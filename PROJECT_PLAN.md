@@ -2,32 +2,33 @@
 
 ## Architecture Summary
 
-| Component | Choice | Rationale |
-|---|---|---|
-| Framework | Next.js + TypeScript | SSR, API routes, single deployable unit |
-| Auth & DB | Supabase (PostgreSQL) | Built-in auth, row-level security, generous free tier |
-| Deployment | Railway or Render | Persistent server for simulation compute |
-| Simulation | Server-side (API routes) | Reliable performance for 10K–100K bracket sims |
-| Data Pipeline | Admin-managed ingestion | KenPom (CSV), Torvik (API), Evan Miya (manual) |
-| AI Narrative | Claude API (server-side) | Prompt-engineered matchup analysis |
-| Styling | Tailwind CSS | Utility-first, dark mode support, rapid iteration |
-| Testing | Vitest + React Testing Library | Fast, co-located tests |
+| Component     | Choice                         | Rationale                                             |
+| ------------- | ------------------------------ | ----------------------------------------------------- |
+| Framework     | Next.js + TypeScript           | SSR, API routes, single deployable unit               |
+| Auth & DB     | Supabase (PostgreSQL)          | Built-in auth, row-level security, generous free tier |
+| Deployment    | Railway or Render              | Persistent server for simulation compute              |
+| Simulation    | Server-side (API routes)       | Reliable performance for 10K–100K bracket sims        |
+| Data Pipeline | Admin-managed ingestion        | KenPom (CSV), Torvik (API), Evan Miya (manual)        |
+| AI Narrative  | Claude API (server-side)       | Prompt-engineered matchup analysis                    |
+| Styling       | Tailwind CSS                   | Utility-first, dark mode support, rapid iteration     |
+| Testing       | Vitest + React Testing Library | Fast, co-located tests                                |
 
 ---
 
 ## Development Phases
 
 ### Phase 0: Project Scaffolding & Infrastructure
+
 > Foundation — everything else builds on this.
 
-- [ ] Initialize Next.js + TypeScript project (App Router)
-- [ ] Configure Tailwind CSS with dark mode defaults
+- [x] Initialize Next.js 16 + TypeScript project (App Router)
+- [x] Configure Tailwind CSS 4 with dark mode defaults (CSS custom properties, Baseball Savant palette)
 - [ ] Set up Supabase project (auth + database)
-- [ ] Configure ESLint, Prettier
-- [ ] Set up Vitest + React Testing Library
-- [ ] Create base directory structure (`src/types/`, `src/lib/`, `src/components/`, `src/hooks/`, `src/app/api/`)
-- [ ] Configure environment variables (`.env.local` template)
-- [ ] Set up CI with GitHub Actions (lint + test on PR)
+- [x] Configure ESLint 9 (flat config) + Prettier
+- [x] Set up Vitest 4 + React Testing Library
+- [x] Create base directory structure (`src/types/`, `src/lib/`, `src/components/`, `src/hooks/`, `src/app/api/`)
+- [x] Configure environment variables (`.env.example` template)
+- [x] Set up CI with GitHub Actions (lint + test + build on PR)
 - [ ] Deploy initial skeleton to Railway/Render
 
 **Parallelizable:** Supabase project setup can happen alongside Next.js scaffolding.
@@ -35,6 +36,7 @@
 ---
 
 ### Phase 1: Data Layer & Admin Pipeline
+
 > Get real data flowing before building UI or simulation.
 
 - [ ] Define TypeScript interfaces for all team data fields (see CLAUDE.md data table)
@@ -51,6 +53,7 @@
 ---
 
 ### Phase 2: Core Probability Engine
+
 > The mathematical heart of the application.
 
 - [ ] Implement composite rating calculator (weighted average of KenPom/Torvik/Miya)
@@ -76,6 +79,7 @@
 ---
 
 ### Phase 3: Monte Carlo Simulation Engine
+
 > Full bracket simulation, server-side.
 
 - [ ] Build simulation API endpoint (`POST /api/simulate`)
@@ -93,6 +97,7 @@
 ---
 
 ### Phase 4: Authentication & User Management
+
 > User accounts, bracket persistence, saved configurations.
 
 - [ ] Integrate Supabase Auth with Next.js (middleware, session handling)
@@ -109,6 +114,7 @@
 ---
 
 ### Phase 5: Bracket View UI
+
 > The primary screen — data-dense, dark, smooth.
 
 - [ ] Build 64-team bracket layout component (responsive, all four regions + Final Four)
@@ -126,6 +132,7 @@
 ---
 
 ### Phase 6: Matchup View UI
+
 > Deep-dive "film room" for individual games.
 
 - [ ] Build team statistical profile card component
@@ -141,6 +148,7 @@
 ---
 
 ### Phase 7: Game Theory / Contest Mode
+
 > Strategic layer — pool size shapes recommendations.
 
 - [ ] Build pool size selection UI (session start or settings)
@@ -160,6 +168,7 @@
 ---
 
 ### Phase 8: Contextual Guidance System
+
 > Proactive warnings and insights without restricting choice.
 
 - [ ] Build guidance rules engine:
@@ -178,6 +187,7 @@
 ---
 
 ### Phase 9: AI Matchup Narrative
+
 > Claude-powered analysis in the matchup view.
 
 - [ ] Build Claude API integration (Next.js API route, server-side only)
@@ -198,6 +208,7 @@
 ---
 
 ### Phase 10: Backtesting Module
+
 > Model validation and lever tuning against history.
 
 - [ ] Source and format historical data (2002–present, as available)
@@ -215,6 +226,7 @@
 ---
 
 ### Phase 11: Polish, Performance & Production
+
 > Ship it.
 
 - [ ] Performance audit: bundle size, API response times, simulation speed
@@ -233,7 +245,16 @@
 
 > Items discovered during development. Will be prioritized and scheduled after the initial build.
 
-_Empty — items will be added here as they surface during development._
+### Claude Code Skills (create once sufficient context exists)
+
+- [ ] `/simulate-matchup` — Pull two teams' data, run probability model, output structured matchup breakdown
+- [ ] `/generate-narrative` — Build AI narrative prompt from matchup data (data block, interpretation instructions, output)
+- [ ] `/backtest-year [year]` — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
+- [ ] `/add-team-data` — Structured team data ingestion with schema validation
+- [ ] `/audit-bracket` — Run guidance system against current bracket state, surface all warnings
+- [ ] `/component [name]` — Component scaffolding with design system context (dark mode, Baseball Savant, TS types)
+
+> These skills should be created as the corresponding features are built — not before. Each skill needs real types, working code, and ideally 2–3 example outputs to be grounded properly.
 
 ---
 

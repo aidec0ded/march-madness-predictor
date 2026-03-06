@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  /* Dark mode default — Baseball Savant inspired palette */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-surface: #1a1a26;
+  --bg-elevated: #222233;
+  --border-subtle: #2a2a3d;
+  --border-default: #3a3a52;
+  --text-primary: #e8e8ed;
+  --text-secondary: #9898a8;
+  --text-muted: #6a6a7d;
+  --accent-primary: #4a90d9;
+  --accent-success: #34d399;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-info: #818cf8;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-surface: #f0f0f4;
+  --bg-elevated: #ffffff;
+  --border-subtle: #e0e0e6;
+  --border-default: #c8c8d4;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a5e;
+  --text-muted: #8a8a9e;
+  --accent-primary: #2563eb;
+  --accent-success: #059669;
+  --accent-warning: #d97706;
+  --accent-danger: #dc2626;
+  --accent-info: #6366f1;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}

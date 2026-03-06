@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init)",
+      "Bash(git branch -M main)",
+      "Bash(gh repo create march-madness-predictor --private --source=. --remote=origin)",
+      "Bash(brew list gh)",
+      "Bash(git add CLAUDE.md PROJECT_PLAN.md README.md .gitignore docs/PRD.md docs/USER_GUIDE.md)",
+      "Bash(git commit:*)",
+      "Bash(git checkout -b phase-0/scaffolding)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest march-madness-temp --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm --turbopack)"
+    ]
+  }
+}

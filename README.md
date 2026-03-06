@@ -13,14 +13,14 @@ A data-driven web application for building, simulating, and strategizing NCAA Ma
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js, React, TypeScript |
-| Styling | Tailwind CSS (dark mode default) |
-| Auth & Database | Supabase (PostgreSQL) |
-| Simulation | Server-side Monte Carlo |
-| AI | Anthropic Claude API |
-| Deployment | Railway / Render |
+| Layer           | Technology                       |
+| --------------- | -------------------------------- |
+| Frontend        | Next.js, React, TypeScript       |
+| Styling         | Tailwind CSS (dark mode default) |
+| Auth & Database | Supabase (PostgreSQL)            |
+| Simulation      | Server-side Monte Carlo          |
+| AI              | Anthropic Claude API             |
+| Deployment      | Railway / Render                 |
 
 ## Getting Started
 

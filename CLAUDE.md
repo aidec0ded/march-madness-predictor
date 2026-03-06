@@ -29,6 +29,7 @@ The composite weights of these three ratings should be configurable. Win probabi
 Levers allow users to adjust how much weight specific factors carry in the probability calculation beyond raw efficiency ratings. There are two categories of levers:
 
 #### Global Levers (bracket-wide)
+
 Applied uniformly across all matchups. Controlled from the main bracket view. These affect the **mean** win probability:
 
 - **Four Factors weights** — offensive and defensive versions are weighted separately:
@@ -46,6 +47,7 @@ The following levers primarily affect the **variance (width)** of the Monte Carl
 - **Three-Point Rate** — high-volume 3-point teams introduce boom/bust variance; affects distribution width
 
 #### Per-Matchup Overrides (matchup-specific)
+
 Accessible from the individual matchup view. All global lever values are inherited as defaults and can be overridden for a specific game. Additionally, per-matchup controls include:
 
 - **Injury / Availability** — manual downward adjustment for roster availability issues
@@ -102,6 +104,7 @@ Available in the matchup view. Calls an AI model to generate a plain-language br
 - Closes with a recommendation that incorporates both the simulation output and the pool context (ownership estimates, contest size)
 
 The AI prompt is constructed from:
+
 1. Structured data for both teams in a consistent, labeled format
 2. A data dictionary explaining how to interpret each field
 3. Explicit reasoning instructions for how to weigh fields in combination and what interactions to look for
@@ -155,26 +158,26 @@ Allows the user to replay historical tournaments (2002–present, subject to dat
 
 The following data fields are used per team. All fields should be sourced from end-of-regular-season snapshots, not updated mid-tournament:
 
-| Field | Source |
-|---|---|
-| Adjusted Offensive Efficiency | KenPom / Torvik / Evan Miya |
-| Adjusted Defensive Efficiency | KenPom / Torvik / Evan Miya |
-| Adjusted Tempo | KenPom |
-| Avg. Possession Length (Off / Def) | KenPom |
-| Effective FG% (Off / Def) | KenPom |
-| Turnover % (Off / Def) | KenPom |
-| Offensive Rebound % (Off / Def) | KenPom |
-| FTA/FGA (Off / Def) | KenPom |
-| 3P% (Off / Def) | KenPom |
-| 3PA/FGA (Off / Def) | KenPom |
-| FT% (Off / Def) | KenPom |
-| Bench Minutes % | KenPom |
-| D-1 Experience (minutes-weighted) | KenPom |
-| Minutes Continuity | KenPom |
-| Average Height | KenPom |
-| 2-Foul Participation | KenPom |
-| Coach tournament record / experience | Curated |
-| Campus-to-site distance | Derived |
+| Field                                | Source                      |
+| ------------------------------------ | --------------------------- |
+| Adjusted Offensive Efficiency        | KenPom / Torvik / Evan Miya |
+| Adjusted Defensive Efficiency        | KenPom / Torvik / Evan Miya |
+| Adjusted Tempo                       | KenPom                      |
+| Avg. Possession Length (Off / Def)   | KenPom                      |
+| Effective FG% (Off / Def)            | KenPom                      |
+| Turnover % (Off / Def)               | KenPom                      |
+| Offensive Rebound % (Off / Def)      | KenPom                      |
+| FTA/FGA (Off / Def)                  | KenPom                      |
+| 3P% (Off / Def)                      | KenPom                      |
+| 3PA/FGA (Off / Def)                  | KenPom                      |
+| FT% (Off / Def)                      | KenPom                      |
+| Bench Minutes %                      | KenPom                      |
+| D-1 Experience (minutes-weighted)    | KenPom                      |
+| Minutes Continuity                   | KenPom                      |
+| Average Height                       | KenPom                      |
+| 2-Foul Participation                 | KenPom                      |
+| Coach tournament record / experience | Curated                     |
+| Campus-to-site distance              | Derived                     |
 
 ---
 

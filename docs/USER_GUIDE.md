@@ -14,12 +14,12 @@
 
 When you first open the app, you'll select your contest pool size. This shapes how the app generates recommendations:
 
-| Pool Size | Strategy |
-|---|---|
-| Small (≤20) | Focus on picking the most probable outcomes |
-| Medium (50–200) | Mix chalk with 1–2 strategic contrarian picks |
-| Large (500+) | Champion pick ownership becomes critical |
-| Very Large (100K+) | Optimize for low-ownership paths |
+| Pool Size          | Strategy                                      |
+| ------------------ | --------------------------------------------- |
+| Small (≤20)        | Focus on picking the most probable outcomes   |
+| Medium (50–200)    | Mix chalk with 1–2 strategic contrarian picks |
+| Large (500+)       | Champion pick ownership becomes critical      |
+| Very Large (100K+) | Optimize for low-ownership paths              |
 
 You can change your pool size at any time from Settings.
 
@@ -108,12 +108,12 @@ A: [TBD]
 
 ## Glossary
 
-| Term | Definition |
-|---|---|
-| AdjEM | Adjusted Efficiency Margin — points scored/allowed per 100 possessions, adjusted for opponent strength |
-| BPR | Bayesian Performance Rating (Evan Miya) |
-| Brier Score | Metric for evaluating probability calibration — lower is better |
-| Four Factors | Dean Oliver's four key basketball stats: eFG%, TO%, ORB%, FTR |
-| Log5 | Method for computing win probability from two teams' ratings |
-| Monte Carlo | Simulation technique that runs thousands of random trials to estimate probabilities |
-| Ownership | Estimated percentage of contest participants picking a given team |
+| Term         | Definition                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------ |
+| AdjEM        | Adjusted Efficiency Margin — points scored/allowed per 100 possessions, adjusted for opponent strength |
+| BPR          | Bayesian Performance Rating (Evan Miya)                                                                |
+| Brier Score  | Metric for evaluating probability calibration — lower is better                                        |
+| Four Factors | Dean Oliver's four key basketball stats: eFG%, TO%, ORB%, FTR                                          |
+| Log5         | Method for computing win probability from two teams' ratings                                           |
+| Monte Carlo  | Simulation technique that runs thousands of random trials to estimate probabilities                    |
+| Ownership    | Estimated percentage of contest participants picking a given team                                      |
