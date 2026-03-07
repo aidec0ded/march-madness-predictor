@@ -1,0 +1,226 @@
+/**
+ * Monte Carlo bracket simulation engine.
+ *
+ * The core simulation loop that runs thousands of full-bracket simulations
+ * to produce win path probabilities for every team. Each simulation plays
+ * out all 63 games from R64 through the National Championship, using the
+ * probability engine's `resolveMatchup` function for win probabilities
+ * and the sampler for random outcome draws.
+ *
+ * Designed for performance: the main `runSimulation` entry point uses a
+ * streaming aggregator to avoid holding all simulated brackets in memory.
+ * Targets < 5 seconds for 50K simulations on a modern server.
+ *
+ * All heavy computation is pure and synchronous. The caller (API route)
+ * is responsible for async scheduling if needed.
+ */
+
+import type { TeamSeason } from "@/types/team";
+import type { EngineConfig, MatchupOverrides } from "@/types/engine";
+import type {
+  BracketMatchup,
+  BracketSlot,
+  SimulatedBracket,
+  SimulationConfig,
+  SimulationResult,
+} from "@/types/simulation";
+
+import { resolveMatchup } from "@/lib/engine/matchup";
+import { sampleGameOutcome, createSeededRandom } from "@/lib/engine/sampler";
+import { buildBracketMatchups, buildBracketSlots } from "@/lib/engine/bracket";
+import { createStreamingAggregator } from "@/lib/engine/aggregator";
+
+// ---------------------------------------------------------------------------
+// Single bracket simulation
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulates one complete 63-game bracket from R64 through the National Championship.
+ *
+ * The simulation processes games in order (R64, R32, S16, E8, F4, NCG). For each game:
+ * 1. Resolve the two teams: look up from bracket slots (R64) or from previous game winners
+ * 2. Look up both teams' full TeamSeason data
+ * 3. Call `resolveMatchup` to get the win probability for team A
+ * 4. Call `sampleGameOutcome` with the random function to determine the winner
+ * 5. Record the winner in gameResults
+ *
+ * The matchups array must be in topological order (feeder games before their consumers),
+ * which `buildBracketMatchups()` guarantees.
+ *
+ * @param teams - Map of teamId to TeamSeason data for all 64 teams
+ * @param matchups - The 63-game bracket matchup tree (from `buildBracketMatchups`)
+ * @param slots - Record of slot IDs to BracketSlot (from `buildBracketSlots`)
+ * @param config - Engine configuration (levers, logistic K, base variance)
+ * @param overrides - Optional per-matchup overrides keyed by gameId
+ * @param random - Optional random number generator (defaults to Math.random)
+ * @returns A SimulatedBracket with all 63 game results and the champion
+ */
+export function simulateBracket(
+  teams: Map<string, TeamSeason>,
+  matchups: BracketMatchup[],
+  slots: Map<string, BracketSlot>,
+  config: EngineConfig,
+  overrides?: Record<string, MatchupOverrides>,
+  random?: () => number
+): SimulatedBracket {
+  const gameResults: Record<string, string> = {};
+  const rng = random ?? Math.random;
+
+  const teamMap = teams;
+
+  for (const matchup of matchups) {
+    // Resolve team A
+    const teamAId = resolveTeamId(matchup.teamASource, slots, gameResults);
+    // Resolve team B
+    const teamBId = resolveTeamId(matchup.teamBSource, slots, gameResults);
+
+    // Look up full team data
+    const teamA = teamMap.get(teamAId);
+    const teamB = teamMap.get(teamBId);
+
+    if (!teamA) {
+      throw new Error(
+        `Team data not found for teamId "${teamAId}" in game "${matchup.gameId}"`
+      );
+    }
+    if (!teamB) {
+      throw new Error(
+        `Team data not found for teamId "${teamBId}" in game "${matchup.gameId}"`
+      );
+    }
+
+    // Get win probability from the matchup resolver
+    const matchupOverrides = overrides?.[matchup.gameId];
+    const result = resolveMatchup(teamA, teamB, config, matchupOverrides);
+
+    // Sample the outcome
+    const outcome = sampleGameOutcome(result.winProbabilityA, rng);
+    const winnerId = outcome === "A" ? teamAId : teamBId;
+
+    gameResults[matchup.gameId] = winnerId;
+  }
+
+  // The champion is the winner of the NCG
+  const champion = gameResults["NCG"];
+
+  return {
+    gameResults,
+    champion,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main simulation entry point
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs the full Monte Carlo bracket simulation.
+ *
+ * This is the main entry point for the simulation engine. It:
+ * 1. Builds the bracket structure (matchups and slots)
+ * 2. Creates a seeded PRNG if a random seed is provided
+ * 3. Initializes a streaming aggregator to avoid memory bloat
+ * 4. Runs N bracket simulations, feeding each into the aggregator
+ * 5. Returns the aggregated SimulationResult with timing information
+ *
+ * Uses the streaming aggregation approach internally: each simulated bracket
+ * is processed immediately and not retained in memory, allowing efficient
+ * handling of 50K-100K simulations.
+ *
+ * @param teams - Map of teamId to TeamSeason data for all 64 tournament teams
+ * @param config - Simulation configuration including number of simulations,
+ *   engine config, per-matchup overrides, and optional random seed
+ * @returns Aggregated SimulationResult with per-team probabilities, champion
+ *   predictions, upset rates, and execution timing
+ *
+ * @example
+ * ```ts
+ * const teamsMap = new Map(teamsArray.map(t => [t.teamId, t]));
+ *
+ * const config: SimulationConfig = {
+ *   numSimulations: 50000,
+ *   engineConfig: DEFAULT_ENGINE_CONFIG,
+ *   randomSeed: 42, // optional, for reproducibility
+ * };
+ *
+ * const result = runSimulation(teamsMap, config);
+ * console.log(result.mostLikelyChampion);
+ * console.log(result.executionTimeMs);
+ * ```
+ */
+export function runSimulation(
+  teams: Map<string, TeamSeason>,
+  config: SimulationConfig
+): SimulationResult {
+  const startTime = performance.now();
+
+  // Build bracket structure from the team data
+  const teamArray = Array.from(teams.values());
+  const matchups = buildBracketMatchups();
+  const slots = buildBracketSlots(teamArray);
+
+  // Create random number generator
+  const rng =
+    config.randomSeed !== undefined
+      ? createSeededRandom(config.randomSeed)
+      : Math.random;
+
+  // Create streaming aggregator
+  const aggregator = createStreamingAggregator(
+    slots,
+    matchups,
+    config.numSimulations
+  );
+
+  // Run simulations with streaming aggregation
+  for (let i = 0; i < config.numSimulations; i++) {
+    const bracket = simulateBracket(
+      teams,
+      matchups,
+      slots,
+      config.engineConfig,
+      config.matchupOverrides,
+      rng
+    );
+    aggregator.addBracket(bracket);
+  }
+
+  const executionTimeMs = performance.now() - startTime;
+
+  return aggregator.getResult(executionTimeMs);
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves a team source to a team ID.
+ *
+ * For R64 games, the source is a slot ID (e.g., "East-1") which maps to a
+ * BracketSlot containing the teamId. For later rounds, the source is a
+ * feeder game's gameId, and the teamId is looked up from gameResults.
+ *
+ * @param source - Either a slot ID or a feeder gameId
+ * @param slots - Record of slot IDs to BracketSlot
+ * @param gameResults - Record of gameId to winner teamId from current simulation
+ * @returns The team ID
+ * @throws {Error} If the source cannot be resolved
+ */
+function resolveTeamId(
+  source: string,
+  slots: Map<string, BracketSlot>,
+  gameResults: Record<string, string>
+): string {
+  // Try slot lookup first (for R64 games)
+  const slot = slots.get(source);
+  if (slot) return slot.teamId;
+
+  // Try game result lookup (for later rounds)
+  const winnerId = gameResults[source];
+  if (winnerId) return winnerId;
+
+  throw new Error(
+    `Cannot resolve team source "${source}": not found in slots or game results`
+  );
+}

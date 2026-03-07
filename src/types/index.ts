@@ -55,3 +55,18 @@ export {
   SITE_PROXIMITY_ADJUSTMENTS,
   SITE_PROXIMITY_THRESHOLDS,
 } from "./engine";
+
+// Simulation types (Monte Carlo)
+export type {
+  BracketSlot,
+  BracketMatchup,
+  SimulationConfig,
+  SimulationCount,
+  TeamSimulationResult,
+  SimulatedBracket,
+  SimulationResult,
+  SimulationRequest,
+  SimulationResponse,
+} from "./simulation";
+
+export { SIMULATION_COUNT_OPTIONS } from "./simulation";

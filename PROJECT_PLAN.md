@@ -79,19 +79,21 @@
 
 ---
 
-### Phase 3: Monte Carlo Simulation Engine
+### Phase 3: Monte Carlo Simulation Engine ✅
 
 > Full bracket simulation, server-side.
 
-- [ ] Build simulation API endpoint (`POST /api/simulate`)
-- [ ] Implement single-game outcome sampling (using probability + variance)
-- [ ] Implement full bracket propagation (63 games, forward-propagating)
-- [ ] Aggregate results: path probabilities, round-by-round survival, champion likelihood
-- [ ] Apply lever effects to simulation parameters
-- [ ] Optimize for performance (target: 50K sims in < 5 seconds)
-- [ ] Add configurable simulation count (10K / 25K / 50K / 100K)
-- [ ] Write integration tests for simulation pipeline
-- [ ] Add progress reporting for long-running simulations
+- [x] Define simulation types (`src/types/simulation.ts` — BracketSlot, BracketMatchup, SimulationConfig, SimulationResult, etc.)
+- [x] Build bracket structure (`src/lib/engine/bracket.ts` — 63 matchups, 4 regions × 16 seeds, standard NCAA seeding order)
+- [x] Implement single-game outcome sampling (`src/lib/engine/sampler.ts` — mulberry32 seeded PRNG for reproducibility)
+- [x] Implement full bracket propagation (`src/lib/engine/simulator.ts` — 63 games, forward-propagating with lever effects)
+- [x] Build streaming result aggregation (`src/lib/engine/aggregator.ts` — path probabilities, round survival, champion likelihood, upset rates)
+- [x] Build simulation API endpoint (`POST /api/simulate` — validates 64-team request, runs simulation, returns results)
+- [x] Apply lever effects to simulation parameters (inherits full engine pipeline per game)
+- [x] Add configurable simulation count (10K / 25K / 50K / 100K via `SIMULATION_COUNT_OPTIONS`)
+- [x] Write comprehensive tests (85 simulation tests: bracket 34, sampler 20, simulator 31; 237 total)
+- [ ] Optimize for performance (target: 50K sims in < 5 seconds) — deferred to Phase 11
+- [ ] Add progress reporting for long-running simulations — deferred to Phase 11
 
 **Dependencies:** Requires Phase 2 (probability engine).
 
