@@ -10,7 +10,24 @@
       "Bash(git checkout -b phase-0/scaffolding)",
       "Bash(node --version)",
       "Bash(npm --version)",
-      "Bash(npx create-next-app@latest march-madness-temp --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm --turbopack)"
+      "Bash(npx create-next-app@latest march-madness-temp --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm --turbopack)",
+      "Bash(git checkout -b phase-1/data-layer)",
+      "WebFetch(domain:barttorvik.com)",
+      "WebFetch(domain:adamcwisports.blogspot.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx vitest run src/lib/data/)",
+      "Bash(./node_modules/.bin/vitest run src/lib/data/)",
+      "Bash(export PATH=\"/Users/robertray/.nvm/versions/node/v22.18.0/bin:$PATH\")",
+      "Bash(node ./node_modules/.bin/vitest run src/lib/data/)",
+      "Bash(node ./node_modules/.bin/tsc --noEmit --pretty)",
+      "Bash(npx vitest run src/lib/data/fetchers/torvik.test.ts)",
+      "Bash(./node_modules/.bin/vitest run src/lib/data/fetchers/torvik.test.ts)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npx tsc --noEmit --skipLibCheck)",
+      "Bash(npx vitest run)",
+      "Bash(npx next build)"
     ]
   }
 }

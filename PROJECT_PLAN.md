@@ -39,14 +39,14 @@
 
 > Get real data flowing before building UI or simulation.
 
-- [ ] Define TypeScript interfaces for all team data fields (see CLAUDE.md data table)
-- [ ] Design Supabase schema: `teams`, `seasons`, `team_stats`, `coaches`, `tournament_sites`
-- [ ] Build admin data import API route (CSV upload → parse → validate → insert)
-- [ ] Build Torvik data fetcher (programmatic pull from barttorvik.com)
-- [ ] Build data normalization layer (map KenPom/Torvik/Miya fields to unified schema)
-- [ ] Create admin UI page for data management (upload, review, approve)
-- [ ] Seed database with current season data
-- [ ] Write unit tests for data validation and normalization
+- [x] Define TypeScript interfaces for all team data fields (`src/types/team.ts`, `src/types/data-import.ts`)
+- [x] Design Supabase schema (`supabase/migrations/001_initial_schema.sql`, `002_rls_policies.sql`)
+- [x] Build admin data import API routes (KenPom CSV, Torvik fetch, Evan Miya manual)
+- [x] Build Torvik data fetcher (`src/lib/data/fetchers/torvik.ts` — static CSV files from barttorvik.com)
+- [x] Build data normalization layer — KenPom, Torvik, Evan Miya normalizers + data merger
+- [x] Create admin UI page for data management (`/admin/data`)
+- [ ] Seed database with current season data (deferred — requires Supabase project setup)
+- [x] Write unit tests for data validation and normalization (56 tests total)
 
 **Parallelizable:** Schema design, TypeScript types, and Torvik fetcher are independent.
 

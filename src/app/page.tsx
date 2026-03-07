@@ -1,6 +1,8 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-8">
       <div className="text-center">
         <h1
           className="text-5xl font-bold tracking-tight mb-4"
@@ -31,6 +33,15 @@ export default function Home() {
           In Development — Phase 0
         </div>
       </div>
+
+      {/* Admin link */}
+      <Link
+        href="/admin/data"
+        className="absolute bottom-4 right-4 text-xs font-mono hover:opacity-80 transition-opacity"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Admin
+      </Link>
     </main>
   );
 }

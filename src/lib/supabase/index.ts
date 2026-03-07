@@ -1,13 +1,40 @@
 /**
  * Supabase client and helpers.
  *
- * This module will contain:
- * - Supabase client initialization
- * - Auth helpers
- * - Database query helpers
- * - Type-safe query builders
- *
- * Built out in Phase 1 (Data Layer) and Phase 4 (Auth).
+ * Re-exports all public APIs:
+ * - Client factories (browser and server)
+ * - Database type definitions
  */
 
-export {};
+// Client factories
+export { createBrowserClient, createServerClient } from "./client";
+
+// Database types
+export type {
+  Database,
+  DbDataSource,
+  DbTournamentRegion,
+  DbTournamentRound,
+  DbImportStatus,
+  TeamRow,
+  TeamInsert,
+  TeamUpdate,
+  CoachRow,
+  CoachInsert,
+  CoachUpdate,
+  TeamSeasonRow,
+  TeamSeasonInsert,
+  TeamSeasonUpdate,
+  TournamentEntryRow,
+  TournamentEntryInsert,
+  TournamentEntryUpdate,
+  TournamentSiteRow,
+  TournamentSiteInsert,
+  TournamentSiteUpdate,
+  TeamNameMappingRow,
+  TeamNameMappingInsert,
+  TeamNameMappingUpdate,
+  ImportJobRow,
+  ImportJobInsert,
+  ImportJobUpdate,
+} from "./types";
