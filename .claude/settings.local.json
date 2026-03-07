@@ -27,7 +27,20 @@
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(npx tsc --noEmit --skipLibCheck)",
       "Bash(npx vitest run)",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(git checkout -b phase-2/probability-engine)",
+      "Bash(npx vitest run src/lib/engine/)",
+      "Bash(./node_modules/.bin/vitest run src/lib/engine/)",
+      "Bash(export PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\")",
+      "Bash(node_modules/.bin/vitest run src/lib/engine/)",
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v22.18.0/bin:$PATH\")",
+      "Bash(node_modules/.bin/tsc --noEmit --pretty)",
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v22.18.0/bin:/usr/bin:$PATH\")",
+      "Bash(npx vitest run src/lib/engine/levers.test.ts src/lib/engine/matchup.test.ts)",
+      "Bash(./node_modules/.bin/vitest run src/lib/engine/levers.test.ts src/lib/engine/matchup.test.ts)",
+      "Bash(echo \"PATH=$PATH\")",
+      "Bash(npm run lint)",
+      "Bash(npm test -- --reporter=dot)"
     ]
   }
 }

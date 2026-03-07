@@ -56,23 +56,24 @@
 
 > The mathematical heart of the application.
 
-- [ ] Implement composite rating calculator (weighted average of KenPom/Torvik/Miya)
-- [ ] Implement log5 logistic model for pairwise win probability
-- [ ] Build global lever system — mean-adjusting levers:
-  - Four Factors weights (8 sub-levers: offense/defense × 4 factors)
-  - Roster Experience weight
-  - Minutes Continuity weight
-  - Coach Tournament Experience weight
-- [ ] Build variance levers:
-  - Pace/Tempo effect on distribution width
-  - Three-Point Rate effect on distribution width
-- [ ] Build per-matchup override system (inherits globals, allows override)
-  - Injury/Availability adjustment
-  - Site Proximity adjustment (with distance bucketing)
-  - Recent Form/Momentum override
-  - Rest/Schedule Density adjustment
-- [ ] Write comprehensive unit tests for all probability calculations
-- [ ] Validate against known matchup outcomes for sanity checking
+- [x] Implement composite rating calculator (weighted KenPom/Torvik/Miya with auto-renormalization)
+- [x] Implement log5 logistic model for pairwise win probability (k=0.0325, calibrated)
+- [x] Build global lever system — mean-adjusting levers:
+  - Four Factors weights (8 sub-levers: offense/defense × 4 factors, scaling factor 0.15)
+  - Roster Experience weight (0.75 eff pts / year)
+  - Minutes Continuity weight (0.05 eff pts / pct point)
+  - Coach Tournament Experience weight (win rate + Final Four bonus)
+- [x] Build variance levers:
+  - Pace/Tempo effect on distribution width (baseline 68, 0.015 scaling, clamped [0.7, 1.4])
+  - Three-Point Rate effect on distribution width (baseline 35%, 0.02 scaling, clamped [0.8, 1.5])
+- [x] Build per-matchup override system (inherits globals, deep-merges overrides)
+  - Injury/Availability adjustment (efficiency point deduction)
+  - Site Proximity adjustment (5 buckets, -1.0 to +3.0 eff pts)
+  - Recent Form/Momentum override (-5.0 to +5.0 eff pts)
+  - Rest/Schedule Density adjustment (-3.0 to +3.0 eff pts)
+- [x] Build matchup resolver (`resolveMatchup` — 10-step pipeline, full `ProbabilityBreakdown`)
+- [x] Write comprehensive unit tests (96 engine tests, 152 total)
+- [ ] Validate against known matchup outcomes for sanity checking (deferred to Phase 10 backtesting)
 
 **Parallelizable:** Mean levers, variance levers, and per-matchup overrides are independent once the base model exists.
 

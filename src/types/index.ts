@@ -34,3 +34,24 @@ export type {
   ImportResponse,
   TeamNameMapping,
 } from "./data-import";
+
+// Engine types (probability model, levers, matchup)
+export type {
+  CompositeWeights,
+  FourFactorsLeverWeights,
+  GlobalLevers,
+  MatchupOverrides,
+  MatchupInput,
+  ProbabilityBreakdown,
+  MatchupResult,
+  EngineConfig,
+} from "./engine";
+
+export {
+  DEFAULT_COMPOSITE_WEIGHTS,
+  DEFAULT_FOUR_FACTORS_WEIGHTS,
+  DEFAULT_GLOBAL_LEVERS,
+  DEFAULT_ENGINE_CONFIG,
+  SITE_PROXIMITY_ADJUSTMENTS,
+  SITE_PROXIMITY_THRESHOLDS,
+} from "./engine";
