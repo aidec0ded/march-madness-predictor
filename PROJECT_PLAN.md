@@ -100,18 +100,22 @@
 
 ---
 
-### Phase 4: Authentication & User Management
+### Phase 4: Authentication & User Management ✅
 
 > User accounts, bracket persistence, saved configurations.
 
-- [ ] Integrate Supabase Auth with Next.js (middleware, session handling)
-- [ ] Build sign-up / sign-in pages (email + OAuth providers)
-- [ ] Design schema for user data: `user_brackets`, `user_lever_configs`, `user_settings`
-- [ ] Implement bracket save/load API routes
-- [ ] Implement lever configuration save/load
-- [ ] Set up Supabase Row Level Security (RLS) policies
-- [ ] Build user profile/settings page
-- [ ] Write auth integration tests
+- [x] Integrate Supabase Auth with Next.js — four-client pattern (`@supabase/ssr`), middleware for session refresh + route protection
+- [x] Build sign-up / sign-in pages (email + OAuth providers) — `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, `/auth/reset-password`
+- [x] Add OAuth callback and email confirmation route handlers (`/auth/callback`, `/auth/confirm`)
+- [x] Create AuthProvider context with server-side initial user hydration + `useAuth` hook
+- [x] Design schema for user data: `user_brackets`, `user_lever_configs`, `user_settings` (`003_user_tables.sql`)
+- [x] Implement bracket save/load API routes (`GET/POST /api/brackets`, `GET/PUT/DELETE /api/brackets/[id]`)
+- [x] Implement lever configuration save/load (`GET/POST /api/lever-configs`, `GET/PUT/DELETE /api/lever-configs/[id]`)
+- [x] Implement settings API route with upsert pattern (`GET/PUT /api/settings`)
+- [x] Set up Supabase Row Level Security (RLS) policies — `auth.uid() = user_id` with admin override
+- [x] Build user settings page (`/settings`) — pool size bucket, simulation count preferences
+- [x] Transition admin auth to dual Supabase Auth + API key fallback
+- [ ] Write auth integration tests — deferred to post-UI when end-to-end flows can be tested
 
 **Parallelizable with Phase 2 and Phase 3** — auth is independent of the engine.
 
