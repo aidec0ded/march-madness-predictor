@@ -1,0 +1,328 @@
+"use client";
+
+import { createContext, useReducer, useMemo, type ReactNode } from "react";
+import type { TeamSeason } from "@/types/team";
+import type { GlobalLevers } from "@/types/engine";
+import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import type {
+  BracketState,
+  BracketAction,
+  SavedBracketData,
+} from "@/types/bracket-ui";
+import { buildBracketMatchups } from "@/lib/engine/bracket";
+import type { BracketMatchup } from "@/types/simulation";
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
+export interface BracketContextValue {
+  state: BracketState;
+  dispatch: React.Dispatch<BracketAction>;
+}
+
+export const BracketContext = createContext<BracketContextValue | null>(null);
+
+// ---------------------------------------------------------------------------
+// Cascade invalidation helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a lookup from gameId to the matchup definition.
+ * Used for downstream cascade logic.
+ */
+function buildMatchupMap(
+  matchups: BracketMatchup[]
+): Map<string, BracketMatchup> {
+  const map = new Map<string, BracketMatchup>();
+  for (const m of matchups) {
+    map.set(m.gameId, m);
+  }
+  return map;
+}
+
+/**
+ * Build a lookup from gameId to all downstream gameIds that depend on it.
+ * A game X is downstream of game Y if Y appears as teamASource or teamBSource of X.
+ */
+function buildDownstreamMap(
+  matchups: BracketMatchup[]
+): Map<string, string[]> {
+  const downstream = new Map<string, string[]>();
+
+  for (const m of matchups) {
+    // If teamASource is a gameId (not a slot ID like "East-1"), it's a feeder
+    if (!m.teamASource.includes("-") || m.teamASource.startsWith("R64-") || m.teamASource.startsWith("R32-") || m.teamASource.startsWith("S16-") || m.teamASource.startsWith("E8-") || m.teamASource.startsWith("F4-")) {
+      // teamASource could be a slot ID (e.g., "East-1") or a gameId (e.g., "R64-East-1")
+      // Only gameIds start with a round prefix
+      if (isGameId(m.teamASource)) {
+        const existing = downstream.get(m.teamASource) ?? [];
+        existing.push(m.gameId);
+        downstream.set(m.teamASource, existing);
+      }
+    }
+    if (isGameId(m.teamBSource)) {
+      const existing = downstream.get(m.teamBSource) ?? [];
+      existing.push(m.gameId);
+      downstream.set(m.teamBSource, existing);
+    }
+  }
+
+  return downstream;
+}
+
+/** Check if a source string is a gameId (starts with round prefix) vs a slot ID */
+function isGameId(source: string): boolean {
+  return (
+    source.startsWith("R64-") ||
+    source.startsWith("R32-") ||
+    source.startsWith("S16-") ||
+    source.startsWith("E8-") ||
+    source.startsWith("F4-") ||
+    source === "NCG"
+  );
+}
+
+/**
+ * Cascade-clear downstream picks when a team is replaced.
+ * If a game's winner changes and the old winner was picked in any downstream game,
+ * those downstream picks must be cleared.
+ */
+function cascadeInvalidation(
+  picks: Record<string, string>,
+  gameId: string,
+  oldWinnerId: string | undefined,
+  downstreamMap: Map<string, string[]>
+): Record<string, string> {
+  if (!oldWinnerId) return picks;
+
+  const newPicks = { ...picks };
+  const toCheck = downstreamMap.get(gameId) ?? [];
+
+  for (const downstreamGameId of toCheck) {
+    if (newPicks[downstreamGameId] === oldWinnerId) {
+      // Clear this pick and cascade further
+      delete newPicks[downstreamGameId];
+      // Continue cascading from this downstream game
+      const furtherDown = cascadeInvalidation(
+        newPicks,
+        downstreamGameId,
+        oldWinnerId,
+        downstreamMap
+      );
+      Object.assign(newPicks, furtherDown);
+    }
+  }
+
+  return newPicks;
+}
+
+// ---------------------------------------------------------------------------
+// Reducer
+// ---------------------------------------------------------------------------
+
+/** Pre-built matchup data (computed once) */
+const ALL_MATCHUPS = buildBracketMatchups();
+const DOWNSTREAM_MAP = buildDownstreamMap(ALL_MATCHUPS);
+
+function bracketReducer(
+  state: BracketState,
+  action: BracketAction
+): BracketState {
+  switch (action.type) {
+    case "ADVANCE_TEAM": {
+      const oldWinner = state.picks[action.gameId];
+      let newPicks = { ...state.picks };
+
+      // If the winner changed, cascade-invalidate downstream picks
+      if (oldWinner && oldWinner !== action.teamId) {
+        newPicks = cascadeInvalidation(
+          newPicks,
+          action.gameId,
+          oldWinner,
+          DOWNSTREAM_MAP
+        );
+      }
+
+      newPicks[action.gameId] = action.teamId;
+
+      return {
+        ...state,
+        picks: newPicks,
+        isDirty: true,
+      };
+    }
+
+    case "RESET_PICK": {
+      const oldWinner = state.picks[action.gameId];
+      let newPicks = { ...state.picks };
+
+      // Cascade-invalidate downstream picks that depended on this winner
+      if (oldWinner) {
+        newPicks = cascadeInvalidation(
+          newPicks,
+          action.gameId,
+          oldWinner,
+          DOWNSTREAM_MAP
+        );
+      }
+
+      delete newPicks[action.gameId];
+
+      return {
+        ...state,
+        picks: newPicks,
+        isDirty: true,
+      };
+    }
+
+    case "SET_GLOBAL_LEVERS": {
+      return {
+        ...state,
+        globalLevers: {
+          ...state.globalLevers,
+          ...action.levers,
+        },
+        isDirty: true,
+      };
+    }
+
+    case "SET_MATCHUP_OVERRIDE": {
+      return {
+        ...state,
+        matchupOverrides: {
+          ...state.matchupOverrides,
+          [action.gameId]: action.overrides,
+        },
+        isDirty: true,
+      };
+    }
+
+    case "REMOVE_MATCHUP_OVERRIDE": {
+      const newOverrides = { ...state.matchupOverrides };
+      delete newOverrides[action.gameId];
+      return {
+        ...state,
+        matchupOverrides: newOverrides,
+        isDirty: true,
+      };
+    }
+
+    case "SET_SIMULATION_RESULT": {
+      return {
+        ...state,
+        simulationResult: action.result,
+        isSimulating: false,
+      };
+    }
+
+    case "SET_SIMULATING": {
+      return {
+        ...state,
+        isSimulating: action.isSimulating,
+      };
+    }
+
+    case "LOAD_BRACKET": {
+      const { bracket } = action;
+      return {
+        ...state,
+        bracketId: bracket.bracketId,
+        bracketName: bracket.name,
+        picks: bracket.picks,
+        globalLevers: bracket.globalLevers,
+        matchupOverrides: bracket.matchupOverrides,
+        simulationResult: bracket.simulationSnapshot,
+        isDirty: false,
+      };
+    }
+
+    case "CLEAR_BRACKET": {
+      return {
+        ...state,
+        picks: {},
+        globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
+        matchupOverrides: {},
+        simulationResult: null,
+        isSimulating: false,
+        bracketId: null,
+        bracketName: "My Bracket",
+        isDirty: false,
+      };
+    }
+
+    case "MARK_SAVED": {
+      return {
+        ...state,
+        bracketId: action.bracketId,
+        isDirty: false,
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+
+interface BracketProviderProps {
+  children: ReactNode;
+  /** Initial 64 teams for the bracket */
+  initialTeams: TeamSeason[];
+  /** Optional saved bracket to restore */
+  savedBracket?: SavedBracketData;
+}
+
+/**
+ * BracketProvider manages the full bracket state via React Context + useReducer.
+ *
+ * Wraps the bracket view and all child components. Provides state and dispatch
+ * through BracketContext, accessed via the useBracket() hook.
+ *
+ * Features:
+ * - ADVANCE_TEAM automatically cascades downstream pick invalidation
+ * - Supports loading saved brackets and resetting to defaults
+ * - Tracks dirty state for unsaved changes
+ */
+export function BracketProvider({
+  children,
+  initialTeams,
+  savedBracket,
+}: BracketProviderProps) {
+  const teamsMap = useMemo(() => {
+    const map = new Map<string, TeamSeason>();
+    for (const team of initialTeams) {
+      map.set(team.teamId, team);
+    }
+    return map;
+  }, [initialTeams]);
+
+  const initialState: BracketState = useMemo(
+    () => ({
+      teams: teamsMap,
+      picks: savedBracket?.picks ?? {},
+      globalLevers: savedBracket?.globalLevers ?? { ...DEFAULT_GLOBAL_LEVERS },
+      matchupOverrides: savedBracket?.matchupOverrides ?? {},
+      simulationResult: savedBracket?.simulationSnapshot ?? null,
+      isSimulating: false,
+      bracketId: savedBracket?.bracketId ?? null,
+      bracketName: savedBracket?.name ?? "My Bracket",
+      isDirty: false,
+    }),
+    [teamsMap, savedBracket]
+  );
+
+  const [state, dispatch] = useReducer(bracketReducer, initialState);
+
+  const value = useMemo<BracketContextValue>(
+    () => ({ state, dispatch }),
+    [state, dispatch]
+  );
+
+  return (
+    <BracketContext.Provider value={value}>{children}</BracketContext.Provider>
+  );
+}
