@@ -1,0 +1,114 @@
+/**
+ * Bracket Page — Server Component
+ *
+ * Fetches tournament team data and the user's active bracket from Supabase,
+ * then renders the BracketShell client component with the data.
+ *
+ * Data flow:
+ * 1. Fetch all team_seasons for the current season (joined with teams + coaches)
+ * 2. Fetch tournament_entries for seeding/region data
+ * 3. Transform DB rows into TeamSeason application types
+ * 4. Filter to tournament teams only
+ * 5. Optionally load user's active saved bracket
+ * 6. Pass everything to BracketShell for client-side interactivity
+ */
+
+import { cookies } from "next/headers";
+import { createServerClient } from "@/lib/supabase/client";
+import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
+import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
+import type { TournamentEntryRow, UserBracketRow } from "@/lib/supabase/types";
+import { BracketShell } from "@/components/bracket/BracketShell";
+import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import type { SavedBracketData } from "@/types/bracket-ui";
+import type { SimulationResult } from "@/types/simulation";
+
+export default async function BracketPage() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(cookieStore);
+
+  // Fetch tournament teams for current season
+  const { data: teamSeasonRows, error: teamsError } = await supabase
+    .from("team_seasons")
+    .select("*, teams!inner(*), coaches(*)")
+    .eq("season", 2026);
+
+  // Fetch tournament entries
+  const { data: entries, error: entriesError } = await supabase
+    .from("tournament_entries")
+    .select("*")
+    .eq("season", 2026);
+
+  if (teamsError || entriesError || !teamSeasonRows || !entries) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          padding: "32px",
+          color: "var(--text-secondary)",
+          textAlign: "center",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            marginBottom: "8px",
+          }}
+        >
+          Unable to load bracket data
+        </h2>
+        <p style={{ fontSize: "0.875rem", maxWidth: "400px" }}>
+          {teamsError?.message ||
+            entriesError?.message ||
+            "No team data available for the 2026 season. Please ensure tournament data has been imported."}
+        </p>
+      </div>
+    );
+  }
+
+  // Transform and filter to tournament teams
+  const allTeams = transformTeamSeasonRows(
+    teamSeasonRows as unknown as TeamSeasonJoinedRow[],
+    entries as unknown as TournamentEntryRow[]
+  );
+  const tournamentTeams = allTeams.filter((t) => t.tournamentEntry);
+
+  // Optionally load user's active bracket
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let savedBracket: SavedBracketData | undefined;
+  if (user) {
+    const { data: brackets } = await supabase
+      .from("user_brackets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .eq("season", 2026)
+      .limit(1);
+
+    if (brackets && brackets.length > 0) {
+      const b = brackets[0] as UserBracketRow;
+      savedBracket = {
+        bracketId: b.id,
+        name: b.name,
+        picks: (b.picks || {}) as Record<string, string>,
+        globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
+        matchupOverrides: {},
+        simulationSnapshot:
+          (b.simulation_snapshot as unknown as SimulationResult) ?? null,
+      };
+    }
+  }
+
+  return (
+    <BracketShell initialTeams={tournamentTeams} savedBracket={savedBracket} />
+  );
+}
