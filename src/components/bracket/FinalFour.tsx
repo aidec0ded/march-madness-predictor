@@ -1,0 +1,388 @@
+"use client";
+
+/**
+ * FinalFour — renders the center section of the bracket: F4-1, F4-2, and NCG.
+ *
+ * Layout:
+ * - F4 Game 1 at top (East vs West winners)
+ * - National Championship in the middle
+ * - F4 Game 2 at bottom (South vs Midwest winners)
+ * - Champion display below NCG when a winner is selected
+ *
+ * Teams are resolved from E8 winners in the picks map.
+ */
+
+import React from "react";
+import type { TeamSeason, TournamentRound } from "@/types/team";
+import type { BracketMatchup, SimulationResult } from "@/types/simulation";
+import type { MatchupOverrides } from "@/types/engine";
+import { MatchupSlot } from "@/components/bracket/MatchupSlot";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface FinalFourProps {
+  /** The 3 Final Four matchups: F4-1, F4-2, NCG */
+  matchups: BracketMatchup[];
+  /** All tournament teams keyed by teamId */
+  teams: Map<string, TeamSeason>;
+  /** User picks: gameId -> winning teamId */
+  picks: Record<string, string>;
+  /** Simulation results (null if not yet run) */
+  simulationResult: SimulationResult | null;
+  /** Per-matchup overrides keyed by gameId */
+  matchupOverrides: Record<string, MatchupOverrides>;
+  /** Called when user picks a team to advance */
+  onAdvance: (gameId: string, teamId: string) => void;
+  /** Called when user clicks a matchup for detail view */
+  onMatchupClick?: (gameId: string) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Gets a team from picks + teams map. The source is a gameId whose
+ * winner is looked up in picks, then resolved from the teams map.
+ */
+function resolveTeamFromPick(
+  sourceGameId: string,
+  picks: Record<string, string>,
+  teams: Map<string, TeamSeason>
+): TeamSeason | null {
+  const winnerId = picks[sourceGameId];
+  if (!winnerId) return null;
+  return teams.get(winnerId) ?? null;
+}
+
+/**
+ * Gets the win probability for a team in a specific round from simulation results.
+ */
+function getTeamProbability(
+  teamId: string | undefined,
+  round: TournamentRound,
+  simulationResult: SimulationResult | null
+): number | null {
+  if (!teamId || !simulationResult) return null;
+  const teamResult = simulationResult.teamResults.find(
+    (r) => r.teamId === teamId
+  );
+  if (!teamResult) return null;
+  return teamResult.roundProbabilities[round] ?? null;
+}
+
+/**
+ * Gets the championship probability for a team.
+ */
+function getChampionshipProbability(
+  teamId: string,
+  simulationResult: SimulationResult | null
+): number | null {
+  if (!simulationResult) return null;
+  const teamResult = simulationResult.teamResults.find(
+    (r) => r.teamId === teamId
+  );
+  return teamResult?.championshipProbability ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Champion Card
+// ---------------------------------------------------------------------------
+
+interface ChampionCardProps {
+  team: TeamSeason;
+  probability: number | null;
+}
+
+function ChampionCard({ team, probability }: ChampionCardProps) {
+  const seed = team.tournamentEntry?.seed;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "6px",
+        padding: "12px 16px",
+        borderRadius: "8px",
+        border: "2px solid var(--accent-warning)",
+        background:
+          "linear-gradient(135deg, var(--bg-elevated), var(--bg-surface))",
+        boxShadow: "0 0 16px rgba(245, 158, 11, 0.15)",
+        animation: "champion-glow 2s ease-in-out infinite alternate",
+      }}
+    >
+      <span style={{ fontSize: "24px" }} role="img" aria-label="Trophy">
+        🏆
+      </span>
+      <span
+        style={{
+          fontSize: "10px",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "var(--accent-warning)",
+        }}
+      >
+        Champion
+      </span>
+      <span
+        style={{
+          fontSize: "16px",
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          textAlign: "center",
+        }}
+      >
+        {seed && (
+          <span
+            style={{
+              fontSize: "12px",
+              color: "var(--text-muted)",
+              marginRight: "4px",
+            }}
+          >
+            ({seed})
+          </span>
+        )}
+        {team.team.shortName}
+      </span>
+      {probability !== null && (
+        <span
+          style={{
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "var(--accent-success)",
+          }}
+        >
+          {(probability * 100).toFixed(1)}% to win
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function FinalFour({
+  matchups,
+  teams,
+  picks,
+  simulationResult,
+  matchupOverrides,
+  onAdvance,
+  onMatchupClick,
+}: FinalFourProps) {
+  // Sort matchups: F4-1 first, then F4-2, then NCG
+  const f4Game1 = matchups.find((m) => m.gameId === "F4-1");
+  const f4Game2 = matchups.find((m) => m.gameId === "F4-2");
+  const ncg = matchups.find((m) => m.gameId === "NCG");
+
+  // Resolve F4 teams from E8 winners
+  const f4Game1TeamA = f4Game1
+    ? resolveTeamFromPick(f4Game1.teamASource, picks, teams)
+    : null;
+  const f4Game1TeamB = f4Game1
+    ? resolveTeamFromPick(f4Game1.teamBSource, picks, teams)
+    : null;
+
+  const f4Game2TeamA = f4Game2
+    ? resolveTeamFromPick(f4Game2.teamASource, picks, teams)
+    : null;
+  const f4Game2TeamB = f4Game2
+    ? resolveTeamFromPick(f4Game2.teamBSource, picks, teams)
+    : null;
+
+  // Resolve NCG teams from F4 winners
+  const ncgTeamA = ncg
+    ? resolveTeamFromPick(ncg.teamASource, picks, teams)
+    : null;
+  const ncgTeamB = ncg
+    ? resolveTeamFromPick(ncg.teamBSource, picks, teams)
+    : null;
+
+  // Champion
+  const championId = ncg ? picks["NCG"] : undefined;
+  const champion = championId ? teams.get(championId) ?? null : null;
+  const championProb = championId
+    ? getChampionshipProbability(championId, simulationResult)
+    : null;
+
+  return (
+    <div
+      className="final-four"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "16px",
+        padding: "8px",
+        minWidth: "180px",
+        height: "100%",
+      }}
+    >
+      {/* Final Four Header */}
+      <h3
+        style={{
+          color: "var(--text-primary)",
+          fontSize: "13px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          textAlign: "center",
+          borderBottom: "2px solid var(--accent-warning)",
+          paddingBottom: "4px",
+        }}
+      >
+        Final Four
+      </h3>
+
+      {/* F4 Game 1 */}
+      {f4Game1 && (
+        <div style={{ width: "100%", maxWidth: "180px" }}>
+          <MatchupSlot
+            gameId={f4Game1.gameId}
+            round={f4Game1.round}
+            teamA={f4Game1TeamA}
+            teamB={f4Game1TeamB}
+            winner={picks["F4-1"] ?? null}
+            probA={getTeamProbability(
+              f4Game1TeamA?.teamId,
+              "F4",
+              simulationResult
+            )}
+            probB={getTeamProbability(
+              f4Game1TeamB?.teamId,
+              "F4",
+              simulationResult
+            )}
+            hasOverrides={"F4-1" in matchupOverrides}
+            onAdvance={(teamId) => onAdvance("F4-1", teamId)}
+            onMatchupClick={onMatchupClick}
+          />
+        </div>
+      )}
+
+      {/* Connector: F4 → NCG */}
+      <div
+        style={{
+          width: "2px",
+          height: "12px",
+          background:
+            picks["F4-1"] || picks["F4-2"]
+              ? "var(--accent-primary)"
+              : "var(--border-subtle)",
+          transition: "background 0.2s ease",
+        }}
+      />
+
+      {/* National Championship */}
+      {ncg && (
+        <div style={{ width: "100%", maxWidth: "180px" }}>
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--text-muted)",
+              textAlign: "center",
+              marginBottom: "4px",
+            }}
+          >
+            Championship
+          </div>
+          <MatchupSlot
+            gameId="NCG"
+            round="NCG"
+            teamA={ncgTeamA}
+            teamB={ncgTeamB}
+            winner={picks["NCG"] ?? null}
+            probA={getTeamProbability(
+              ncgTeamA?.teamId,
+              "NCG",
+              simulationResult
+            )}
+            probB={getTeamProbability(
+              ncgTeamB?.teamId,
+              "NCG",
+              simulationResult
+            )}
+            hasOverrides={"NCG" in matchupOverrides}
+            onAdvance={(teamId) => onAdvance("NCG", teamId)}
+            onMatchupClick={onMatchupClick}
+          />
+        </div>
+      )}
+
+      {/* Champion display */}
+      {champion && <ChampionCard team={champion} probability={championProb} />}
+
+      {/* Connector: NCG → F4 Game 2 */}
+      {!champion && (
+        <div
+          style={{
+            width: "2px",
+            height: "12px",
+            background:
+              picks["F4-1"] || picks["F4-2"]
+                ? "var(--accent-primary)"
+                : "var(--border-subtle)",
+            transition: "background 0.2s ease",
+          }}
+        />
+      )}
+
+      {champion && (
+        <div
+          style={{
+            width: "2px",
+            height: "12px",
+            background: "var(--accent-primary)",
+            transition: "background 0.2s ease",
+          }}
+        />
+      )}
+
+      {/* F4 Game 2 */}
+      {f4Game2 && (
+        <div style={{ width: "100%", maxWidth: "180px" }}>
+          <MatchupSlot
+            gameId={f4Game2.gameId}
+            round={f4Game2.round}
+            teamA={f4Game2TeamA}
+            teamB={f4Game2TeamB}
+            winner={picks["F4-2"] ?? null}
+            probA={getTeamProbability(
+              f4Game2TeamA?.teamId,
+              "F4",
+              simulationResult
+            )}
+            probB={getTeamProbability(
+              f4Game2TeamB?.teamId,
+              "F4",
+              simulationResult
+            )}
+            hasOverrides={"F4-2" in matchupOverrides}
+            onAdvance={(teamId) => onAdvance("F4-2", teamId)}
+            onMatchupClick={onMatchupClick}
+          />
+        </div>
+      )}
+
+      {/* Keyframe animation for champion glow */}
+      <style>{`
+        @keyframes champion-glow {
+          from { box-shadow: 0 0 8px rgba(245, 158, 11, 0.1); }
+          to { box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
+        }
+      `}</style>
+    </div>
+  );
+}
