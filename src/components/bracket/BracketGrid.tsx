@@ -88,75 +88,6 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 }
 
 // ---------------------------------------------------------------------------
-// Loading State
-// ---------------------------------------------------------------------------
-
-function BracketLoading() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "400px",
-        color: "var(--text-muted)",
-        fontSize: "14px",
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            border: "3px solid var(--border-subtle)",
-            borderTopColor: "var(--accent-primary)",
-            borderRadius: "50%",
-            animation: "bracket-spin 0.8s linear infinite",
-            margin: "0 auto 12px",
-          }}
-        />
-        Loading bracket data...
-        <style>{`
-          @keyframes bracket-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Error State
-// ---------------------------------------------------------------------------
-
-function BracketError({ message }: { message: string }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "400px",
-        color: "var(--accent-danger)",
-        fontSize: "14px",
-        padding: "24px",
-        textAlign: "center",
-      }}
-    >
-      <div>
-        <div
-          style={{ fontSize: "20px", marginBottom: "8px", fontWeight: 700 }}
-        >
-          Error
-        </div>
-        <div style={{ color: "var(--text-secondary)" }}>{message}</div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -187,15 +118,8 @@ export function BracketGrid() {
     // TODO: Navigate to /matchup/[gameId] or open a modal
   }, []);
 
-  // Loading state
-  if (state.isLoading) {
-    return <BracketLoading />;
-  }
-
-  // Error state
-  if (state.error) {
-    return <BracketError message={state.error} />;
-  }
+  // Loading state (show while simulation is running)
+  // Note: isSimulating is tracked but we don't block rendering during simulation
 
   // Empty state
   if (state.teams.size === 0) {

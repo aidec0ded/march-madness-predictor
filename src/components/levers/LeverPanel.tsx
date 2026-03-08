@@ -95,7 +95,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
 
   const updateLevers = useCallback(
     (partial: Partial<GlobalLevers>) => {
-      dispatch({ type: "SET_GLOBAL_LEVERS", payload: partial });
+      dispatch({ type: "SET_GLOBAL_LEVERS", levers: partial });
     },
     [dispatch],
   );
@@ -103,7 +103,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
   const handleReset = useCallback(() => {
     dispatch({
       type: "SET_GLOBAL_LEVERS",
-      payload: { ...DEFAULT_GLOBAL_LEVERS },
+      levers: { ...DEFAULT_GLOBAL_LEVERS },
     });
   }, [dispatch]);
 

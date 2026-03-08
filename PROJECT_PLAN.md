@@ -121,19 +121,23 @@
 
 ---
 
-### Phase 5: Bracket View UI
+### Phase 5: Bracket View UI ✅
 
 > The primary screen — data-dense, dark, smooth.
 
-- [ ] Build 64-team bracket layout component (responsive, all four regions + Final Four)
-- [ ] Build team card component (name, seed, probability bars)
-- [ ] Implement interactive bracket picking (click to advance team)
-- [ ] Build global lever panel (collapsible sidebar/drawer)
-- [ ] Build simulation trigger button with loading/progress state
-- [ ] Display simulation results overlay (champion probabilities, round survival)
-- [ ] Implement dark mode theme system (Baseball Savant inspired)
-- [ ] Add visual indicators for matchups with per-matchup overrides
-- [ ] Responsive design (desktop primary, tablet secondary)
+- [x] Build 64-team bracket layout component (responsive, all four regions + Final Four) — `BracketGrid`, `RegionBracket`, `FinalFour` with CSS Grid layout + connector lines
+- [x] Build team card component (name, seed, probability bars) — `TeamCard` (React.memo, seed badge color-coded), `ProbabilityBar` (3px color-interpolated bar)
+- [x] Implement interactive bracket picking (click to advance team) — `BracketProvider` with `useReducer`, cascading pick invalidation on upstream changes
+- [x] Build global lever panel (collapsible sidebar/drawer) — `LeverPanel` with `CompositeWeightsControl` (auto-normalization), `FourFactorsControls` (8 sliders), `VarianceControls`
+- [x] Build simulation trigger button with loading/progress state — `SimulationButton` with idle/loading/success/error states, `useBracketSimulation` hook
+- [x] Display simulation results overlay (champion probabilities, round survival) — `SimulationResultsOverlay` with top 10 champions table, upset rates, execution metadata
+- [x] Implement dark mode theme system (Baseball Savant inspired) — CSS custom properties throughout, all components use `--bg-*`, `--text-*`, `--accent-*` variables
+- [x] Add visual indicators for matchups with per-matchup overrides — `OverrideIndicator` orange dot with tooltip
+- [x] Connect `/api/simulate` to Supabase — `transforms.ts` for DB row → `TeamSeason` conversion, endpoint fetches 64 teams and runs engine
+- [x] Build `/bracket` page (Server Component) with team fetching and optional saved bracket loading
+- [x] Build bracket save/load persistence — `useBracketPersistence` hook connected to brackets API
+- [ ] Responsive design polish (tablet horizontal scroll, mobile region-by-region view) — deferred to Phase 11
+- [ ] Add bracket-specific unit/component tests — deferred to post-UI
 
 **Dependencies:** Requires Phase 2 (lever system), Phase 3 (simulation results to display), Phase 4 (save/load).
 
