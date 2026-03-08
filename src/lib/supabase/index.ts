@@ -2,12 +2,17 @@
  * Supabase client and helpers.
  *
  * Re-exports all public APIs:
- * - Client factories (browser and server)
+ * - Client factories (browser, server, middleware, and admin)
  * - Database type definitions
  */
 
 // Client factories
-export { createBrowserClient, createServerClient } from "./client";
+export {
+  createBrowserClient,
+  createServerClient,
+  createMiddlewareClient,
+  createAdminClient,
+} from "./client";
 
 // Database types
 export type {
