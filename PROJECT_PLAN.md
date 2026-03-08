@@ -29,7 +29,7 @@
 - [x] Create base directory structure (`src/types/`, `src/lib/`, `src/components/`, `src/hooks/`, `src/app/api/`)
 - [x] Configure environment variables (`.env.example` template)
 - [x] Set up CI with GitHub Actions (lint + test + build on PR)
-- [ ] Deploy initial skeleton to Railway/Render
+- [x] Deploy initial skeleton to Render — `render.yaml` Blueprint, `output: "standalone"`, `.nvmrc` for Node 20
 
 **Parallelizable:** Supabase project setup can happen alongside Next.js scaffolding.
 
