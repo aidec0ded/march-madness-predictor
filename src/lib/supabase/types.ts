@@ -73,6 +73,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- coaches -----
@@ -110,6 +111,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- team_seasons -----
@@ -278,6 +280,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- tournament_entries -----
@@ -315,6 +318,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- tournament_sites -----
@@ -355,6 +359,7 @@ export interface Database {
           season?: number;
           created_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- team_name_mappings -----
@@ -386,6 +391,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       // ----- import_jobs -----
@@ -423,6 +429,115 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+
+      // ----- user_brackets -----
+      user_brackets: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          season: number;
+          picks: Record<string, unknown>;
+          simulation_snapshot: Record<string, unknown> | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string;
+          season?: number;
+          picks?: Record<string, unknown>;
+          simulation_snapshot?: Record<string, unknown> | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          season?: number;
+          picks?: Record<string, unknown>;
+          simulation_snapshot?: Record<string, unknown> | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
+      // ----- user_lever_configs -----
+      user_lever_configs: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          season: number;
+          global_levers: Record<string, unknown>;
+          matchup_overrides: Record<string, unknown>;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string;
+          season?: number;
+          global_levers?: Record<string, unknown>;
+          matchup_overrides?: Record<string, unknown>;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          season?: number;
+          global_levers?: Record<string, unknown>;
+          matchup_overrides?: Record<string, unknown>;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
+      // ----- user_settings -----
+      user_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          pool_size_bucket: string;
+          simulation_count: number;
+          preferences: Record<string, unknown>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pool_size_bucket?: string;
+          simulation_count?: number;
+          preferences?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          pool_size_bucket?: string;
+          simulation_count?: number;
+          preferences?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
 
@@ -488,3 +603,27 @@ export type ImportJobInsert =
   Database["public"]["Tables"]["import_jobs"]["Insert"];
 export type ImportJobUpdate =
   Database["public"]["Tables"]["import_jobs"]["Update"];
+
+/** Shorthand for a user_brackets table row. */
+export type UserBracketRow =
+  Database["public"]["Tables"]["user_brackets"]["Row"];
+export type UserBracketInsert =
+  Database["public"]["Tables"]["user_brackets"]["Insert"];
+export type UserBracketUpdate =
+  Database["public"]["Tables"]["user_brackets"]["Update"];
+
+/** Shorthand for a user_lever_configs table row. */
+export type UserLeverConfigRow =
+  Database["public"]["Tables"]["user_lever_configs"]["Row"];
+export type UserLeverConfigInsert =
+  Database["public"]["Tables"]["user_lever_configs"]["Insert"];
+export type UserLeverConfigUpdate =
+  Database["public"]["Tables"]["user_lever_configs"]["Update"];
+
+/** Shorthand for a user_settings table row. */
+export type UserSettingsRow =
+  Database["public"]["Tables"]["user_settings"]["Row"];
+export type UserSettingsInsert =
+  Database["public"]["Tables"]["user_settings"]["Insert"];
+export type UserSettingsUpdate =
+  Database["public"]["Tables"]["user_settings"]["Update"];

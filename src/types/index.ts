@@ -70,3 +70,13 @@ export type {
 } from "./simulation";
 
 export { SIMULATION_COUNT_OPTIONS } from "./simulation";
+
+// User data types
+export type {
+  PoolSizeBucket,
+  UserBracket,
+  UserLeverConfig,
+  UserSettings,
+} from "./user";
+
+export { POOL_SIZE_LABELS } from "./user";
