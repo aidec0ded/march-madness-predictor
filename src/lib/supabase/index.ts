@@ -42,4 +42,13 @@ export type {
   ImportJobRow,
   ImportJobInsert,
   ImportJobUpdate,
+  UserBracketRow,
+  UserBracketInsert,
+  UserBracketUpdate,
+  UserLeverConfigRow,
+  UserLeverConfigInsert,
+  UserLeverConfigUpdate,
+  UserSettingsRow,
+  UserSettingsInsert,
+  UserSettingsUpdate,
 } from "./types";
