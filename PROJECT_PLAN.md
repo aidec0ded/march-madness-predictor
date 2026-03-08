@@ -23,7 +23,7 @@
 
 - [x] Initialize Next.js 16 + TypeScript project (App Router)
 - [x] Configure Tailwind CSS 4 with dark mode defaults (CSS custom properties, Baseball Savant palette)
-- [ ] Set up Supabase project (auth + database)
+- [x] Set up Supabase project (auth + database) — `xiwpovarclryqtkaugsm.supabase.co`, 7 tables, RLS policies applied
 - [x] Configure ESLint 9 (flat config) + Prettier
 - [x] Set up Vitest 4 + React Testing Library
 - [x] Create base directory structure (`src/types/`, `src/lib/`, `src/components/`, `src/hooks/`, `src/app/api/`)
@@ -45,7 +45,8 @@
 - [x] Build Torvik data fetcher (`src/lib/data/fetchers/torvik.ts` — static CSV files from barttorvik.com)
 - [x] Build data normalization layer — KenPom, Torvik, Evan Miya normalizers + data merger
 - [x] Create admin UI page for data management (`/admin/data`)
-- [ ] Seed database with current season data (deferred — requires Supabase project setup)
+- [x] Seed database with 2026 Torvik data (365 teams, programmatic seeder via `scripts/fetch-and-seed.ts`)
+- [x] Build campus location lookup for 380+ D-1 schools (`src/lib/data/campus-locations.ts`)
 - [x] Write unit tests for data validation and normalization (56 tests total)
 
 **Parallelizable:** Schema design, TypeScript types, and Torvik fetcher are independent.
