@@ -4,6 +4,7 @@
  * Re-exports all public APIs:
  * - Client factories (browser, server, middleware, and admin)
  * - Database type definitions
+ * - Transform utilities (DB rows → application types)
  */
 
 // Client factories
@@ -13,6 +14,10 @@ export {
   createMiddlewareClient,
   createAdminClient,
 } from "./client";
+
+// Transforms
+export { transformTeamSeasonRows } from "./transforms";
+export type { TeamSeasonJoinedRow } from "./transforms";
 
 // Database types
 export type {

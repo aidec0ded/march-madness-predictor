@@ -18,7 +18,7 @@
  * Response:
  * - 200: Successful simulation with full results
  * - 400: Invalid request body (missing fields, bad values)
- * - 501: Database not yet connected (temporary — pre-Supabase)
+ * - 404: No tournament data found for the requested season
  * - 500: Unexpected server error
  */
 
@@ -27,7 +27,13 @@ import { NextResponse } from "next/server";
 import type { EngineConfig, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
-import type { SimulationCount } from "@/types/simulation";
+import type { SimulationConfig, SimulationCount } from "@/types/simulation";
+import { createAdminClient } from "@/lib/supabase/client";
+import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
+import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
+import type { TournamentEntryRow } from "@/lib/supabase/types";
+import { runSimulation } from "@/lib/engine/simulator";
+import type { TeamSeason } from "@/types/team";
 
 // ---------------------------------------------------------------------------
 // Request body shape
@@ -197,38 +203,114 @@ export async function POST(request: Request) {
     } = validation.data;
 
     // Resolve full engine configuration (merge partial with defaults)
-    const _resolvedConfig = resolveEngineConfig(engineConfig);
-    const _resolvedOverrides = matchupOverrides ?? {};
-    const _resolvedSeed = randomSeed;
+    const resolvedConfig = resolveEngineConfig(engineConfig);
+    const resolvedOverrides = matchupOverrides ?? {};
+    const resolvedSeed = randomSeed;
 
-    // TODO (Phase 4): Fetch 64 TeamSeason records from Supabase for the
-    // requested season. The query will be:
-    //
-    //   const { data: teams, error } = await supabase
-    //     .from("team_seasons")
-    //     .select("*, teams(*), coaches(*)")
-    //     .eq("season", season)
-    //     .not("tournament_entry", "is", null)
-    //     .order("team_id");
-    //
-    // Once fetched:
-    // 1. Validate that exactly 64 teams have tournament entries
-    // 2. Build bracket slots using buildBracketSlots(teams)
-    // 3. Build bracket matchups using buildBracketMatchups()
-    // 4. Create SimulationConfig from resolved parameters
-    // 5. Run simulation using runSimulation(teams, config)
-    // 6. Return SimulationResult
+    // --- Fetch team data from Supabase ---
+    const supabase = createAdminClient();
 
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Simulation endpoint is active but not yet connected to the database. " +
-          "Team data retrieval from Supabase will be implemented in Phase 4. " +
-          `Received valid request for season ${season} with ${numSimulations} simulations.`,
-      },
-      { status: 501 }
+    // Query team_seasons for the requested season, joining teams and coaches
+    const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
+      .from("team_seasons")
+      .select("*, teams!inner(*), coaches(*)")
+      .eq("season", season)
+      .order("team_id");
+
+    if (teamSeasonsError) {
+      console.error("Error fetching team seasons:", teamSeasonsError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Database error fetching team data: ${teamSeasonsError.message}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!teamSeasonRows || teamSeasonRows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No team data found for season ${season}.`,
+        },
+        { status: 404 }
+      );
+    }
+
+    // Query tournament entries for the same season
+    const { data: tournamentEntries, error: entriesError } = await supabase
+      .from("tournament_entries")
+      .select("*")
+      .eq("season", season);
+
+    if (entriesError) {
+      console.error("Error fetching tournament entries:", entriesError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Database error fetching tournament entries: ${entriesError.message}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!tournamentEntries || tournamentEntries.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No tournament entries found for season ${season}. The bracket may not have been set yet.`,
+        },
+        { status: 404 }
+      );
+    }
+
+    // --- Transform DB rows to application types ---
+    const allTeamSeasons = transformTeamSeasonRows(
+      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
+      tournamentEntries as unknown as TournamentEntryRow[]
     );
+
+    // Filter to only teams that have tournament entries
+    const tournamentTeams = allTeamSeasons.filter(
+      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
+        ts.tournamentEntry !== undefined
+    );
+
+    // Validate exactly 64 tournament teams
+    if (tournamentTeams.length !== 64) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Expected 64 tournament teams for season ${season}, but found ${tournamentTeams.length}. ` +
+            `The bracket data may be incomplete.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // --- Build teams map and run simulation ---
+    const teamsMap = new Map<string, TeamSeason>();
+    for (const team of tournamentTeams) {
+      teamsMap.set(team.teamId, team);
+    }
+
+    const simulationConfig: SimulationConfig = {
+      numSimulations,
+      engineConfig: resolvedConfig,
+      matchupOverrides:
+        Object.keys(resolvedOverrides).length > 0
+          ? resolvedOverrides
+          : undefined,
+      randomSeed: resolvedSeed,
+    };
+
+    const result = runSimulation(teamsMap, simulationConfig);
+
+    return NextResponse.json({
+      success: true,
+      result,
+    });
   } catch (error) {
     console.error("Simulation error:", error);
     return NextResponse.json(
