@@ -34,21 +34,22 @@ interface FieldRange {
  * catching clearly invalid data (e.g., a negative tempo or a 200% FG%).
  */
 const FIELD_RANGES: Record<string, FieldRange> = {
-  // Efficiency ratings
-  adjOE: { min: 80, max: 130, label: "Adjusted Offensive Efficiency" },
-  adjDE: { min: 80, max: 130, label: "Adjusted Defensive Efficiency" },
-  adjEM: { min: -30, max: 40, label: "Adjusted Efficiency Margin" },
+  // Efficiency ratings — widened to accommodate D1 outliers (e.g., elite
+  // teams with AdjEM > 40, very weak teams below -30, AdjOE above 130)
+  adjOE: { min: 75, max: 140, label: "Adjusted Offensive Efficiency" },
+  adjDE: { min: 75, max: 140, label: "Adjusted Defensive Efficiency" },
+  adjEM: { min: -45, max: 50, label: "Adjusted Efficiency Margin" },
 
-  // Four Factors (percentages expressed as 0-100)
-  efgPct: { min: 30, max: 70, label: "Effective FG%" },
-  toPct: { min: 8, max: 30, label: "Turnover %" },
-  orbPct: { min: 15, max: 45, label: "Offensive Rebound %" },
-  ftRate: { min: 15, max: 55, label: "Free Throw Rate" },
+  // Four Factors (percentages expressed as 0-100) — widened for low-major outliers
+  efgPct: { min: 25, max: 75, label: "Effective FG%" },
+  toPct: { min: 5, max: 35, label: "Turnover %" },
+  orbPct: { min: 10, max: 50, label: "Offensive Rebound %" },
+  ftRate: { min: 10, max: 65, label: "Free Throw Rate" },
 
-  // Shooting splits
-  threePtPct: { min: 20, max: 50, label: "Three-Point %" },
-  threePtRate: { min: 15, max: 55, label: "Three-Point Attempt Rate" },
-  ftPct: { min: 55, max: 85, label: "Free Throw %" },
+  // Shooting splits — widened for opponent 3PA rate outliers and low-major extremes
+  threePtPct: { min: 15, max: 55, label: "Three-Point %" },
+  threePtRate: { min: 10, max: 70, label: "Three-Point Attempt Rate" },
+  ftPct: { min: 50, max: 90, label: "Free Throw %" },
 
   // Tempo & pace
   adjTempo: { min: 55, max: 80, label: "Adjusted Tempo" },

@@ -106,9 +106,9 @@ describe("validateTeamSeason", () => {
       ratings: {
         kenpom: {
           source: "kenpom",
-          adjOE: 150.0, // Max is 130
+          adjOE: 160.0, // Max is 140
           adjDE: 95.0,
-          adjEM: 55.0,
+          adjEM: 65.0,
         },
       },
     });
@@ -121,7 +121,7 @@ describe("validateTeamSeason", () => {
       (e) => e.field === "ratings.kenpom.adjOE"
     );
     expect(adjOEError).toBeDefined();
-    expect(adjOEError?.value).toBe(150.0);
+    expect(adjOEError?.value).toBe(160.0);
   });
 
   it("should flag out-of-range adjDE (too low)", () => {
@@ -130,8 +130,8 @@ describe("validateTeamSeason", () => {
         kenpom: {
           source: "kenpom",
           adjOE: 115.0,
-          adjDE: 70.0, // Min is 80
-          adjEM: 45.0,
+          adjDE: 60.0, // Min is 75
+          adjEM: 55.0,
         },
       },
     });
@@ -151,7 +151,7 @@ describe("validateTeamSeason", () => {
           source: "kenpom",
           adjOE: 115.0,
           adjDE: 95.0,
-          adjEM: 50.0, // Max is 40
+          adjEM: 60.0, // Max is 50
         },
       },
     });
@@ -222,8 +222,8 @@ describe("validateTeamSeason", () => {
       ratings: {
         kenpom: {
           source: "kenpom",
-          adjOE: 80.0, // Exact minimum
-          adjDE: 80.0,
+          adjOE: 75.0, // Exact minimum
+          adjDE: 75.0,
           adjEM: 0.0,
         },
       },
@@ -246,8 +246,8 @@ describe("validateTeamSeason", () => {
       ratings: {
         kenpom: {
           source: "kenpom",
-          adjOE: 130.0, // Exact maximum
-          adjDE: 130.0,
+          adjOE: 140.0, // Exact maximum
+          adjDE: 140.0,
           adjEM: 0.0,
         },
       },
