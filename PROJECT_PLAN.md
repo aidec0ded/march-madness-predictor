@@ -232,21 +232,26 @@
 
 ---
 
-### Phase 10: Backtesting Module
+### Phase 10: Backtesting Module ✅
 
 > Model validation and lever tuning against history.
 
-- [ ] Source and format historical data (2002–present, as available)
-- [ ] Build historical data import pipeline
-- [ ] Build backtest runner: simulate historical tournament → compare to actual results
-- [ ] Implement Brier Score calculator
-- [ ] Build naive seed-based baseline for comparison
-- [ ] Build lever tuning interface: adjust weights → re-run → compare scores
-- [ ] Implement train/test split management (recommended: hold out 2021–2024)
-- [ ] Flag 2021 as anomalous (COVID bubble)
-- [ ] Build results visualization (Brier score over years, calibration plots)
+- [x] Source and format historical data — scraped 2008–2024 from sports-reference.com (1,007 games across 16 seasons)
+- [x] Build historical data import pipeline — `scripts/scrape-tournament-results.ts` → `src/lib/backtest/historical-results.ts`
+- [x] Build backtest runner: per-game `resolveMatchup()` evaluation against actual results
+- [x] Implement Brier Score calculator — `src/lib/backtest/brier-score.ts` (15 tests)
+- [x] Build naive seed-based baseline for comparison — `src/lib/backtest/seed-baseline.ts` (14 tests)
+- [x] Build calibration bins for model calibration analysis — `src/lib/backtest/calibration.ts` (15 tests)
+- [x] Build backtest runner with multi-year aggregation — `src/lib/backtest/runner.ts` (19 tests)
+- [x] Build lever tuning interface: isolated levers for backtest configuration
+- [x] Implement train/test split management (2008–2019 train, 2021–2024 test)
+- [x] Flag 2021 as anomalous (COVID bubble — all games in Indianapolis)
+- [x] Build results visualization (Brier Score chart, calibration plot, results table)
+- [x] Build API route — `POST /api/backtest`
+- [x] Build historical data seeder — `scripts/seed-historical.ts`
+- [x] Build full backtest dashboard UI — `/backtest` page with all components
 
-**Largely independent — can be developed in parallel with Phases 7–9.**
+**Completed: 63 backtest tests, 400 total tests passing.**
 
 ---
 

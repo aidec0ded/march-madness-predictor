@@ -98,3 +98,25 @@ export type {
   NarrativeState,
   NarrativeCacheEntry,
 } from "./narrative";
+
+// Backtest types (Phase 10 — backtesting module)
+export type {
+  HistoricalGameResult,
+  TournamentResults,
+  BrierGameScore,
+  BrierScoreResult,
+  BacktestYearResult,
+  BacktestResult,
+  CalibrationBin,
+  BacktestRequest,
+  BacktestResponse,
+} from "./backtest";
+
+export {
+  TRAIN_SEASONS,
+  TEST_SEASONS,
+  ALL_SEASONS,
+  ANOMALOUS_SEASONS,
+  SEED_MATCHUP_WIN_RATES,
+  ROUND_LABELS,
+} from "./backtest";
