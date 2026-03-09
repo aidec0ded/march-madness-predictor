@@ -9,6 +9,7 @@
  */
 
 import { memo } from "react";
+import { ordinal } from "@/lib/engine/rankings";
 import type { StatCategory } from "@/types/matchup-view";
 import type { TeamSeason } from "@/types/team";
 
@@ -37,7 +38,7 @@ function formatValue(value: number | null, format: "pct" | "decimal" | "integer"
   if (value === null) return "—";
   switch (format) {
     case "pct":
-      return (value * 100).toFixed(1);
+      return (value * 100).toFixed(1) + "%";
     case "decimal":
       return value.toFixed(1);
     case "integer":
@@ -179,10 +180,16 @@ function StatRow({ stat }: { stat: StatCategory }) {
   const colorB =
     advantage === "B" ? "var(--accent-danger)" : "var(--border-subtle)";
 
+  const rankA = stat.rankA;
+  const rankB = stat.rankB;
+
   return (
     <div className="stat-row">
-      {/* Team A value + bar */}
+      {/* Team A value + rank + bar */}
       <div className="stat-row__side stat-row__side--left">
+        {rankA != null && (
+          <span className="stat-row__rank">{ordinal(rankA)}</span>
+        )}
         <span
           className="stat-row__value"
           style={{
@@ -206,7 +213,7 @@ function StatRow({ stat }: { stat: StatCategory }) {
       {/* Label */}
       <span className="stat-row__label">{stat.label}</span>
 
-      {/* Team B value + bar */}
+      {/* Team B value + rank + bar */}
       <div className="stat-row__side stat-row__side--right">
         <div className="stat-row__bar-container stat-row__bar-container--right">
           <div
@@ -226,6 +233,9 @@ function StatRow({ stat }: { stat: StatCategory }) {
         >
           {valB}
         </span>
+        {rankB != null && (
+          <span className="stat-row__rank">{ordinal(rankB)}</span>
+        )}
       </div>
 
       <style jsx>{`
@@ -257,10 +267,22 @@ function StatRow({ stat }: { stat: StatCategory }) {
         .stat-row__value {
           font-size: 0.75rem;
           font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-          min-width: 40px;
+          min-width: 48px;
           text-align: right;
         }
         .stat-row__side--right .stat-row__value {
+          text-align: left;
+        }
+        .stat-row__rank {
+          font-size: 0.625rem;
+          color: var(--text-muted);
+          white-space: nowrap;
+          min-width: 24px;
+        }
+        .stat-row__side--left .stat-row__rank {
+          text-align: right;
+        }
+        .stat-row__side--right .stat-row__rank {
           text-align: left;
         }
         .stat-row__bar-container {

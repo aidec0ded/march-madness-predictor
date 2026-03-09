@@ -83,4 +83,8 @@ export interface StatCategory {
   format: "pct" | "decimal" | "integer";
   /** Group this stat belongs to */
   group: "efficiency" | "four_factors" | "shooting" | "other";
+  /** Team A rank in the tournament field (1-indexed, null if unavailable) */
+  rankA?: number | null;
+  /** Team B rank in the tournament field (1-indexed, null if unavailable) */
+  rankB?: number | null;
 }

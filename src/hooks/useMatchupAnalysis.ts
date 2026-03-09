@@ -16,6 +16,7 @@ import { resolveMatchup } from "@/lib/engine/matchup";
 import { ratingDiffToSpread } from "@/lib/engine/win-probability";
 import { generateMatchupDistribution } from "@/lib/engine/distribution";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
+import { computeFieldRankings, getTeamRank } from "@/lib/engine/rankings";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import type { TeamSeason } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
@@ -43,14 +44,25 @@ const MATCHUP_MAP = new Map<string, BracketMatchup>(
  *
  * @param teamA - First team
  * @param teamB - Second team
+ * @param rankings - Optional pre-computed field rankings (from computeFieldRankings)
  * @returns Array of StatCategory objects for the comparison display
  */
 export function buildStatCategories(
   teamA: TeamSeason,
-  teamB: TeamSeason
+  teamB: TeamSeason,
+  rankings?: Map<string, Map<string, number>>
 ): StatCategory[] {
   const kenpomA = teamA.ratings.kenpom;
   const kenpomB = teamB.ratings.kenpom;
+
+  /** Helper to look up ranks for both teams by stat label */
+  const ranks = (label: string) =>
+    rankings
+      ? {
+          rankA: getTeamRank(rankings, teamA.teamId, label),
+          rankB: getTeamRank(rankings, teamB.teamId, label),
+        }
+      : {};
 
   return [
     // Efficiency
@@ -61,6 +73,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "decimal",
       group: "efficiency",
+      ...ranks("Adj. Off. Efficiency"),
     },
     {
       label: "Adj. Def. Efficiency",
@@ -69,6 +82,7 @@ export function buildStatCategories(
       higherIsBetter: false,
       format: "decimal",
       group: "efficiency",
+      ...ranks("Adj. Def. Efficiency"),
     },
     // Four Factors
     {
@@ -78,6 +92,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "pct",
       group: "four_factors",
+      ...ranks("eFG% (Off)"),
     },
     {
       label: "eFG% (Def)",
@@ -86,6 +101,7 @@ export function buildStatCategories(
       higherIsBetter: false,
       format: "pct",
       group: "four_factors",
+      ...ranks("eFG% (Def)"),
     },
     {
       label: "TO% (Off)",
@@ -94,6 +110,7 @@ export function buildStatCategories(
       higherIsBetter: false,
       format: "pct",
       group: "four_factors",
+      ...ranks("TO% (Off)"),
     },
     {
       label: "TO% (Def)",
@@ -102,6 +119,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "pct",
       group: "four_factors",
+      ...ranks("TO% (Def)"),
     },
     {
       label: "ORB% (Off)",
@@ -110,6 +128,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "pct",
       group: "four_factors",
+      ...ranks("ORB% (Off)"),
     },
     {
       label: "ORB% (Def)",
@@ -118,6 +137,7 @@ export function buildStatCategories(
       higherIsBetter: false,
       format: "pct",
       group: "four_factors",
+      ...ranks("ORB% (Def)"),
     },
     {
       label: "FT Rate (Off)",
@@ -126,6 +146,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "decimal",
       group: "four_factors",
+      ...ranks("FT Rate (Off)"),
     },
     {
       label: "FT Rate (Def)",
@@ -134,6 +155,7 @@ export function buildStatCategories(
       higherIsBetter: false,
       format: "decimal",
       group: "four_factors",
+      ...ranks("FT Rate (Def)"),
     },
     // Shooting
     {
@@ -143,6 +165,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "pct",
       group: "shooting",
+      ...ranks("3PT%"),
     },
     // Other
     {
@@ -152,6 +175,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "decimal",
       group: "other",
+      ...ranks("Adj Tempo"),
     },
     {
       label: "Experience",
@@ -160,6 +184,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "decimal",
       group: "other",
+      ...ranks("Experience"),
     },
     {
       label: "Continuity",
@@ -168,6 +193,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "pct",
       group: "other",
+      ...ranks("Continuity"),
     },
     {
       label: "Avg Height",
@@ -176,6 +202,7 @@ export function buildStatCategories(
       higherIsBetter: true,
       format: "decimal",
       group: "other",
+      ...ranks("Avg Height"),
     },
   ];
 }
@@ -315,8 +342,9 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
     // which expects positive = A favored
     const distribution = generateMatchupDistribution(-spread, 7.5);
 
-    // Build stat categories
-    const stats = buildStatCategories(teamA, teamB);
+    // Compute field rankings and build stat categories
+    const rankings = computeFieldRankings(state.teams);
+    const stats = buildStatCategories(teamA, teamB, rankings);
 
     const analysis: MatchupAnalysis = {
       gameId,
