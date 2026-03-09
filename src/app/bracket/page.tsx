@@ -14,7 +14,7 @@
  */
 
 import { cookies } from "next/headers";
-import { createServerClient } from "@/lib/supabase/client";
+import { createServerClient, createAdminClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow, UserBracketRow } from "@/lib/supabase/types";
@@ -24,17 +24,17 @@ import type { SavedBracketData } from "@/types/bracket-ui";
 import type { SimulationResult } from "@/types/simulation";
 
 export default async function BracketPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(cookieStore);
+  // Use admin client for public team data (RLS requires authenticated role)
+  const adminClient = createAdminClient();
 
   // Fetch tournament teams for current season
-  const { data: teamSeasonRows, error: teamsError } = await supabase
+  const { data: teamSeasonRows, error: teamsError } = await adminClient
     .from("team_seasons")
     .select("*, teams!inner(*), coaches(*)")
     .eq("season", 2026);
 
   // Fetch tournament entries
-  const { data: entries, error: entriesError } = await supabase
+  const { data: entries, error: entriesError } = await adminClient
     .from("tournament_entries")
     .select("*")
     .eq("season", 2026);
@@ -79,7 +79,9 @@ export default async function BracketPage() {
   );
   const tournamentTeams = allTeams.filter((t) => t.tournamentEntry);
 
-  // Optionally load user's active bracket
+  // Optionally load user's active bracket (needs cookie-based client for auth)
+  const cookieStore = await cookies();
+  const supabase = createServerClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();

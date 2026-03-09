@@ -117,10 +117,10 @@ export function Slider({
 
       {/* Inline style for thumb background color since Tailwind arbitrary can be unreliable */}
       <style>{`
-        #${CSS.escape(id)}::-webkit-slider-thumb {
+        #${id.replace(/[^a-zA-Z0-9_-]/g, "\\$&")}::-webkit-slider-thumb {
           background-color: var(--accent-primary);
         }
-        #${CSS.escape(id)}::-moz-range-thumb {
+        #${id.replace(/[^a-zA-Z0-9_-]/g, "\\$&")}::-moz-range-thumb {
           background-color: var(--accent-primary);
         }
       `}</style>
