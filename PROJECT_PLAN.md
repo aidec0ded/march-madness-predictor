@@ -143,56 +143,60 @@
 
 ---
 
-### Phase 6: Matchup View UI
+### Phase 6: Matchup View UI ✅
 
 > Deep-dive "film room" for individual games.
 
-- [ ] Build team statistical profile card component
-- [ ] Build side-by-side comparison layout
-- [ ] Build per-matchup lever override panel (shows inherited defaults, allows override)
-- [ ] Display win probability before and after overrides
-- [ ] Build Monte Carlo distribution visualization (histogram/density chart)
-- [ ] Navigation: bracket view ↔ matchup view with context preservation
-- [ ] Charting library integration (Recharts, Nivo, or D3)
+- [x] Build team statistical profile card component — `TeamProfileCard` showing efficiency ratings, four factors, shooting splits, tempo, experience, coaching
+- [x] Build side-by-side comparison layout — `StatComparison` with 15 metrics grouped by category (efficiency, four factors, shooting, other) with advantage coloring
+- [x] Build per-matchup lever override panel (shows inherited defaults, allows override) — `MatchupOverridePanel` with sliders for injury, site proximity, recent form, rest
+- [x] Display win probability before and after overrides — `ProbabilityDisplay` with large probability numbers, point spread, and full breakdown table
+- [x] Build Monte Carlo distribution visualization (histogram/density chart) — `DistributionChart` using Recharts with margin-of-victory bins color-split at 0
+- [x] Navigation: bracket view ↔ matchup view with context preservation — Full-screen `MatchupView` overlay triggered by clicking any matchup, closes on Escape key
+- [x] Charting library integration — Recharts installed and integrated
+- [x] Build shared bracket-utils — Extracted `resolveSlotTeam()` and `resolveMatchupTeams()` into shared `bracket-utils.ts`
+- [x] Build distribution generator — `generateMatchupDistribution()` mini Monte Carlo (1000 samples), Box-Muller normal noise
+- [x] Build useMatchupAnalysis hook — Resolves teams, runs probability with/without overrides, generates distribution
+- [x] Write tests (8 distribution generator tests, 245 total passing)
 
 **Dependencies:** Requires Phase 5 (bracket navigation context).
 
 ---
 
-### Phase 7: Game Theory / Contest Mode
+### Phase 7: Game Theory / Contest Mode ✅
 
 > Strategic layer — pool size shapes recommendations.
 
-- [ ] Build pool size selection UI (session start or settings)
-- [ ] Implement ownership model:
-  - Heuristic based on seed, conference, media profile, historical over-pick patterns
-  - Store ownership estimates per team per round
-- [ ] Build strategy recommendation engine:
-  - Small pool: maximize probability
-  - Medium pool: 1–2 contrarian picks
-  - Large pool: champion ownership weighting
-  - Very large pool: low-ownership path optimization
-- [ ] Display ownership estimates alongside win probabilities in bracket view
+- [x] Build pool size selection UI — `PoolSizeSelector` compact dropdown in header bar, dispatches `SET_POOL_SIZE` to BracketContext
+- [x] Implement ownership model — seed-based baseline (1-seed: 98%, 16-seed: 2%) × round decay (R64: 1.0 → NCG: 0.3) × conference premium (power +4%) × rating-strength adjustment
+- [x] Build strategy recommendation engine — 4 pool tiers (small/medium/large/very_large), leverage score = winProb / (ownership/100), typed recommendations (max_probability, contrarian_value, slight_contrarian, avoid, neutral)
+- [x] Display ownership estimates alongside win probabilities in bracket view — `OwnershipBadge` (memo-wrapped) inline on `TeamCard`, color-coded by ownership level
+- [x] Add `poolSizeBucket` to BracketState + `SET_POOL_SIZE` action
+- [x] Wire ownership through BracketGrid → RegionBracket → MatchupSlot → TeamCard + FinalFour
+- [x] Build `useContestStrategy` hook with memoized `getOwnership()` and `getRecommendation()` functions
+- [x] Write tests (27 new: 9 ownership + 18 strategy, 264 total passing)
 - [ ] Feed contest context into AI narrative recommendations (Phase 9)
 
 **Parallelizable with Phase 6 and Phase 8.**
 
 ---
 
-### Phase 8: Contextual Guidance System
+### Phase 8: Contextual Guidance System ✅
 
 > Proactive warnings and insights without restricting choice.
 
-- [ ] Build guidance rules engine:
-  - Upset volume warning (vs. historical base rates)
-  - Chalk concentration warning (vs. ownership model)
-  - Variance mismatch note (high-variance teams advancing deep)
-  - Lever conflict detection (lever weights vs. team profiles)
-  - Recency divergence flag (recent form vs. season composite)
-  - Pace/tempo explanation (variance compression)
-- [ ] Build guidance display component (non-intrusive banners or sidebar notes)
-- [ ] Trigger re-evaluation on bracket changes and lever adjustments
-- [ ] Write unit tests for each guidance rule
+- [x] Build guidance rules engine — 6 pure-function rules evaluating BracketState → GuidanceMessage[]:
+  - Upset volume warning — counts R64 upsets vs historical avg (~4), warning >6, danger ≥8
+  - Chalk concentration warning — % picks matching higher seed, warning ≥80%, danger ≥90%
+  - Variance mismatch note — flags teams with 3PT rate ≥38% picked to S16+
+  - Lever conflict detection — high experience/continuity/coach weight vs team profile contradiction
+  - Recency divergence flag — |recentForm override| > 2.0 or rating sources disagree >5 pts
+  - Pace/tempo explanation — slow-paced teams (<64 adj tempo) in R64 upset picks
+- [x] Build guidance evaluator pipeline — runs all rules, catches errors, deduplicates by ID, sorts by severity (danger > warning > info)
+- [x] Build `GuidancePanel` component — collapsible panel with color-coded messages (danger/warning/info), category icons, individual dismiss support
+- [x] Build `useGuidance` hook — memoized, builds GuidanceContext from BracketState, recomputes on picks/levers/overrides/simulation changes
+- [x] Integrate into BracketShell — "Guidance" toggle button in header bar
+- [x] Write comprehensive tests (37 new tests across 7 files, 274 total passing)
 
 **Parallelizable with Phase 7.**
 
@@ -264,7 +268,7 @@
 - [ ] `/backtest-year [year]` — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
 - [ ] `/add-team-data` — Structured team data ingestion with schema validation
 - [ ] `/audit-bracket` — Run guidance system against current bracket state, surface all warnings
-- [ ] `/component [name]` — Component scaffolding with design system context (dark mode, Baseball Savant, TS types)
+- [x] `/component [name]` — Component scaffolding with design system context (dark mode, Baseball Savant, TS types) — `.claude/skills/component/SKILL.md`
 
 > These skills should be created as the corresponding features are built — not before. Each skill needs real types, working code, and ideally 2–3 example outputs to be grounded properly.
 
