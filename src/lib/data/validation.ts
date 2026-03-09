@@ -52,7 +52,7 @@ const FIELD_RANGES: Record<string, FieldRange> = {
   ftPct: { min: 50, max: 90, label: "Free Throw %" },
 
   // Tempo & pace
-  adjTempo: { min: 55, max: 80, label: "Adjusted Tempo" },
+  adjTempo: { min: 55, max: 85, label: "Adjusted Tempo" },
   avgPossLengthOff: {
     min: 12,
     max: 22,

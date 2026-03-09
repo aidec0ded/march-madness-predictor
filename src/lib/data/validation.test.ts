@@ -169,7 +169,7 @@ describe("validateTeamSeason", () => {
   // -----------------------------------------------------------------------
 
   it("should flag out-of-range adjTempo", () => {
-    const team = makeValidPartial({ adjTempo: 90.0 }); // Max is 80
+    const team = makeValidPartial({ adjTempo: 90.0 }); // Max is 85
     const result = validateTeamSeason(team);
 
     expect(result.valid).toBe(false);
