@@ -4,45 +4,50 @@
 
 import { describe, it, expect } from "vitest";
 import { normalizeKenPom } from "./kenpom";
-import type { KenPomRawRow } from "@/types";
+import type { KenPomMergedRow } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Test data helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a complete, valid KenPom raw row with realistic data.
+ * Creates a complete, valid KenPomMergedRow with realistic data.
  * Specific fields can be overridden via the `overrides` parameter.
  */
-function makeKenPomRow(overrides: Partial<KenPomRawRow> = {}): KenPomRawRow {
+function makeMergedRow(
+  overrides: Partial<KenPomMergedRow> = {}
+): KenPomMergedRow {
   return {
-    Team: "Connecticut",
-    Conf: "Big East",
-    AdjEM: "31.4",
-    AdjO: "121.1",
-    AdjD: "89.7",
-    AdjT: "67.8",
-    "OE-eFG%": "55.2",
-    "OE-TO%": "16.3",
-    "OE-OR%": "34.1",
-    "OE-FTR": "36.8",
-    "DE-eFG%": "44.1",
-    "DE-TO%": "21.5",
-    "DE-OR%": "24.3",
-    "DE-FTR": "28.9",
-    "3P%": "36.5",
-    "3PA/FGA": "38.2",
-    "FT%": "73.5",
-    "Opp3P%": "30.1",
-    "Opp3PA/FGA": "33.4",
-    "OppFT%": "68.2",
-    AvgPossOff: "16.8",
-    AvgPossDef: "17.2",
-    "BenchMin%": "28.5",
-    Experience: "2.15",
-    Continuity: "62.3",
-    AvgHgt: "78.2",
-    "2FoulPart": "45.6",
+    teamName: "Connecticut",
+    // Main CSV
+    adjOE: 121.1,
+    adjDE: 89.7,
+    adjEM: 31.4,
+    adjTempo: 67.8,
+    seed: "1",
+    // Offense CSV
+    offEfgPct: 55.2,
+    offToPct: 16.3,
+    offOrbPct: 34.1,
+    offFtRate: 36.8,
+    // Defense CSV
+    defEfgPct: 44.1,
+    defToPct: 21.5,
+    defOrbPct: 24.3,
+    defFtRate: 28.9,
+    // Misc CSV
+    offThreePtPct: 36.5,
+    offFtPct: 73.5,
+    offThreePtRate: 38.2,
+    defThreePtPct: 30.1,
+    defFtPct: 68.2,
+    defThreePtRate: 33.4,
+    twoFoulParticipation: 45.6,
+    // Height CSV
+    avgHeight: 78.2,
+    experience: 2.15,
+    benchMinutesPct: 28.5,
+    minutesContinuity: 62.3,
     ...overrides,
   };
 }
@@ -52,8 +57,8 @@ function makeKenPomRow(overrides: Partial<KenPomRawRow> = {}): KenPomRawRow {
 // ---------------------------------------------------------------------------
 
 describe("normalizeKenPom", () => {
-  it("should correctly map a valid KenPom row to the TeamSeason schema", () => {
-    const row = makeKenPomRow();
+  it("should correctly map all fields from KenPomMergedRow to the TeamSeason schema", () => {
+    const row = makeMergedRow();
     const { data, errors } = normalizeKenPom([row], 2025);
 
     expect(errors).toHaveLength(0);
@@ -63,7 +68,7 @@ describe("normalizeKenPom", () => {
 
     // Team identity
     expect(team.team?.name).toBe("Connecticut");
-    expect(team.team?.conference).toBe("Big East");
+    expect(team.team?.shortName).toBe("Connecticut");
     expect(team.season).toBe(2025);
     expect(team.dataSources).toEqual(["kenpom"]);
 
@@ -106,8 +111,6 @@ describe("normalizeKenPom", () => {
 
     // Tempo
     expect(team.adjTempo).toBe(67.8);
-    expect(team.avgPossLengthOff).toBe(16.8);
-    expect(team.avgPossLengthDef).toBe(17.2);
 
     // Roster
     expect(team.benchMinutesPct).toBe(28.5);
@@ -119,11 +122,11 @@ describe("normalizeKenPom", () => {
     expect(team.twoFoulParticipation).toBe(45.6);
   });
 
-  it("should produce validation errors for invalid numeric values", () => {
-    const row = makeKenPomRow({
-      AdjO: "not_a_number",
-      AdjD: "also_bad",
-      AdjEM: "",
+  it("should produce validation errors for missing required efficiency fields", () => {
+    const row = makeMergedRow({
+      adjOE: null,
+      adjDE: null,
+      adjEM: null,
     });
     const { data, errors } = normalizeKenPom([row], 2025);
 
@@ -131,23 +134,37 @@ describe("normalizeKenPom", () => {
     expect(data).toHaveLength(1);
     expect(data[0].ratings?.kenpom).toBeUndefined();
 
-    // Should have 3 errors for the invalid fields
+    // Should have 3 errors for the missing required fields
     expect(errors).toHaveLength(3);
-    expect(errors[0].field).toBe("AdjO");
+    expect(errors[0].field).toBe("adjOE");
     expect(errors[0].row).toBe(0);
-    expect(errors[1].field).toBe("AdjD");
-    expect(errors[2].field).toBe("AdjEM");
+    expect(errors[1].field).toBe("adjDE");
+    expect(errors[2].field).toBe("adjEM");
   });
 
-  it("should handle missing optional fields gracefully", () => {
-    const row = makeKenPomRow({
-      AvgPossOff: "",
-      AvgPossDef: "",
-      "BenchMin%": "",
-      Experience: "",
-      Continuity: "",
-      AvgHgt: "",
-      "2FoulPart": "",
+  it("should handle missing optional fields (null values) — sub-objects not created", () => {
+    const row = makeMergedRow({
+      // Null out all optional fields
+      offEfgPct: null,
+      offToPct: null,
+      offOrbPct: null,
+      offFtRate: null,
+      defEfgPct: null,
+      defToPct: null,
+      defOrbPct: null,
+      defFtRate: null,
+      offThreePtPct: null,
+      offFtPct: null,
+      offThreePtRate: null,
+      defThreePtPct: null,
+      defFtPct: null,
+      defThreePtRate: null,
+      twoFoulParticipation: null,
+      avgHeight: null,
+      experience: null,
+      benchMinutesPct: null,
+      minutesContinuity: null,
+      adjTempo: null,
     });
     const { data, errors } = normalizeKenPom([row], 2025);
 
@@ -155,10 +172,19 @@ describe("normalizeKenPom", () => {
     expect(errors).toHaveLength(0);
     expect(data).toHaveLength(1);
 
-    // Optional fields should be undefined (not set)
     const team = data[0];
-    expect(team.avgPossLengthOff).toBeUndefined();
-    expect(team.avgPossLengthDef).toBeUndefined();
+
+    // Required efficiency fields are still present
+    expect(team.ratings?.kenpom).toBeDefined();
+
+    // Optional group sub-objects should be undefined (not set)
+    expect(team.fourFactorsOffense).toBeUndefined();
+    expect(team.fourFactorsDefense).toBeUndefined();
+    expect(team.shootingOffense).toBeUndefined();
+    expect(team.shootingDefense).toBeUndefined();
+
+    // Optional scalar fields should be undefined
+    expect(team.adjTempo).toBeUndefined();
     expect(team.benchMinutesPct).toBeUndefined();
     expect(team.experience).toBeUndefined();
     expect(team.minutesContinuity).toBeUndefined();
@@ -168,9 +194,9 @@ describe("normalizeKenPom", () => {
 
   it("should handle multiple rows and index errors correctly", () => {
     const rows = [
-      makeKenPomRow({ Team: "Duke" }),
-      makeKenPomRow({ Team: "UConn", AdjT: "bad_value" }),
-      makeKenPomRow({ Team: "Kansas" }),
+      makeMergedRow({ teamName: "Duke" }),
+      makeMergedRow({ teamName: "UConn", adjOE: null }),
+      makeMergedRow({ teamName: "Kansas" }),
     ];
     const { data, errors } = normalizeKenPom(rows, 2025);
 
@@ -182,7 +208,7 @@ describe("normalizeKenPom", () => {
     // Only one error, on row index 1
     expect(errors).toHaveLength(1);
     expect(errors[0].row).toBe(1);
-    expect(errors[0].field).toBe("AdjT");
+    expect(errors[0].field).toBe("adjOE");
   });
 
   it("should return empty arrays for empty input", () => {
@@ -191,31 +217,28 @@ describe("normalizeKenPom", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should handle a row where only some Four Factor fields are invalid", () => {
-    const row = makeKenPomRow({
-      "OE-eFG%": "abc",
-      // Other offense factors remain valid
+  it("should preserve team name in output", () => {
+    const row = makeMergedRow({ teamName: "North Carolina" });
+    const { data } = normalizeKenPom([row], 2025);
+
+    expect(data[0].team?.name).toBe("North Carolina");
+    expect(data[0].team?.shortName).toBe("North Carolina");
+  });
+
+  it("should not create fourFactorsOffense when one sub-field is null", () => {
+    const row = makeMergedRow({
+      offEfgPct: null,
+      // Other offense factors remain non-null
     });
     const { data, errors } = normalizeKenPom([row], 2025);
 
-    expect(errors).toHaveLength(1);
-    expect(errors[0].field).toBe("OE-eFG%");
+    // No validation errors (offense four factors are optional)
+    expect(errors).toHaveLength(0);
 
-    // fourFactorsOffense should be undefined because not all fields parsed
+    // fourFactorsOffense should be undefined because not all fields are present
     expect(data[0].fourFactorsOffense).toBeUndefined();
 
-    // But fourFactorsDefense should still be present
+    // But fourFactorsDefense should still be present (all fields non-null)
     expect(data[0].fourFactorsDefense).toBeDefined();
-  });
-
-  it("should trim team name and conference whitespace", () => {
-    const row = makeKenPomRow({
-      Team: "  Duke  ",
-      Conf: "  ACC  ",
-    });
-    const { data } = normalizeKenPom([row], 2025);
-
-    expect(data[0].team?.name).toBe("Duke");
-    expect(data[0].team?.conference).toBe("ACC");
   });
 });

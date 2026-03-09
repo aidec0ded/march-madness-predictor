@@ -1,14 +1,19 @@
 /**
  * API Route: POST /api/admin/import/kenpom
  *
- * Admin endpoint for importing KenPom CSV data. Accepts raw CSV content
- * and a season year, then parses, normalizes, and validates the data.
+ * Admin endpoint for importing KenPom CSV data. Accepts a bundle of up to
+ * 5 CSV strings (main + optional offense/defense/misc/height) and a season
+ * year, then merges, normalizes, and validates the data.
  *
  * Request body:
  * ```json
  * {
  *   "season": 2025,
- *   "csvContent": "Team,Conf,AdjEM,AdjO,AdjD,..."
+ *   "csvContent": "Season,TeamName,Tempo,...",
+ *   "offenseCsv": "Season,TeamName,eFGPct,...",
+ *   "defenseCsv": "Season,TeamName,eFGPct,...",
+ *   "miscCsv": "Season,TeamName,FG2Pct,...",
+ *   "heightCsv": "Season,TeamName,Size,..."
  * }
  * ```
  *
@@ -22,8 +27,8 @@
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/auth/admin-check";
-import { parseCsv, normalizeKenPom, validateBatch } from "@/lib/data";
-import type { KenPomRawRow } from "@/types";
+import { mergeKenPomCsvs, normalizeKenPom, validateBatch } from "@/lib/data";
+import type { KenPomCsvBundle } from "@/types";
 
 export async function POST(request: Request) {
   // --- Auth check ---
@@ -49,10 +54,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const { season, csvContent } = body as {
-      season?: unknown;
-      csvContent?: unknown;
-    };
+    const { season, csvContent, offenseCsv, defenseCsv, miscCsv, heightCsv } =
+      body as {
+        season?: unknown;
+        csvContent?: unknown;
+        offenseCsv?: unknown;
+        defenseCsv?: unknown;
+        miscCsv?: unknown;
+        heightCsv?: unknown;
+      };
 
     // --- Validate season ---
     if (season === undefined || season === null) {
@@ -93,10 +103,30 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Parse CSV ---
-    const rawRows = parseCsv<KenPomRawRow>(csvContent);
+    // --- Build CSV bundle and merge ---
+    const bundle: KenPomCsvBundle = {
+      main: csvContent,
+      ...(typeof offenseCsv === "string" && offenseCsv.trim()
+        ? { offense: offenseCsv }
+        : {}),
+      ...(typeof defenseCsv === "string" && defenseCsv.trim()
+        ? { defense: defenseCsv }
+        : {}),
+      ...(typeof miscCsv === "string" && miscCsv.trim()
+        ? { misc: miscCsv }
+        : {}),
+      ...(typeof heightCsv === "string" && heightCsv.trim()
+        ? { height: heightCsv }
+        : {}),
+    };
 
-    if (rawRows.length === 0) {
+    const {
+      data: mergedRows,
+      warnings: mergeWarnings,
+      csvSummary,
+    } = mergeKenPomCsvs(bundle);
+
+    if (mergedRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -109,7 +139,7 @@ export async function POST(request: Request) {
 
     // --- Normalize ---
     const { data: normalizedData, errors: normalizationErrors } =
-      normalizeKenPom(rawRows, seasonNum);
+      normalizeKenPom(mergedRows, seasonNum);
 
     // --- Validate ---
     const validationResult = validateBatch(normalizedData);
@@ -124,6 +154,8 @@ export async function POST(request: Request) {
         season: seasonNum,
         source: "kenpom",
         teamCount: normalizedData.length,
+        csvSummary,
+        mergeWarnings,
         validation: {
           valid: allErrors.length === 0,
           errors: allErrors,

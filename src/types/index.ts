@@ -23,6 +23,13 @@ export type {
 // Data import pipeline types
 export type {
   KenPomRawRow,
+  KenPomMainCsvRow,
+  KenPomOffenseCsvRow,
+  KenPomDefenseCsvRow,
+  KenPomMiscCsvRow,
+  KenPomHeightCsvRow,
+  KenPomMergedRow,
+  KenPomCsvBundle,
   TorvikRawRow,
   EvanMiyaRawRow,
   ValidationError,

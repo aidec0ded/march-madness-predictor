@@ -12,8 +12,8 @@ import { DataSource } from "./team";
 // ---------------------------------------------------------------------------
 
 /**
- * Raw KenPom CSV row.
- * Field names match KenPom's export format.
+ * @deprecated Use the multi-CSV pipeline types (KenPomMainCsvRow, etc.) instead.
+ * Kept temporarily for backward compatibility with the import API route.
  */
 export interface KenPomRawRow {
   Team: string;
@@ -44,6 +44,181 @@ export interface KenPomRawRow {
   AvgHgt: string;
   "2FoulPart": string;
   [key: string]: string; // Allow additional fields
+}
+
+// ---------------------------------------------------------------------------
+// KenPom multi-CSV pipeline types
+// ---------------------------------------------------------------------------
+
+/**
+ * Row from the main KenPom summary export CSV.
+ * All values are strings (CSV parser returns strings).
+ */
+export interface KenPomMainCsvRow {
+  Season: string;
+  TeamName: string;
+  Tempo: string;
+  RankTempo: string;
+  AdjTempo: string;
+  RankAdjTempo: string;
+  OE: string;
+  RankOE: string;
+  AdjOE: string;
+  RankAdjOE: string;
+  DE: string;
+  RankDE: string;
+  AdjDE: string;
+  RankAdjDE: string;
+  AdjEM: string;
+  RankAdjEM: string;
+  seed: string;
+  [key: string]: string;
+}
+
+/**
+ * Row from the KenPom offensive Four Factors CSV export.
+ */
+export interface KenPomOffenseCsvRow {
+  Season: string;
+  TeamName: string;
+  eFGPct: string;
+  RankeFGPct: string;
+  TOPct: string;
+  RankTOPct: string;
+  ORPct: string;
+  RankORPct: string;
+  FTRate: string;
+  RankFTRate: string;
+  [key: string]: string;
+}
+
+/**
+ * Row from the KenPom defensive Four Factors CSV export.
+ * Same field names as offense (values are defensive).
+ */
+export interface KenPomDefenseCsvRow {
+  Season: string;
+  TeamName: string;
+  eFGPct: string;
+  RankeFGPct: string;
+  TOPct: string;
+  RankTOPct: string;
+  ORPct: string;
+  RankORPct: string;
+  FTRate: string;
+  RankFTRate: string;
+  [key: string]: string;
+}
+
+/**
+ * Row from the KenPom miscellaneous stats CSV export.
+ */
+export interface KenPomMiscCsvRow {
+  Season: string;
+  TeamName: string;
+  FG2Pct: string;
+  RankFG2Pct: string;
+  FG3Pct: string;
+  RankFG3Pct: string;
+  FTPct: string;
+  RankFTPct: string;
+  BlockPct: string;
+  RankBlockPct: string;
+  OppFG2Pct: string;
+  RankOppFG2Pct: string;
+  OppFG3Pct: string;
+  RankOppFG3Pct: string;
+  OppFTPct: string;
+  RankOppFTPct: string;
+  OppBlockPct: string;
+  RankOppBlockPct: string;
+  FG3Rate: string;
+  RankFG3Rate: string;
+  OppFG3Rate: string;
+  RankOppFG3Rate: string;
+  ARate: string;
+  RankARate: string;
+  OppARate: string;
+  RankOppARate: string;
+  StlRate: string;
+  RankStlRate: string;
+  OppStlRate: string;
+  RankOppStlRate: string;
+  DFP: string;
+  NSTRate: string;
+  RankNSTRate: string;
+  OppNSTRate: string;
+  RankOppNSTRate: string;
+  [key: string]: string;
+}
+
+/**
+ * Row from the KenPom height/experience CSV export.
+ * Includes positional height data columns we don't use (captured by index sig).
+ */
+export interface KenPomHeightCsvRow {
+  Season: string;
+  TeamName: string;
+  Size: string;
+  SizeRank: string;
+  Exp: string;
+  ExpRank: string;
+  Bench: string;
+  BenchRank: string;
+  Continuity: string;
+  RankContinuity: string;
+  HgtEff: string;
+  HgtEffRank: string;
+  [key: string]: string;
+}
+
+/**
+ * A single team row after all KenPom CSVs have been merged.
+ * Numeric fields are pre-parsed; null means the value was missing or unparseable.
+ */
+export interface KenPomMergedRow {
+  teamName: string;
+  // Main CSV
+  adjOE: number | null;
+  adjDE: number | null;
+  adjEM: number | null;
+  adjTempo: number | null;
+  seed: string | null;
+  // Offense CSV
+  offEfgPct: number | null;
+  offToPct: number | null;
+  offOrbPct: number | null;
+  offFtRate: number | null;
+  // Defense CSV
+  defEfgPct: number | null;
+  defToPct: number | null;
+  defOrbPct: number | null;
+  defFtRate: number | null;
+  // Misc CSV
+  offThreePtPct: number | null;
+  offFtPct: number | null;
+  offThreePtRate: number | null;
+  defThreePtPct: number | null;
+  defFtPct: number | null;
+  defThreePtRate: number | null;
+  twoFoulParticipation: number | null;
+  // Height CSV
+  avgHeight: number | null;
+  experience: number | null;
+  benchMinutesPct: number | null;
+  minutesContinuity: number | null;
+}
+
+/**
+ * Bundle of raw CSV content strings for the KenPom multi-CSV pipeline.
+ * Only main is required; the rest are optional supplementary CSVs.
+ */
+export interface KenPomCsvBundle {
+  main: string;
+  offense?: string;
+  defense?: string;
+  misc?: string;
+  height?: string;
 }
 
 /**
