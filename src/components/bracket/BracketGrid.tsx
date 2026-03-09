@@ -25,7 +25,7 @@
 import React, { useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
-import { buildBracketMatchups, REGIONS } from "@/lib/engine/bracket";
+import { buildBracketMatchups } from "@/lib/engine/bracket";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
@@ -57,6 +57,15 @@ const LEFT_REGIONS: Region[] = ["East", "South"];
 
 /** Right-side regions in display order (top to bottom) */
 const RIGHT_REGIONS: Region[] = ["West", "Midwest"];
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface BracketGridProps {
+  /** Handler for clicking a matchup to open the detail view */
+  onMatchupClick?: (gameId: string) => void;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,7 +102,7 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 // Component
 // ---------------------------------------------------------------------------
 
-export function BracketGrid() {
+export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   const { state, dispatch } = useBracket();
   const { ownershipModel } = useContestStrategy();
 
@@ -114,12 +123,13 @@ export function BracketGrid() {
     [dispatch]
   );
 
-  // Handler for matchup detail click
-  const handleMatchupClick = useCallback((_gameId: string) => {
-    // Navigation to matchup view will be implemented when the
-    // matchup detail page is built. For now, this is a no-op placeholder.
-    // TODO: Navigate to /matchup/[gameId] or open a modal
-  }, []);
+  // Handler for matchup detail click — forwarded from BracketShell
+  const handleMatchupClick = useCallback(
+    (gameId: string) => {
+      if (onMatchupClick) onMatchupClick(gameId);
+    },
+    [onMatchupClick]
+  );
 
   // Empty state
   if (state.teams.size === 0) {

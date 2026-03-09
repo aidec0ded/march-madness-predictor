@@ -10,6 +10,7 @@ import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
 import { GuidancePanel } from "@/components/bracket/GuidancePanel";
 import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
+import { MatchupView } from "@/components/matchup/MatchupView";
 import { SaveButton } from "./BracketShellSaveButton";
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ interface BracketShellProps {
  * Top-level client shell for the bracket page.
  *
  * Wraps everything in BracketProvider and manages local UI state for
- * panel visibility (levers drawer, results overlay, guidance panel).
+ * panel visibility (levers drawer, results overlay, guidance panel, matchup detail view).
  *
  * Layout:
  * - Sticky header bar with bracket name, pool size selector, simulation button,
@@ -40,11 +41,13 @@ interface BracketShellProps {
  * - SimulationResultsOverlay (conditional, collapses in below guidance)
  * - BracketGrid (full remaining space, scrollable)
  * - LeverPanel (right-side drawer)
+ * - MatchupView (full-screen overlay, conditional on selectedMatchupId)
  */
 export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) {
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
+  const [selectedMatchupId, setSelectedMatchupId] = useState<string | null>(null);
 
   const toggleLevers = useCallback(() => {
     setIsLeverPanelOpen((prev) => !prev);
@@ -68,6 +71,14 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
 
   const closeGuidance = useCallback(() => {
     setIsGuidanceOpen(false);
+  }, []);
+
+  const openMatchup = useCallback((gameId: string) => {
+    setSelectedMatchupId(gameId);
+  }, []);
+
+  const closeMatchup = useCallback(() => {
+    setSelectedMatchupId(null);
   }, []);
 
   return (
@@ -204,11 +215,16 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             padding: "8px 0",
           }}
         >
-          <BracketGrid />
+          <BracketGrid onMatchupClick={openMatchup} />
         </main>
 
         {/* Lever panel drawer */}
         <LeverPanel isOpen={isLeverPanelOpen} onClose={closeLevers} />
+
+        {/* Matchup detail overlay */}
+        {selectedMatchupId && (
+          <MatchupView gameId={selectedMatchupId} onClose={closeMatchup} />
+        )}
       </div>
     </BracketProvider>
   );

@@ -19,7 +19,8 @@ import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
 import type { OwnershipModel } from "@/types/game-theory";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
-import { getRegionMatchupPosition, parseGameId } from "@/lib/bracket-layout";
+import { getRegionMatchupPosition } from "@/lib/bracket-layout";
+import { resolveMatchupTeams } from "@/lib/bracket-utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,53 +52,6 @@ interface RegionBracketProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Resolves a slot source (e.g., "East-1") to a TeamSeason from the teams map.
- * Slot IDs follow the pattern "{Region}-{Seed}".
- */
-function resolveSlotTeam(
-  slotId: string,
-  teams: Map<string, TeamSeason>
-): TeamSeason | null {
-  // Find a team whose tournamentEntry matches this slot
-  for (const team of teams.values()) {
-    if (!team.tournamentEntry) continue;
-    const teamSlot = `${team.tournamentEntry.region}-${team.tournamentEntry.seed}`;
-    if (teamSlot === slotId) return team;
-  }
-  return null;
-}
-
-/**
- * Resolves the two teams in a matchup based on the round:
- * - R64: look up from slot IDs (e.g., "East-1" -> seed 1 in East)
- * - Later rounds: look up the winner of the feeder game from picks
- */
-function resolveMatchupTeams(
-  matchup: BracketMatchup,
-  teams: Map<string, TeamSeason>,
-  picks: Record<string, string>
-): { teamA: TeamSeason | null; teamB: TeamSeason | null } {
-  const parsed = parseGameId(matchup.gameId);
-
-  if (parsed.round === "R64") {
-    // R64 sources are slot IDs like "East-1", "East-16"
-    return {
-      teamA: resolveSlotTeam(matchup.teamASource, teams),
-      teamB: resolveSlotTeam(matchup.teamBSource, teams),
-    };
-  }
-
-  // Later rounds: sources are gameIds of feeder games
-  const winnerAId = picks[matchup.teamASource];
-  const winnerBId = picks[matchup.teamBSource];
-
-  return {
-    teamA: winnerAId ? teams.get(winnerAId) ?? null : null,
-    teamB: winnerBId ? teams.get(winnerBId) ?? null : null,
-  };
-}
 
 /**
  * Gets the win probability for a team in a specific round from simulation results.
