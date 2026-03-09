@@ -40,21 +40,6 @@ export default function BacktestLoading() {
           }}
         />
       </div>
-
-      <style jsx>{`
-        .skeleton-pulse {
-          animation: pulse 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 0.3;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-      `}</style>
     </div>
   );
 }

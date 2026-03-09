@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/client";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { Navbar } from "@/components/navigation/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "March Madness Bracket Predictor",
-    template: "%s | March Madness Predictor",
+    default: "Predict the Madness",
+    template: "%s | Predict the Madness",
   },
   description:
     "Data-driven bracket predictions using Monte Carlo simulation, composite ratings from KenPom, Torvik, and Evan Miya, plus contest-aware game theory strategy.",
@@ -15,16 +16,16 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   openGraph: {
-    title: "March Madness Bracket Predictor",
+    title: "Predict the Madness",
     description:
       "Build smarter brackets with Monte Carlo simulation, composite ratings, and contest-aware strategy.",
-    siteName: "March Madness Predictor",
+    siteName: "Predict the Madness",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "March Madness Bracket Predictor",
+    title: "Predict the Madness",
     description:
       "Monte Carlo simulation meets college basketball. Build data-driven brackets.",
   },
@@ -60,7 +61,10 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        <AuthProvider initialUser={user}>{children}</AuthProvider>
+        <AuthProvider initialUser={user}>
+          <Navbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

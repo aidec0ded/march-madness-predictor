@@ -33,6 +33,9 @@ export default function SignUpPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+      },
     });
 
     if (signUpError) {
@@ -95,7 +98,7 @@ export default function SignUpPage() {
             Create Account
           </h1>
           <p className="mb-8 text-center text-sm text-[var(--text-secondary)]">
-            March Madness Bracket Predictor
+            Predict the Madness
           </p>
 
           {error && (

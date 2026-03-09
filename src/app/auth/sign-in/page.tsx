@@ -58,7 +58,7 @@ export default function SignInPage() {
             Sign In
           </h1>
           <p className="mb-8 text-center text-sm text-[var(--text-secondary)]">
-            March Madness Bracket Predictor
+            Predict the Madness
           </p>
 
           {error && (

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "Evaluate model calibration against 16 years of historical NCAA tournament results using Brier Score analysis.",
   openGraph: {
-    title: "Backtest | March Madness Predictor",
+    title: "Backtest | Predict the Madness",
     description:
       "Validate bracket prediction model against historical tournament data.",
   },

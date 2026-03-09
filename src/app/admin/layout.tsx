@@ -37,7 +37,7 @@ export default function AdminLayout({
             className="text-sm font-semibold tracking-wide"
             style={{ color: "var(--text-primary)" }}
           >
-            March Madness Predictor
+            Predict the Madness
           </span>
           <span
             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider"

@@ -121,7 +121,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
         <header
           style={{
             position: "sticky",
-            top: 0,
+            top: 48,
             zIndex: 10,
             display: "flex",
             alignItems: "center",
