@@ -80,3 +80,12 @@ export type {
 } from "./user";
 
 export { POOL_SIZE_LABELS } from "./user";
+
+// Guidance types (Phase 8)
+export type {
+  GuidanceSeverity,
+  GuidanceCategory,
+  GuidanceMessage,
+  GuidanceContext,
+  GuidanceRule,
+} from "./guidance";

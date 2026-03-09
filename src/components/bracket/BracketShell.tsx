@@ -8,6 +8,7 @@ import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
 import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
+import { GuidancePanel } from "@/components/bracket/GuidancePanel";
 import { SaveButton } from "./BracketShellSaveButton";
 
 // ---------------------------------------------------------------------------
@@ -29,18 +30,20 @@ interface BracketShellProps {
  * Top-level client shell for the bracket page.
  *
  * Wraps everything in BracketProvider and manages local UI state for
- * panel visibility (levers drawer, results overlay).
+ * panel visibility (levers drawer, results overlay, guidance panel).
  *
  * Layout:
- * - Sticky header bar with bracket name, simulation button, lever toggle,
- *   save button, and results toggle
- * - SimulationResultsOverlay (conditional, collapses in below header)
+ * - Sticky header bar with bracket name, simulation button, guidance toggle,
+ *   lever toggle, save button, and results toggle
+ * - GuidancePanel (conditional, collapses in below header)
+ * - SimulationResultsOverlay (conditional, collapses in below guidance)
  * - BracketGrid (full remaining space, scrollable)
  * - LeverPanel (right-side drawer)
  */
 export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) {
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
 
   const toggleLevers = useCallback(() => {
     setIsLeverPanelOpen((prev) => !prev);
@@ -50,12 +53,20 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
     setIsResultsOpen((prev) => !prev);
   }, []);
 
+  const toggleGuidance = useCallback(() => {
+    setIsGuidanceOpen((prev) => !prev);
+  }, []);
+
   const closeResults = useCallback(() => {
     setIsResultsOpen(false);
   }, []);
 
   const closeLevers = useCallback(() => {
     setIsLeverPanelOpen(false);
+  }, []);
+
+  const closeGuidance = useCallback(() => {
+    setIsGuidanceOpen(false);
   }, []);
 
   return (
@@ -120,6 +131,28 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
 
             <button
               type="button"
+              onClick={toggleGuidance}
+              style={{
+                padding: "8px 14px",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: isGuidanceOpen
+                  ? "var(--accent-primary)"
+                  : "var(--text-secondary)",
+                backgroundColor: isGuidanceOpen
+                  ? "rgba(74, 144, 217, 0.1)"
+                  : "transparent",
+                border: "1px solid var(--border-primary)",
+                borderRadius: "6px",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              Guidance
+            </button>
+
+            <button
+              type="button"
               onClick={toggleLevers}
               style={{
                 padding: "8px 14px",
@@ -143,6 +176,9 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             <SaveButton />
           </div>
         </header>
+
+        {/* Guidance panel (conditional) */}
+        <GuidancePanel isOpen={isGuidanceOpen} onClose={closeGuidance} />
 
         {/* Simulation results overlay (conditional) */}
         <SimulationResultsOverlay
@@ -178,11 +214,6 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
  * since SET_BRACKET_NAME is not yet in the reducer (could be added).
  */
 function BracketName() {
-  // Using useBracket directly would require importing inside BracketProvider,
-  // which we're already inside. But this sub-component is rendered inside
-  // the provider, so it works.
-  // However, to avoid a hook dependency issue, we use a simple approach:
-  // display-only for now.
   return (
     <div
       style={{
