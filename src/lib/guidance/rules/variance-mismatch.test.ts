@@ -6,7 +6,7 @@ describe("varianceMismatchRule", () => {
   it("flags a high-3PT team picked to S16", () => {
     const team = createMockTeam({
       shortName: "3PT U",
-      threePtRate: 0.42,
+      threePtRate: 42,
       seed: 5,
       region: "East",
     });
@@ -25,7 +25,7 @@ describe("varianceMismatchRule", () => {
   it("flags a high-3PT team picked to NCG", () => {
     const team = createMockTeam({
       shortName: "Boom",
-      threePtRate: 0.39,
+      threePtRate: 39,
       seed: 3,
       region: "West",
     });
@@ -41,7 +41,7 @@ describe("varianceMismatchRule", () => {
   it("does not flag a low-3PT team advancing deep", () => {
     const team = createMockTeam({
       shortName: "Paint U",
-      threePtRate: 0.30,
+      threePtRate: 30,
       seed: 1,
       region: "South",
     });
@@ -54,7 +54,7 @@ describe("varianceMismatchRule", () => {
   });
 
   it("does not flag a high-3PT team in R64 or R32", () => {
-    const team = createMockTeam({ threePtRate: 0.42, seed: 5, region: "East" });
+    const team = createMockTeam({ threePtRate: 42, seed: 5, region: "East" });
     const context = createMockContext({
       teams: [team],
       picks: {
@@ -67,7 +67,7 @@ describe("varianceMismatchRule", () => {
   });
 
   it("deduplicates when the same team appears in multiple deep-round picks", () => {
-    const team = createMockTeam({ threePtRate: 0.40, seed: 2, region: "Midwest" });
+    const team = createMockTeam({ threePtRate: 40, seed: 2, region: "Midwest" });
     const context = createMockContext({
       teams: [team],
       picks: {

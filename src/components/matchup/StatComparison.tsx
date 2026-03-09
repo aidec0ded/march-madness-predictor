@@ -33,12 +33,14 @@ interface StatComparisonProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Formats a value based on the format type */
+/** Formats a value based on the format type.
+ *  Note: percentage fields are stored on a 0-100 scale (e.g., 58.8 for 58.8%),
+ *  so we do NOT multiply by 100 here. */
 function formatValue(value: number | null, format: "pct" | "decimal" | "integer"): string {
   if (value === null) return "—";
   switch (format) {
     case "pct":
-      return (value * 100).toFixed(1) + "%";
+      return value.toFixed(1) + "%";
     case "decimal":
       return value.toFixed(1);
     case "integer":

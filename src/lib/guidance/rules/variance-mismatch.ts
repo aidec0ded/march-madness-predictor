@@ -14,8 +14,8 @@ import { parseGameId } from "@/lib/bracket-layout";
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Three-point rate threshold (3PA/FGA) above which a team is flagged */
-const HIGH_THREE_PT_RATE = 0.38;
+/** Three-point rate threshold (3PA/FGA, 0-100 scale) above which a team is flagged */
+const HIGH_THREE_PT_RATE = 38;
 
 /** Rounds considered "deep" for this rule */
 const DEEP_ROUNDS = new Set(["S16", "E8", "F4", "NCG"]);
@@ -52,7 +52,7 @@ export function varianceMismatchRule(
     if (threePtRate >= HIGH_THREE_PT_RATE) {
       flaggedTeams.add(winnerId);
 
-      const pct = Math.round(threePtRate * 100);
+      const pct = Math.round(threePtRate);
       const roundLabel = roundDisplayName(parsed.round);
 
       messages.push({
@@ -60,7 +60,7 @@ export function varianceMismatchRule(
         title: `${team.team.shortName}: high 3PT reliance in ${roundLabel}`,
         description:
           `${team.team.shortName} has a three-point attempt rate of ${pct}%, ` +
-          `which is above the ${Math.round(HIGH_THREE_PT_RATE * 100)}% threshold. ` +
+          `which is above the ${Math.round(HIGH_THREE_PT_RATE)}% threshold. ` +
           `Teams heavily reliant on three-point shooting have wider outcome ` +
           `distributions — they can beat anyone on a hot night but are also ` +
           `more likely to go cold. This volatility compounds over multiple rounds, ` +

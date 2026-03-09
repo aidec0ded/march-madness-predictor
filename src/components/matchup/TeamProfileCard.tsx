@@ -27,9 +27,9 @@ interface TeamProfileCardProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Formats a percentage value (0-1 scale) */
+/** Formats a percentage value (stored on 0-100 scale, e.g. 58.8 for 58.8%) */
 function fmtPct(value: number): string {
-  return (value * 100).toFixed(1) + "%";
+  return value.toFixed(1) + "%";
 }
 
 /** Formats a decimal value */

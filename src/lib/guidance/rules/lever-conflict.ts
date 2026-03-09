@@ -25,8 +25,8 @@ const HIGH_LEVER_WEIGHT = 1.5;
 /** Experience threshold below which a team is considered "low experience" */
 const LOW_EXPERIENCE = 1.5;
 
-/** Continuity threshold below which a team is considered "low continuity" */
-const LOW_CONTINUITY = 0.4;
+/** Continuity threshold (0-100 scale) below which a team is considered "low continuity" */
+const LOW_CONTINUITY = 40;
 
 /** Coach tournament appearances threshold below which they're "inexperienced" */
 const LOW_COACH_EXPERIENCE = 3;
@@ -94,7 +94,7 @@ export function leverConflictRule(
           title: `${team.team.shortName}: low continuity vs. high continuity lever`,
           description:
             `Your continuity lever is set to ${globalLevers.continuityWeight.toFixed(1)}x, ` +
-            `but ${team.team.shortName} has only ${Math.round(team.minutesContinuity * 100)}% ` +
+            `but ${team.team.shortName} has only ${Math.round(team.minutesContinuity)}% ` +
             `minutes continuity from last season. Teams with significant roster turnover ` +
             `may lack the cohesion that your lever weights reward.`,
           severity: "warning",

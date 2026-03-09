@@ -65,7 +65,7 @@ describe("evaluateGuidance", () => {
   it("deduplicates messages by ID", () => {
     // The same team in multiple deep-round picks should only generate one variance message
     const team = createMockTeam({
-      threePtRate: 0.42,
+      threePtRate: 42,
       seed: 3,
       region: "East",
     });

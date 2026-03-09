@@ -38,7 +38,7 @@ describe("leverConflictRule", () => {
   it("flags low-continuity team when continuity weight is high", () => {
     const team = createMockTeam({
       shortName: "Transfer U",
-      minutesContinuity: 0.3,
+      minutesContinuity: 30,
       seed: 4,
       region: "West",
     });
