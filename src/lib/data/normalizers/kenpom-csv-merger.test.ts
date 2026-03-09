@@ -83,8 +83,8 @@ describe("mergeKenPomCsvs", () => {
     expect(uconn.defThreePtPct).toBe(30.1);
     expect(uconn.defFtPct).toBe(68.2);
     expect(uconn.defThreePtRate).toBe(33.4);
-    // DFP 0.14 * 100 = 14.0 (use toBeCloseTo for floating point)
-    expect(uconn.twoFoulParticipation).toBeCloseTo(14.0, 10);
+    // DFP column is intentionally ignored — it is NOT 2-Foul Participation
+    expect(uconn.twoFoulParticipation).toBeNull();
 
     // Height CSV fields
     expect(uconn.avgHeight).toBe(78.2);
@@ -97,7 +97,7 @@ describe("mergeKenPomCsvs", () => {
     expect(duke).toBeDefined();
     expect(duke.adjOE).toBe(118.0);
     expect(duke.seed).toBe("2");
-    expect(duke.twoFoulParticipation).toBeCloseTo(22.0, 10); // 0.22 * 100
+    expect(duke.twoFoulParticipation).toBeNull(); // DFP is not 2-Foul Participation
   });
 
   it("should work with main CSV only (optional fields are null)", () => {
@@ -161,43 +161,23 @@ describe("mergeKenPomCsvs", () => {
     expect(result.data[0].offEfgPct).toBe(54.0);
   });
 
-  it("should convert DFP from 0-1 scale to 0-100 for recent seasons", () => {
+  it("should always ignore DFP column (it is not 2-Foul Participation)", () => {
     const mainCsv = `Season,TeamName,Tempo,RankTempo,AdjTempo,RankAdjTempo,OE,RankOE,AdjOE,RankAdjOE,DE,RankDE,AdjDE,RankAdjDE,AdjEM,RankAdjEM,seed
 2025,TestTeam,68.0,50,67.5,48,115.0,5,118.0,3,88.0,5,90.0,5,28.0,2,1`;
 
+    // DFP column present with various values — all should be ignored
     const miscCsv = `Season,TeamName,FG2Pct,RankFG2Pct,FG3Pct,RankFG3Pct,FTPct,RankFTPct,BlockPct,RankBlockPct,OppFG2Pct,RankOppFG2Pct,OppFG3Pct,RankOppFG3Pct,OppFTPct,RankOppFTPct,OppBlockPct,RankOppBlockPct,FG3Rate,RankFG3Rate,OppFG3Rate,RankOppFG3Rate,ARate,RankARate,OppARate,RankOppARate,StlRate,RankStlRate,OppStlRate,RankOppStlRate,DFP,NSTRate,RankNSTRate,OppNSTRate,RankOppNSTRate
 2025,TestTeam,50.0,10,35.0,20,72.0,25,11.0,15,47.0,10,32.0,15,69.0,12,10.0,45,39.0,20,34.0,25,54.0,12,49.0,12,10.0,15,9.0,22,0.14,34.0,12,31.0,18`;
 
     const result = mergeKenPomCsvs({ main: mainCsv, misc: miscCsv });
 
-    expect(result.data[0].twoFoulParticipation).toBeCloseTo(14.0, 10);
-  });
-
-  it("should skip DFP and warn when values are outside 0-1 range (older seasons)", () => {
-    const mainCsv = `Season,TeamName,Tempo,RankTempo,AdjTempo,RankAdjTempo,OE,RankOE,AdjOE,RankAdjOE,DE,RankDE,AdjDE,RankAdjDE,AdjEM,RankAdjEM,seed
-2018,TeamA,68.0,50,67.5,48,115.0,5,118.0,3,88.0,5,90.0,5,28.0,2,1
-2018,TeamB,66.0,80,65.5,78,100.0,100,102.0,98,95.0,80,97.0,78,5.0,80,NULL`;
-
-    // DFP values of 13.4 and -1.12 are clearly NOT on 0-1 scale
-    const miscCsv = `Season,TeamName,FG2Pct,RankFG2Pct,FG3Pct,RankFG3Pct,FTPct,RankFTPct,BlockPct,RankBlockPct,OppFG2Pct,RankOppFG2Pct,OppFG3Pct,RankOppFG3Pct,OppFTPct,RankOppFTPct,OppBlockPct,RankOppBlockPct,FG3Rate,RankFG3Rate,OppFG3Rate,RankOppFG3Rate,ARate,RankARate,OppARate,RankOppARate,StlRate,RankStlRate,OppStlRate,RankOppStlRate,DFP
-2018,TeamA,50.0,10,35.0,20,72.0,25,11.0,15,47.0,10,32.0,15,69.0,12,10.0,45,39.0,20,34.0,25,54.0,12,49.0,12,10.0,15,9.0,22,13.4
-2018,TeamB,48.0,20,33.0,30,70.0,35,9.0,25,49.0,20,34.0,25,71.0,8,8.0,55,37.0,30,36.0,20,52.0,18,51.0,8,9.0,20,10.0,15,-1.12`;
-
-    const result = mergeKenPomCsvs({ main: mainCsv, misc: miscCsv });
-
-    // twoFoulParticipation should be null for both teams
+    // DFP is never mapped to twoFoulParticipation — that stat is only
+    // visible on individual KenPom team pages and not in any CSV export
     expect(result.data[0].twoFoulParticipation).toBeNull();
-    expect(result.data[1].twoFoulParticipation).toBeNull();
 
-    // Other misc fields should still be populated
+    // Other misc fields should still work
     expect(result.data[0].offThreePtPct).toBe(35.0);
-    expect(result.data[1].offThreePtPct).toBe(33.0);
-
-    // Should have a warning about DFP
-    const dfpWarning = result.warnings.find((w) => w.includes("DFP"));
-    expect(dfpWarning).toBeDefined();
-    expect(dfpWarning).toContain("outside 0-1 range");
-    expect(dfpWarning).toContain("2 rows");
+    expect(result.data[0].defFtPct).toBe(69.0);
   });
 
   it("should handle NULL string in seed and DFP fields", () => {

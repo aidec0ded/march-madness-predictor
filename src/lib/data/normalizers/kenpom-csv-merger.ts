@@ -200,32 +200,12 @@ export function mergeKenPomCsvs(bundle: KenPomCsvBundle): KenPomMergeResult {
       m.defThreePtPct = safeParseFloat(row.OppFG3Pct);
       m.defThreePtRate = safeParseFloat(row.OppFG3Rate);
       m.defFtPct = safeParseFloat(row.OppFTPct);
-      // DFP column meaning changed across KenPom seasons:
-      // - Recent seasons: 2-Foul Participation on 0-1 scale (e.g., 0.65 = 65%)
-      // - Older seasons: a different metric (net rating / differential) with
-      //   values ranging from roughly -15 to +25
-      // Auto-detect: if the value is in [0, 1], treat it as 2FP and scale × 100.
-      // Otherwise skip it — it's a different stat entirely.
-      const dfp = safeParseFloat(row.DFP);
-      if (dfp !== null && dfp >= 0 && dfp <= 1) {
-        m.twoFoulParticipation = dfp * 100;
-      } else {
-        m.twoFoulParticipation = null;
-      }
+      // Note: The DFP column in KenPom's misc CSV is NOT 2-Foul Participation.
+      // It's always NULL in recent seasons, and in older seasons it's an
+      // unrelated metric (values ranging from -15 to +25). The actual 2-Foul
+      // Participation stat is only visible on individual team pages and is not
+      // included in any exportable CSV. We intentionally ignore DFP here.
     });
-
-    // Check if any DFP values were skipped and warn
-    const dfpSkipped = rows.filter((row) => {
-      const val = safeParseFloat(row.DFP);
-      return val !== null && (val < 0 || val > 1);
-    });
-    if (dfpSkipped.length > 0) {
-      warnings.push(
-        `misc: DFP column values are outside 0-1 range (${dfpSkipped.length} rows) — ` +
-          `this appears to be a different metric than 2-Foul Participation. ` +
-          `Skipping twoFoulParticipation for this season.`
-      );
-    }
   }
 
   // ------------------------------------------------------------------
