@@ -8,6 +8,7 @@ import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
 import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
+import { MatchupView } from "@/components/matchup/MatchupView";
 import { SaveButton } from "./BracketShellSaveButton";
 
 // ---------------------------------------------------------------------------
@@ -29,7 +30,7 @@ interface BracketShellProps {
  * Top-level client shell for the bracket page.
  *
  * Wraps everything in BracketProvider and manages local UI state for
- * panel visibility (levers drawer, results overlay).
+ * panel visibility (levers drawer, results overlay, matchup detail view).
  *
  * Layout:
  * - Sticky header bar with bracket name, simulation button, lever toggle,
@@ -37,10 +38,12 @@ interface BracketShellProps {
  * - SimulationResultsOverlay (conditional, collapses in below header)
  * - BracketGrid (full remaining space, scrollable)
  * - LeverPanel (right-side drawer)
+ * - MatchupView (full-screen overlay, conditional on selectedMatchupId)
  */
 export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) {
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [selectedMatchupId, setSelectedMatchupId] = useState<string | null>(null);
 
   const toggleLevers = useCallback(() => {
     setIsLeverPanelOpen((prev) => !prev);
@@ -56,6 +59,14 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
 
   const closeLevers = useCallback(() => {
     setIsLeverPanelOpen(false);
+  }, []);
+
+  const openMatchup = useCallback((gameId: string) => {
+    setSelectedMatchupId(gameId);
+  }, []);
+
+  const closeMatchup = useCallback(() => {
+    setSelectedMatchupId(null);
   }, []);
 
   return (
@@ -158,11 +169,16 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             padding: "8px 0",
           }}
         >
-          <BracketGrid />
+          <BracketGrid onMatchupClick={openMatchup} />
         </main>
 
         {/* Lever panel drawer */}
         <LeverPanel isOpen={isLeverPanelOpen} onClose={closeLevers} />
+
+        {/* Matchup detail overlay */}
+        {selectedMatchupId && (
+          <MatchupView gameId={selectedMatchupId} onClose={closeMatchup} />
+        )}
       </div>
     </BracketProvider>
   );
@@ -178,11 +194,6 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
  * since SET_BRACKET_NAME is not yet in the reducer (could be added).
  */
 function BracketName() {
-  // Using useBracket directly would require importing inside BracketProvider,
-  // which we're already inside. But this sub-component is rendered inside
-  // the provider, so it works.
-  // However, to avoid a hook dependency issue, we use a simple approach:
-  // display-only for now.
   return (
     <div
       style={{
