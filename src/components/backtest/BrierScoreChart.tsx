@@ -263,7 +263,7 @@ export const BrierScoreChart = memo(function BrierScoreChart({
   }, [chartData]);
 
   return (
-    <div className="brier-chart-card">
+    <div className="brier-chart-card" role="img" aria-label="Line chart comparing model Brier Score versus seed baseline across tournament seasons">
       <div className="brier-chart-card__header">
         <h3 className="brier-chart-card__title">BRIER SCORE BY YEAR</h3>
         {result && (

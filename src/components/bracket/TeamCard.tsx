@@ -92,6 +92,7 @@ export const TeamCard = memo(function TeamCard({
     <button
       type="button"
       onClick={onClick}
+      aria-label={`${seed} seed ${team.team.name}${isWinner ? ", selected winner" : ""}${probability != null ? `, ${(probability * 100).toFixed(0)}% win probability` : ""}`}
       disabled={!isClickable}
       className={`flex flex-col justify-center gap-0.5 px-2 py-1 rounded transition-colors
         ${isClickable ? "cursor-pointer hover:brightness-110" : "cursor-default"}

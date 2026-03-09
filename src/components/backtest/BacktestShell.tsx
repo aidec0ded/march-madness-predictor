@@ -1,14 +1,30 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { useBacktest } from "@/hooks/useBacktest";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { YearSelector } from "@/components/backtest/YearSelector";
 import { LeverTuningPanel } from "@/components/backtest/LeverTuningPanel";
 import { BaselineComparisonCard } from "@/components/backtest/BaselineComparisonCard";
-import { BrierScoreChart } from "@/components/backtest/BrierScoreChart";
-import { CalibrationPlot } from "@/components/backtest/CalibrationPlot";
 import { BacktestResultsTable } from "@/components/backtest/BacktestResultsTable";
+
+const BrierScoreChart = dynamic(
+  () =>
+    import("@/components/backtest/BrierScoreChart").then((mod) => ({
+      default: mod.BrierScoreChart,
+    })),
+  { loading: () => <ChartSkeleton height={320} /> }
+);
+
+const CalibrationPlot = dynamic(
+  () =>
+    import("@/components/backtest/CalibrationPlot").then((mod) => ({
+      default: mod.CalibrationPlot,
+    })),
+  { loading: () => <ChartSkeleton height={340} /> }
+);
 
 // ---------------------------------------------------------------------------
 // Component

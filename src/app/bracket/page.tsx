@@ -13,9 +13,21 @@
  * 6. Pass everything to BracketShell for client-side interactivity
  */
 
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createServerClient, createAdminClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
+
+export const metadata: Metadata = {
+  title: "Bracket Builder",
+  description:
+    "Build and simulate your March Madness bracket with Monte Carlo probabilities and game theory strategy.",
+  openGraph: {
+    title: "Bracket Builder | March Madness Predictor",
+    description:
+      "Build and simulate your bracket with Monte Carlo probabilities and contest-aware strategy.",
+  },
+};
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow, UserBracketRow } from "@/lib/supabase/types";
 import { BracketShell } from "@/components/bracket/BracketShell";

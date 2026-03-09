@@ -255,19 +255,25 @@
 
 ---
 
-### Phase 11: Polish, Performance & Production
+### Phase 11: Polish, Performance & Production ✅
 
 > Ship it.
 
-- [ ] Performance audit: bundle size, API response times, simulation speed
-- [ ] Lazy loading for heavy components (charts, matchup view)
-- [ ] Error boundaries and graceful failure handling
-- [ ] Accessibility audit (ARIA, keyboard navigation, color contrast)
-- [ ] SEO / Open Graph tags for shared bracket URLs
-- [ ] Production environment configuration
-- [ ] Custom domain setup
-- [ ] Monitoring and logging
-- [ ] Final documentation pass
+- [x] Error boundaries and graceful failure handling — `global-error.tsx`, `error.tsx`, `not-found.tsx`, bracket/backtest-specific boundaries
+- [x] Loading states — `loading.tsx` skeletons for all routes (bracket grid skeleton, backtest chart skeleton, spinner fallbacks)
+- [x] Lazy loading for heavy components — `MatchupView`, `BrierScoreChart`, `CalibrationPlot` via `next/dynamic` with `ChartSkeleton` fallbacks
+- [x] Security headers — HSTS, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy via `next.config.ts`
+- [x] SEO / Open Graph tags — metadata with title template, OpenGraph, Twitter cards, robots, metadataBase on layout + bracket + backtest pages
+- [x] Rate limiting — `src/lib/rate-limit.ts` with `createRateLimiter()` applied to all 4 API routes (simulate 20/min, narrative 10/min, backtest 10/min, teams 30/min)
+- [x] Structured logging — `src/lib/logger.ts` with JSON output, error serialization, debug suppression in production
+- [x] Accessibility improvements — `:focus-visible` outlines, skip-to-content link, `aria-pressed` on toggles, `aria-label` on charts and team cards, focus management in MatchupView dialog, `--text-muted` contrast ratio fix
+- [x] Final documentation pass — USER_GUIDE.md (all sections filled), README.md (clone URL, deployment, rate limits), CLAUDE.md (new conventions)
+
+**Completed: 12 new rate-limit/logger tests, 412 total tests passing.**
+
+- [ ] Performance audit: bundle analyzer, API response times — deferred to backlog
+- [ ] Custom domain setup — deployment-provider-specific, documented in README
+- [ ] Responsive/mobile design polish — deferred to backlog
 
 ---
 

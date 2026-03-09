@@ -15,9 +15,29 @@
  */
 
 import { NextResponse } from "next/server";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+const rateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60_000 });
 
 export async function GET(request: Request) {
   try {
+    // --- Rate limit ---
+    const clientIp = getClientIp(request);
+    const rl = rateLimiter.check(clientIp);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.resetAt),
+          },
+        }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const seasonParam = searchParams.get("season");
     const teamIdParam = searchParams.get("teamId");
@@ -83,7 +103,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Teams fetch error:", error);
+    logger.error("Teams fetch error", error instanceof Error ? error : undefined);
     return NextResponse.json(
       {
         success: false,

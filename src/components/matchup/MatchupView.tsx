@@ -16,7 +16,7 @@
  * Closes on Escape key or clicking the back button.
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useMatchupAnalysis } from "@/hooks/useMatchupAnalysis";
 import { TeamProfileCard } from "@/components/matchup/TeamProfileCard";
@@ -60,6 +60,8 @@ const ROUND_LABELS: Record<string, string> = {
 export function MatchupView({ gameId, onClose }: MatchupViewProps) {
   const { state } = useBracket();
   const { analysis, teamA, teamB, stats } = useMatchupAnalysis(gameId);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Get current overrides for this game
   const overrides = state.matchupOverrides[gameId];
@@ -73,11 +75,21 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
   );
 
   useEffect(() => {
+    // Store the previously focused element to restore on close
+    previousFocusRef.current = document.activeElement as HTMLElement;
+
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
+
+    // Focus the close button when overlay opens
+    closeButtonRef.current?.focus();
+
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+
+      // Return focus to the element that triggered the overlay
+      previousFocusRef.current?.focus();
     };
   }, [handleKeyDown]);
 
@@ -104,6 +116,7 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
         {/* Header */}
         <header className="matchup-view__header">
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             className="matchup-view__back"

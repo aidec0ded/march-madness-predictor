@@ -187,7 +187,7 @@ export const CalibrationPlot = memo(function CalibrationPlot({
   );
 
   return (
-    <div className="cal-chart-card">
+    <div className="cal-chart-card" role="img" aria-label="Scatter plot showing predicted win probability versus actual win rate for model calibration">
       <div className="cal-chart-card__header">
         <h3 className="cal-chart-card__title">CALIBRATION PLOT</h3>
         {result && (

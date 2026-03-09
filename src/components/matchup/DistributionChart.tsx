@@ -108,7 +108,7 @@ export const DistributionChart = memo(function DistributionChart({
   );
 
   return (
-    <div className="distribution-chart">
+    <div className="distribution-chart" role="img" aria-label={`Histogram showing margin of victory distribution between ${teamA.team.name} and ${teamB.team.name}`}>
       <div className="distribution-chart__header">
         <span className="distribution-chart__title">
           Outcome Distribution (1,000 simulations)

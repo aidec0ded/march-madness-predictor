@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import type { TeamSeason } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
@@ -10,8 +11,32 @@ import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
 import { GuidancePanel } from "@/components/bracket/GuidancePanel";
 import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
-import { MatchupView } from "@/components/matchup/MatchupView";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SaveButton } from "./BracketShellSaveButton";
+
+const MatchupView = dynamic(
+  () =>
+    import("@/components/matchup/MatchupView").then((mod) => ({
+      default: mod.MatchupView,
+    })),
+  {
+    loading: () => (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          zIndex: 50,
+        }}
+      >
+        <LoadingSpinner size={40} />
+      </div>
+    ),
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,6 +156,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             <button
               type="button"
               onClick={toggleResults}
+              aria-pressed={isResultsOpen}
               style={{
                 padding: "8px 14px",
                 fontSize: "0.8125rem",
@@ -153,6 +179,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             <button
               type="button"
               onClick={toggleGuidance}
+              aria-pressed={isGuidanceOpen}
               style={{
                 padding: "8px 14px",
                 fontSize: "0.8125rem",
@@ -175,6 +202,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             <button
               type="button"
               onClick={toggleLevers}
+              aria-pressed={isLeverPanelOpen}
               style={{
                 padding: "8px 14px",
                 fontSize: "0.8125rem",
@@ -209,6 +237,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
 
         {/* Main bracket area */}
         <main
+          id="main-content"
           style={{
             flex: 1,
             overflow: "auto",

@@ -34,6 +34,14 @@ import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { runSimulation } from "@/lib/engine/simulator";
 import type { TeamSeason } from "@/types/team";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+// ---------------------------------------------------------------------------
+// Rate Limiting
+// ---------------------------------------------------------------------------
+
+const rateLimiter = createRateLimiter({ maxRequests: 20, windowMs: 60_000 });
 
 // ---------------------------------------------------------------------------
 // Request body shape
@@ -174,6 +182,22 @@ function resolveEngineConfig(partial?: Partial<EngineConfig>): EngineConfig {
 
 export async function POST(request: Request) {
   try {
+    // --- Rate limit ---
+    const clientIp = getClientIp(request);
+    const rl = rateLimiter.check(clientIp);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.resetAt),
+          },
+        }
+      );
+    }
+
     // --- Parse request body ---
     let body: unknown;
     try {
@@ -218,7 +242,7 @@ export async function POST(request: Request) {
       .order("team_id");
 
     if (teamSeasonsError) {
-      console.error("Error fetching team seasons:", teamSeasonsError);
+      logger.error("Error fetching team seasons", teamSeasonsError);
       return NextResponse.json(
         {
           success: false,
@@ -245,7 +269,7 @@ export async function POST(request: Request) {
       .eq("season", season);
 
     if (entriesError) {
-      console.error("Error fetching tournament entries:", entriesError);
+      logger.error("Error fetching tournament entries", entriesError);
       return NextResponse.json(
         {
           success: false,
@@ -312,7 +336,7 @@ export async function POST(request: Request) {
       result,
     });
   } catch (error) {
-    console.error("Simulation error:", error);
+    logger.error("Simulation error", error instanceof Error ? error : undefined);
     return NextResponse.json(
       {
         success: false,

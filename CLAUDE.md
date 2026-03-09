@@ -233,3 +233,8 @@ When ideas or improvements surface during development, add them to the **Backlog
 - UI components live in `src/components/`
 - Reusable hooks live in `src/hooks/`
 - Test files are co-located with source files using `.test.ts` / `.test.tsx` suffix
+- **Structured logging:** Use `import { logger } from "@/lib/logger"` instead of `console.error/warn/info`. The logger outputs structured JSON (level, message, timestamp, context, error) parseable by log aggregation services. Use `logger.error("message", error)` for errors with stack traces.
+- **Rate limiting:** Use `import { createRateLimiter, getClientIp } from "@/lib/rate-limit"` for API route protection. Create a module-level limiter with `createRateLimiter({ maxRequests, windowMs })` and call `limiter.check(key)` per request. Use `getClientIp(request)` for unauthenticated routes, `user.id` for authenticated routes.
+- **Error boundaries:** Each route segment can have an `error.tsx` (client component with `reset` prop) for graceful error recovery. `global-error.tsx` catches root layout errors and must render its own `<html>/<body>` with hardcoded styles. `not-found.tsx` handles 404s.
+- **Loading states:** Each route segment can have a `loading.tsx` for automatic Suspense boundaries during navigation. Use skeleton placeholders that match the page layout.
+- **Dynamic imports:** Use `next/dynamic` for heavy components (charts, overlays) to reduce initial bundle size. Provide a `loading` fallback component.
