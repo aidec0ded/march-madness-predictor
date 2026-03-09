@@ -328,6 +328,7 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
       spread,
       breakdown,
       distribution,
+      rawBreakdown: result.breakdown,
     };
 
     return { analysis, teamA, teamB, stats, matchup };

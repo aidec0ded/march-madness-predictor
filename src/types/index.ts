@@ -89,3 +89,12 @@ export type {
   GuidanceContext,
   GuidanceRule,
 } from "./guidance";
+
+// Narrative types (Phase 9 — AI matchup analysis)
+export type {
+  NarrativeRequest,
+  NarrativeTeamData,
+  NarrativeStatus,
+  NarrativeState,
+  NarrativeCacheEntry,
+} from "./narrative";

@@ -9,6 +9,7 @@
  * - Side-by-side stat comparison
  * - Probability display with before/after overrides
  * - Monte Carlo distribution histogram
+ * - AI-generated narrative analysis (Claude-powered)
  * - Per-matchup override controls
  *
  * Renders as a fixed full-screen overlay with a semi-transparent backdrop.
@@ -23,6 +24,7 @@ import { StatComparison } from "@/components/matchup/StatComparison";
 import { ProbabilityDisplay } from "@/components/matchup/ProbabilityDisplay";
 import { DistributionChart } from "@/components/matchup/DistributionChart";
 import { MatchupOverridePanel } from "@/components/matchup/MatchupOverridePanel";
+import { NarrativePanel } from "@/components/matchup/NarrativePanel";
 import { parseGameId } from "@/lib/bracket-layout";
 
 // ---------------------------------------------------------------------------
@@ -163,6 +165,13 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
               {/* Distribution Chart */}
               <DistributionChart
                 bins={analysis.distribution}
+                teamA={teamA}
+                teamB={teamB}
+              />
+
+              {/* AI Narrative Analysis */}
+              <NarrativePanel
+                analysis={analysis}
                 teamA={teamA}
                 teamB={teamB}
               />

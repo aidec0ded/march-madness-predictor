@@ -7,6 +7,7 @@
  */
 
 import type { TournamentRound } from "./team";
+import type { ProbabilityBreakdown } from "./engine";
 
 // ---------------------------------------------------------------------------
 // Distribution Chart Types
@@ -46,6 +47,8 @@ export interface MatchupAnalysis {
   breakdown: ProbabilityBreakdownDisplay[];
   /** Histogram bins for distribution chart */
   distribution: DistributionBin[];
+  /** Raw probability breakdown from the engine (used by narrative prompt) */
+  rawBreakdown: ProbabilityBreakdown;
 }
 
 // ---------------------------------------------------------------------------

@@ -16,6 +16,7 @@
     "seed:db": "tsx scripts/fetch-and-seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "dotenv": "^17.3.1",

@@ -202,22 +202,31 @@
 
 ---
 
-### Phase 9: AI Matchup Narrative
+### Phase 9: AI Matchup Narrative ✅
 
 > Claude-powered analysis in the matchup view.
 
-- [ ] Build Claude API integration (Next.js API route, server-side only)
-- [ ] Engineer prompt template:
-  - Structured team data payload
-  - Data dictionary for field interpretation
-  - Reasoning instructions for interaction effects
-  - 1–2 example outputs for style/structure
-  - Constraints (no speculation, must recommend)
-- [ ] Build narrative display component in matchup view
-- [ ] Add generation trigger (button, not auto-generate)
-- [ ] Implement response caching (avoid re-generating for same data)
-- [ ] Rate limiting / cost controls
-- [ ] Incorporate contest mode context into prompt
+- [x] Build Claude API integration (`POST /api/narrative` — SSE streaming via Anthropic SDK, `claude-sonnet-4-20250514`, 1024 max tokens)
+- [x] Engineer prompt template:
+  - Structured team data payload (`buildTeamDataBlock()` — all stats from TeamSeason in labeled format)
+  - Data dictionary for field interpretation (`src/lib/narrative/data-dictionary.ts` — baselines, interaction effects)
+  - Reasoning instructions for interaction effects (6 documented interaction patterns)
+  - 1 few-shot example output for style/structure (`src/lib/narrative/examples.ts`)
+  - Constraints (no speculation, must recommend, under 600 words, 5-section format)
+- [x] Build narrative display component (`NarrativePanel` — generate button, streaming text, lightweight markdown renderer)
+- [x] Add generation trigger (button, not auto-generate — "Generate Analysis" with sparkle icon)
+- [x] Implement response caching (module-level `Map<hash, text>` in `useMatchupNarrative`, keyed by djb2 hash of data inputs)
+- [x] Rate limiting / cost controls (in-memory `Map<userId, {count, resetAt}>`, 10 req/min per user)
+- [x] Incorporate contest mode context into prompt (ownership %, leverage scores, pool strategy description)
+- [x] Write prompt builder tests (28 tests, 337 total passing)
+
+**Implementation notes:**
+- 8 new files: `src/types/narrative.ts`, `src/lib/narrative/data-dictionary.ts`, `src/lib/narrative/examples.ts`, `src/lib/narrative/prompt-builder.ts`, `src/lib/narrative/prompt-builder.test.ts`, `src/app/api/narrative/route.ts`, `src/hooks/useMatchupNarrative.ts`, `src/components/matchup/NarrativePanel.tsx`
+- 3 modified files: `src/types/matchup-view.ts` (+`rawBreakdown`), `src/hooks/useMatchupAnalysis.ts` (populate rawBreakdown), `src/components/matchup/MatchupView.tsx` (+NarrativePanel)
+- Prompt structure: system message (role + rules + data dictionary) + user message (team blocks + matchup context + pool context + examples + instruction)
+- 5-section output format: Rating Profile, Stylistic Matchup, Key Factors, How This Game Plays Out, Recommendation
+- NarrativePanel states: idle → generating (streaming with blinking cursor) → complete / error
+- `@anthropic-ai/sdk` added as dependency
 
 **Dependencies:** Requires Phase 6 (matchup view to display in), Phase 7 (contest context for prompt).
 
