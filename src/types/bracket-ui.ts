@@ -9,6 +9,7 @@
 import type { TeamSeason, Region, TournamentRound } from "./team";
 import type { GlobalLevers, MatchupOverrides } from "./engine";
 import type { SimulationResult, BracketMatchup } from "./simulation";
+import type { PoolSizeBucket } from "./game-theory";
 
 // ---------------------------------------------------------------------------
 // Bracket State
@@ -47,6 +48,9 @@ export interface BracketState {
 
   /** Whether the bracket has unsaved changes */
   isDirty: boolean;
+
+  /** Pool size bucket for game theory recommendations */
+  poolSizeBucket: PoolSizeBucket;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +71,8 @@ export type BracketAction =
   | { type: "SET_SIMULATING"; isSimulating: boolean }
   | { type: "LOAD_BRACKET"; bracket: SavedBracketData }
   | { type: "CLEAR_BRACKET" }
-  | { type: "MARK_SAVED"; bracketId: string };
+  | { type: "MARK_SAVED"; bracketId: string }
+  | { type: "SET_POOL_SIZE"; poolSizeBucket: PoolSizeBucket };
 
 // ---------------------------------------------------------------------------
 // Matchup Display Data

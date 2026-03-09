@@ -9,6 +9,7 @@ import { LeverPanel } from "@/components/levers/LeverPanel";
 import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
 import { GuidancePanel } from "@/components/bracket/GuidancePanel";
+import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
 import { SaveButton } from "./BracketShellSaveButton";
 
 // ---------------------------------------------------------------------------
@@ -33,8 +34,8 @@ interface BracketShellProps {
  * panel visibility (levers drawer, results overlay, guidance panel).
  *
  * Layout:
- * - Sticky header bar with bracket name, simulation button, guidance toggle,
- *   lever toggle, save button, and results toggle
+ * - Sticky header bar with bracket name, pool size selector, simulation button,
+ *   guidance toggle, lever toggle, save button, and results toggle
  * - GuidancePanel (conditional, collapses in below header)
  * - SimulationResultsOverlay (conditional, collapses in below guidance)
  * - BracketGrid (full remaining space, scrollable)
@@ -94,8 +95,17 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             borderBottom: "1px solid var(--border-primary)",
           }}
         >
-          {/* Left section: bracket name */}
-          <BracketName />
+          {/* Left section: bracket name + pool size */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <BracketName />
+            <PoolSizeSelector />
+          </div>
 
           {/* Right section: action buttons */}
           <div

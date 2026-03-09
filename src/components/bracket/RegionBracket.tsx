@@ -3,7 +3,7 @@
 /**
  * RegionBracket — renders one region's bracket (15 matchups) in a CSS Grid.
  *
- * The grid uses 4 columns × 16 rows. R64 games are in the outermost column,
+ * The grid uses 4 columns x 16 rows. R64 games are in the outermost column,
  * with each successive round moving inward and spanning more rows so matchups
  * center between their feeder games.
  *
@@ -17,6 +17,7 @@ import React from "react";
 import type { Region, TeamSeason, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
+import type { OwnershipModel } from "@/types/game-theory";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition, parseGameId } from "@/lib/bracket-layout";
 
@@ -43,6 +44,8 @@ interface RegionBracketProps {
   onAdvance: (gameId: string, teamId: string) => void;
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
+  /** Ownership model for displaying ownership badges (optional) */
+  ownershipModel?: OwnershipModel | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +71,7 @@ function resolveSlotTeam(
 
 /**
  * Resolves the two teams in a matchup based on the round:
- * - R64: look up from slot IDs (e.g., "East-1" → seed 1 in East)
+ * - R64: look up from slot IDs (e.g., "East-1" -> seed 1 in East)
  * - Later rounds: look up the winner of the feeder game from picks
  */
 function resolveMatchupTeams(
@@ -132,15 +135,11 @@ function generateConnectors(
 ): ConnectorLine[] {
   const connectors: ConnectorLine[] = [];
 
-  // Connectors go between rounds: R64→R32, R32→S16, S16→E8
+  // Connectors go between rounds: R64->R32, R32->S16, S16->E8
   const laterRounds = matchups.filter((m) => m.round !== "R64");
 
   for (const matchup of laterRounds) {
     const targetPos = getRegionMatchupPosition(matchup.gameId, direction);
-
-    // The connector column sits between the feeder round and this round
-    // For ltr: connector is at the feeder's column + 0.5 (we'll use the target column)
-    // For rtl: connector is at the feeder's column - 0.5
 
     // We draw vertical connectors spanning from feeder A midpoint to feeder B midpoint
     const feederAPos = getRegionMatchupPosition(
@@ -183,6 +182,7 @@ export function RegionBracket({
   matchupOverrides,
   onAdvance,
   onMatchupClick,
+  ownershipModel,
 }: RegionBracketProps) {
   const connectors = generateConnectors(matchups, picks, direction);
 
@@ -277,6 +277,16 @@ export function RegionBracket({
             simulationResult
           );
 
+          // Get ownership for this round
+          const ownershipA =
+            ownershipModel && teamA?.teamId
+              ? ownershipModel.getOwnership(teamA.teamId, matchup.round)
+              : undefined;
+          const ownershipB =
+            ownershipModel && teamB?.teamId
+              ? ownershipModel.getOwnership(teamB.teamId, matchup.round)
+              : undefined;
+
           return (
             <div
               key={matchup.gameId}
@@ -300,6 +310,8 @@ export function RegionBracket({
                 hasOverrides={hasOverrides}
                 onAdvance={(teamId) => onAdvance(matchup.gameId, teamId)}
                 onMatchupClick={onMatchupClick}
+                ownershipA={ownershipA}
+                ownershipB={ownershipB}
               />
             </div>
           );

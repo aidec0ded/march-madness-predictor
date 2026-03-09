@@ -17,12 +17,14 @@
  * 1. Gets state and dispatch from useBracket()
  * 2. Builds the 63-matchup tree using buildBracketMatchups() (memoized)
  * 3. Splits matchups by region + F4/NCG
- * 4. Passes props down to RegionBracket and FinalFour
- * 5. Wraps everything in a horizontally scrollable container
+ * 4. Computes ownership model via useContestStrategy()
+ * 5. Passes props down to RegionBracket and FinalFour
+ * 6. Wraps everything in a horizontally scrollable container
  */
 
 import React, { useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
+import { useContestStrategy } from "@/hooks/useContestStrategy";
 import { buildBracketMatchups, REGIONS } from "@/lib/engine/bracket";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
@@ -93,6 +95,7 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 
 export function BracketGrid() {
   const { state, dispatch } = useBracket();
+  const { ownershipModel } = useContestStrategy();
 
   // Build the 63-matchup tree (stable reference since it's pure)
   const allMatchups = useMemo(() => buildBracketMatchups(), []);
@@ -117,9 +120,6 @@ export function BracketGrid() {
     // matchup detail page is built. For now, this is a no-op placeholder.
     // TODO: Navigate to /matchup/[gameId] or open a modal
   }, []);
-
-  // Loading state (show while simulation is running)
-  // Note: isSimulating is tracked but we don't block rendering during simulation
 
   // Empty state
   if (state.teams.size === 0) {
@@ -178,6 +178,7 @@ export function BracketGrid() {
               matchupOverrides={state.matchupOverrides}
               onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
+              ownershipModel={ownershipModel}
             />
           ))}
         </div>
@@ -191,6 +192,7 @@ export function BracketGrid() {
           matchupOverrides={state.matchupOverrides}
           onAdvance={handleAdvance}
           onMatchupClick={handleMatchupClick}
+          ownershipModel={ownershipModel}
         />
 
         {/* Right side: West (top) + Midwest (bottom) */}
@@ -213,6 +215,7 @@ export function BracketGrid() {
               matchupOverrides={state.matchupOverrides}
               onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
+              ownershipModel={ownershipModel}
             />
           ))}
         </div>
