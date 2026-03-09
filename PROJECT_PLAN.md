@@ -272,11 +272,11 @@
 
 ### Claude Code Skills (create once sufficient context exists)
 
-- [ ] `/simulate-matchup` — Pull two teams' data, run probability model, output structured matchup breakdown
-- [ ] `/generate-narrative` — Build AI narrative prompt from matchup data (data block, interpretation instructions, output)
+- [x] `/simulate-matchup` — Pull two teams' data, run probability model, output structured matchup breakdown — `.claude/skills/simulate-matchup/SKILL.md`
+- [x] `/generate-narrative` — Build AI narrative prompt from matchup data (data block, interpretation instructions, output) — `.claude/skills/generate-narrative/SKILL.md`
 - [ ] `/backtest-year [year]` — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
-- [ ] `/add-team-data` — Structured team data ingestion with schema validation
-- [ ] `/audit-bracket` — Run guidance system against current bracket state, surface all warnings
+- [x] `/add-team-data` — Structured team data ingestion with schema validation — `.claude/skills/add-team-data/SKILL.md`
+- [x] `/audit-bracket` — Run guidance system against current bracket state, surface all warnings — `.claude/skills/audit-bracket/SKILL.md`
 - [x] `/component [name]` — Component scaffolding with design system context (dark mode, Baseball Savant, TS types) — `.claude/skills/component/SKILL.md`
 
 > These skills should be created as the corresponding features are built — not before. Each skill needs real types, working code, and ideally 2–3 example outputs to be grounded properly.
