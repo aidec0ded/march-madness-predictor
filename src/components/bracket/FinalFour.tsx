@@ -16,6 +16,7 @@ import React from "react";
 import type { TeamSeason, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
+import type { OwnershipModel } from "@/types/game-theory";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 
 // ---------------------------------------------------------------------------
@@ -37,6 +38,8 @@ interface FinalFourProps {
   onAdvance: (gameId: string, teamId: string) => void;
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
+  /** Ownership model for displaying ownership badges (optional) */
+  ownershipModel?: OwnershipModel | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -177,6 +180,7 @@ export function FinalFour({
   matchupOverrides,
   onAdvance,
   onMatchupClick,
+  ownershipModel,
 }: FinalFourProps) {
   // Sort matchups: F4-1 first, then F4-2, then NCG
   const f4Game1 = matchups.find((m) => m.gameId === "F4-1");
@@ -212,6 +216,12 @@ export function FinalFour({
   const championProb = championId
     ? getChampionshipProbability(championId, simulationResult)
     : null;
+
+  // Ownership helpers
+  const getOwn = (teamId: string | undefined, round: TournamentRound) =>
+    ownershipModel && teamId
+      ? ownershipModel.getOwnership(teamId, round)
+      : undefined;
 
   return (
     <div
@@ -265,11 +275,13 @@ export function FinalFour({
             hasOverrides={"F4-1" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-1", teamId)}
             onMatchupClick={onMatchupClick}
+            ownershipA={getOwn(f4Game1TeamA?.teamId, "F4")}
+            ownershipB={getOwn(f4Game1TeamB?.teamId, "F4")}
           />
         </div>
       )}
 
-      {/* Connector: F4 → NCG */}
+      {/* Connector: F4 -> NCG */}
       <div
         style={{
           width: "2px",
@@ -317,6 +329,8 @@ export function FinalFour({
             hasOverrides={"NCG" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("NCG", teamId)}
             onMatchupClick={onMatchupClick}
+            ownershipA={getOwn(ncgTeamA?.teamId, "NCG")}
+            ownershipB={getOwn(ncgTeamB?.teamId, "NCG")}
           />
         </div>
       )}
@@ -324,7 +338,7 @@ export function FinalFour({
       {/* Champion display */}
       {champion && <ChampionCard team={champion} probability={championProb} />}
 
-      {/* Connector: NCG → F4 Game 2 */}
+      {/* Connector: NCG -> F4 Game 2 */}
       {!champion && (
         <div
           style={{
@@ -372,6 +386,8 @@ export function FinalFour({
             hasOverrides={"F4-2" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-2", teamId)}
             onMatchupClick={onMatchupClick}
+            ownershipA={getOwn(f4Game2TeamA?.teamId, "F4")}
+            ownershipB={getOwn(f4Game2TeamB?.teamId, "F4")}
           />
         </div>
       )}

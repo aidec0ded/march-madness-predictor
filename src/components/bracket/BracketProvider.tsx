@@ -248,6 +248,7 @@ function bracketReducer(
         bracketId: null,
         bracketName: "My Bracket",
         isDirty: false,
+        poolSizeBucket: "medium",
       };
     }
 
@@ -256,6 +257,14 @@ function bracketReducer(
         ...state,
         bracketId: action.bracketId,
         isDirty: false,
+      };
+    }
+
+    case "SET_POOL_SIZE": {
+      return {
+        ...state,
+        poolSizeBucket: action.poolSizeBucket,
+        isDirty: true,
       };
     }
 
@@ -286,6 +295,7 @@ interface BracketProviderProps {
  * - ADVANCE_TEAM automatically cascades downstream pick invalidation
  * - Supports loading saved brackets and resetting to defaults
  * - Tracks dirty state for unsaved changes
+ * - SET_POOL_SIZE updates the contest pool size for game theory recommendations
  */
 export function BracketProvider({
   children,
@@ -311,6 +321,7 @@ export function BracketProvider({
       bracketId: savedBracket?.bracketId ?? null,
       bracketName: savedBracket?.name ?? "My Bracket",
       isDirty: false,
+      poolSizeBucket: "medium",
     }),
     [teamsMap, savedBracket]
   );

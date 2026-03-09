@@ -8,6 +8,7 @@ import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
 import { SimulationButton } from "@/components/bracket/SimulationButton";
 import { SimulationResultsOverlay } from "@/components/bracket/SimulationResultsOverlay";
+import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
 import { SaveButton } from "./BracketShellSaveButton";
 
 // ---------------------------------------------------------------------------
@@ -32,8 +33,8 @@ interface BracketShellProps {
  * panel visibility (levers drawer, results overlay).
  *
  * Layout:
- * - Sticky header bar with bracket name, simulation button, lever toggle,
- *   save button, and results toggle
+ * - Sticky header bar with bracket name, pool size selector, simulation button,
+ *   lever toggle, save button, and results toggle
  * - SimulationResultsOverlay (conditional, collapses in below header)
  * - BracketGrid (full remaining space, scrollable)
  * - LeverPanel (right-side drawer)
@@ -83,8 +84,17 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
             borderBottom: "1px solid var(--border-primary)",
           }}
         >
-          {/* Left section: bracket name */}
-          <BracketName />
+          {/* Left section: bracket name + pool size */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <BracketName />
+            <PoolSizeSelector />
+          </div>
 
           {/* Right section: action buttons */}
           <div
@@ -178,11 +188,6 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
  * since SET_BRACKET_NAME is not yet in the reducer (could be added).
  */
 function BracketName() {
-  // Using useBracket directly would require importing inside BracketProvider,
-  // which we're already inside. But this sub-component is rendered inside
-  // the provider, so it works.
-  // However, to avoid a hook dependency issue, we use a simple approach:
-  // display-only for now.
   return (
     <div
       style={{
