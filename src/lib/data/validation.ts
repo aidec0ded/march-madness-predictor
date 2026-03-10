@@ -73,12 +73,11 @@ const FIELD_RANGES: Record<string, FieldRange> = {
   // Coaching style
   twoFoulParticipation: { min: 0, max: 100, label: "2-Foul Participation %" },
 
-  // Evan Miya-specific metrics
-  evanmiyaOpponentAdjust: { min: -100, max: 100, label: "Opponent Adjustment" },
-  evanmiyaPaceAdjust: { min: -100, max: 100, label: "Pace Adjustment" },
-  evanmiyaKillShotsPerGame: { min: 0, max: 5, label: "Kill Shots Per Game" },
-  evanmiyaKillShotsAllowedPerGame: { min: 0, max: 5, label: "Kill Shots Allowed Per Game" },
-  evanmiyaKillShotsMargin: { min: -5, max: 5, label: "Kill Shots Margin" },
+  // Note: Evan Miya BPR and Miya-specific metrics (opponent adjust, pace
+  // adjust, kill shots) are intentionally excluded from range validation.
+  // BPR values are on a different scale than KenPom/Torvik efficiency
+  // ratings, and the Miya-specific metrics don't have well-established
+  // bounds across historical seasons.
 };
 
 // ---------------------------------------------------------------------------
@@ -165,8 +164,12 @@ export function validateTeamSeason(
   const errors: ValidationError[] = [];
 
   // --- Efficiency ratings ---
+  // Only validate KenPom and Torvik against adjOE/adjDE/adjEM ranges.
+  // Evan Miya BPR values are on a different scale (relative-to-average,
+  // typically -15 to +25) and don't share ranges with absolute efficiency
+  // ratings (typically 75-140). Skip Evan Miya here.
   if (team.ratings) {
-    for (const sourceKey of ["kenpom", "torvik", "evanmiya"] as const) {
+    for (const sourceKey of ["kenpom", "torvik"] as const) {
       const rating = team.ratings[sourceKey];
       if (!rating) continue;
 
