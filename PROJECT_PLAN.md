@@ -290,6 +290,7 @@
 ### Batch 2 — Matchup Bug Fix ✅
 
 - [x] **Defensive metrics display bug** — Root cause: `num()` in transforms.ts converted NULL → 0, masking missing data. Fix: made `fourFactorsDefense` and `shootingDefense` nullable on TeamSeason; transforms return null when all DB fields are NULL; engine skips four factors adjustment when defensive data is missing; UI shows "—" instead of 0.0%
+- [x] **Defensive data overwrite bug** — Root cause: KenPom commit route always included defensive columns (`def_efg_pct`, etc.) in its upsert, even when the defense CSV wasn't uploaded; `nanToNull(undefined?.efgPct)` → `null` overwrote Torvik-provided defensive data. Fix: applied conditional-include pattern (same approach Torvik already used for height/experience) to all three import paths — KenPom commit, Torvik commit, and fetch-and-seed script. Defensive columns are now only included in the upsert when actual data is present.
 
 ### Batch 3 — Teams API
 
