@@ -522,6 +522,10 @@ function KenPomPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
     { path: "ratings.kenpom.adjDE", label: "AdjDE", format: "number" },
     { path: "ratings.kenpom.adjEM", label: "AdjEM", format: "number" },
     { path: "adjTempo", label: "Tempo", format: "number" },
+    { path: "fourFactorsDefense.efgPct", label: "eFG% D", format: "number" },
+    { path: "fourFactorsDefense.toPct", label: "TO% D", format: "number" },
+    { path: "fourFactorsDefense.orbPct", label: "ORB% D", format: "number" },
+    { path: "fourFactorsDefense.ftRate", label: "FTR D", format: "number" },
     { path: "experience", label: "Exp", format: "number" },
     { path: "minutesContinuity", label: "Cont", format: "number" },
     { path: "benchMinutesPct", label: "Bench", format: "number" },
@@ -1001,6 +1005,10 @@ function TorvikPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
     { path: "fourFactorsOffense.efgPct", label: "eFG%", format: "number" },
     { path: "fourFactorsOffense.toPct", label: "TO%", format: "number" },
     { path: "fourFactorsOffense.orbPct", label: "ORB%", format: "number" },
+    { path: "fourFactorsDefense.efgPct", label: "eFG% D", format: "number" },
+    { path: "fourFactorsDefense.toPct", label: "TO% D", format: "number" },
+    { path: "fourFactorsDefense.orbPct", label: "ORB% D", format: "number" },
+    { path: "fourFactorsDefense.ftRate", label: "FTR D", format: "number" },
     { path: "shootingOffense.threePtPct", label: "3P%", format: "number" },
     { path: "avgHeight", label: "Hgt", format: "number" },
     { path: "experience", label: "Exp", format: "number" },
@@ -1425,6 +1433,35 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
                       {result.data.fetchWarnings.join("; ")}
                     </div>
                   )}
+                {/* Defensive data coverage indicator */}
+                {result.data.teams && (() => {
+                  const teams = result.data.teams as Array<Record<string, unknown>>;
+                  const withDef = teams.filter((t) => t.fourFactorsDefense != null).length;
+                  const total = teams.length;
+                  const hasDef = withDef > 0;
+                  return (
+                    <div
+                      className="mt-2 rounded-lg px-3 py-2 text-xs"
+                      style={{
+                        backgroundColor: hasDef
+                          ? "rgba(52, 211, 153, 0.06)"
+                          : "rgba(239, 68, 68, 0.06)",
+                        color: hasDef
+                          ? "var(--accent-success)"
+                          : "var(--accent-danger)",
+                      }}
+                    >
+                      Defensive Four Factors: {withDef}/{total} teams
+                      {!hasDef && (
+                        <span className="ml-1 font-medium">
+                          — Defensive data missing! {mode === "fetch"
+                            ? "The fffinal.csv fetch may have failed."
+                            : "Check that your CSV includes EFG D., TOV% D, OP REB%, FT RATE D columns."}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <TorvikPreviewTable teams={result.data.teams} />
                 <ErrorList errors={result.data.validation.errors} />
               </div>
