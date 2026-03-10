@@ -74,7 +74,7 @@
   - Rest/Schedule Density adjustment (-3.0 to +3.0 eff pts)
 - [x] Build matchup resolver (`resolveMatchup` — 10-step pipeline, full `ProbabilityBreakdown`)
 - [x] Write comprehensive unit tests (96 engine tests, 152 total)
-- [ ] Validate against known matchup outcomes for sanity checking (deferred to Phase 10 backtesting)
+- [ ] ~~Validate against known matchup outcomes for sanity checking~~ → moved to Backlog
 
 **Parallelizable:** Mean levers, variance levers, and per-matchup overrides are independent once the base model exists.
 
@@ -93,8 +93,8 @@
 - [x] Apply lever effects to simulation parameters (inherits full engine pipeline per game)
 - [x] Add configurable simulation count (10K / 25K / 50K / 100K via `SIMULATION_COUNT_OPTIONS`)
 - [x] Write comprehensive tests (85 simulation tests: bracket 34, sampler 20, simulator 31; 237 total)
-- [ ] Optimize for performance (target: 50K sims in < 5 seconds) — deferred to Phase 11
-- [ ] Add progress reporting for long-running simulations — deferred to Phase 11
+- [ ] ~~Optimize for performance (target: 50K sims in < 5 seconds)~~ → moved to Backlog
+- [ ] ~~Add progress reporting for long-running simulations~~ → moved to Backlog
 
 **Dependencies:** Requires Phase 2 (probability engine).
 
@@ -115,7 +115,7 @@
 - [x] Set up Supabase Row Level Security (RLS) policies — `auth.uid() = user_id` with admin override
 - [x] Build user settings page (`/settings`) — pool size bucket, simulation count preferences
 - [x] Transition admin auth to dual Supabase Auth + API key fallback
-- [ ] Write auth integration tests — deferred to post-UI when end-to-end flows can be tested
+- [ ] ~~Write auth integration tests~~ → moved to Backlog
 
 **Parallelizable with Phase 2 and Phase 3** — auth is independent of the engine.
 
@@ -136,8 +136,8 @@
 - [x] Connect `/api/simulate` to Supabase — `transforms.ts` for DB row → `TeamSeason` conversion, endpoint fetches 64 teams and runs engine
 - [x] Build `/bracket` page (Server Component) with team fetching and optional saved bracket loading
 - [x] Build bracket save/load persistence — `useBracketPersistence` hook connected to brackets API
-- [ ] Responsive design polish (tablet horizontal scroll, mobile region-by-region view) — deferred to Phase 11
-- [ ] Add bracket-specific unit/component tests — deferred to post-UI
+- [ ] ~~Responsive design polish (tablet horizontal scroll, mobile region-by-region view)~~ → moved to Backlog
+- [ ] ~~Add bracket-specific unit/component tests~~ → moved to Backlog
 
 **Dependencies:** Requires Phase 2 (lever system), Phase 3 (simulation results to display), Phase 4 (save/load).
 
@@ -175,7 +175,7 @@
 - [x] Wire ownership through BracketGrid → RegionBracket → MatchupSlot → TeamCard + FinalFour
 - [x] Build `useContestStrategy` hook with memoized `getOwnership()` and `getRecommendation()` functions
 - [x] Write tests (27 new: 9 ownership + 18 strategy, 264 total passing)
-- [ ] Feed contest context into AI narrative recommendations (Phase 9)
+- [x] Feed contest context into AI narrative recommendations (completed in Phase 9)
 
 **Parallelizable with Phase 6 and Phase 8.**
 
@@ -271,26 +271,72 @@
 
 **Completed: 12 new rate-limit/logger tests, 412 total tests passing.**
 
-- [ ] Performance audit: bundle analyzer, API response times — deferred to backlog
-- [ ] Custom domain setup — deployment-provider-specific, documented in README
-- [ ] Responsive/mobile design polish — deferred to backlog
+- [ ] ~~Performance audit: bundle analyzer, API response times~~ → moved to Backlog
+- [ ] ~~Custom domain setup~~ → moved to Backlog
+- [ ] ~~Responsive/mobile design polish~~ → moved to Backlog
 
 ---
 
 ## Backlog
 
-> Items discovered during development. Will be prioritized and scheduled after the initial build.
+> Prioritized work queue. Items are grouped into execution batches.
 
-### Claude Code Skills (create once sufficient context exists)
+### Batch 1 — Testing Gaps & Skill _(parallel)_
 
-- [x] `/simulate-matchup` — Pull two teams' data, run probability model, output structured matchup breakdown — `.claude/skills/simulate-matchup/SKILL.md`
-- [x] `/generate-narrative` — Build AI narrative prompt from matchup data (data block, interpretation instructions, output) — `.claude/skills/generate-narrative/SKILL.md`
-- [ ] `/backtest-year [year]` — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
-- [x] `/add-team-data` — Structured team data ingestion with schema validation — `.claude/skills/add-team-data/SKILL.md`
-- [x] `/audit-bracket` — Run guidance system against current bracket state, surface all warnings — `.claude/skills/audit-bracket/SKILL.md`
-- [x] `/component [name]` — Component scaffolding with design system context (dark mode, Baseball Savant, TS types) — `.claude/skills/component/SKILL.md`
+- [ ] **Auth integration tests** — End-to-end auth flow tests (deferred from Phase 4)
+- [ ] **Bracket component tests** — Unit and component tests for bracket UI (deferred from Phase 5)
+- [ ] `/backtest-year [year]` skill — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
 
-> These skills should be created as the corresponding features are built — not before. Each skill needs real types, working code, and ideally 2–3 example outputs to be grounded properly.
+### Batch 2 — Matchup Bug Fix
+
+- [ ] **Defensive metrics display bug** — Defensive metrics all read 0 on the matchup screen; diagnose and fix
+
+### Batch 3 — Teams API
+
+- [ ] **Teams API route: replace placeholder with Supabase query** — `src/app/api/teams/route.ts` still uses a placeholder response instead of querying Supabase
+
+### Batch 4 — Data Ingestion _(sequential)_
+
+- [ ] **Populate real 2026 bracket teams** — Replace test data with likely tournament field using Bracket Matrix as guide; define methodology for inputting the actual bracket post-Selection Sunday
+- [ ] **Historical tournament data for backtesting** — Integrate Kaggle March Machine Learning Mania dataset (https://www.kaggle.com/competitions/march-machine-learning-mania-2023/data) for additional historical coverage; identify gaps and fill for tournaments not included
+- [ ] **Coach data ingestion** — Define methodology for injecting coach tournament records (current season + historical) into the database
+- [ ] **Tournament venue / location data** — Add game site locations for each round (already known info); auto-calculate site proximity from campus-to-venue distance instead of relying on manual user adjustment
+- [ ] **NET Ranking / Strength of Schedule lever** — Add NET ranking or SoS-based lever (requires manual data capture + DB ingestion pipeline)
+- [ ] **Luck regression lever** — KenPom Luck factor as a regression-to-mean signal (requires manual data capture + DB ingestion pipeline)
+- [ ] **2-Foul Participation editability** — Either make 2-Foul Participation editable on the matchup screen, provide a manual DB injection path, or remove it from the UI if it can't be edited
+
+### Batch 5 — Model Validation & Backtest Parity
+
+- [ ] **Validate model against known outcomes** — Sanity-check engine predictions against historical matchup results
+- [ ] **Align backtest levers with global bracket levers** — Backtest lever configuration should match the full set of global lever options from the bracket, so users can test their bracket lever configuration against historical data
+
+### Batch 6 — UX Clarity & Guidance _(sequential)_
+
+- [ ] **Per-matchup override guidance** — Add contextual help explaining how to calibrate each override slider (e.g., "if a team's 3rd-best player is injured, try 0.5–1.0; if a starter is out, try 2.0–3.0")
+- [ ] **Clarify probability numbers on team cards** — The numbers next to team names are confusing: explain what they represent (round survival probability from simulation vs. single-game win probability); consider UX improvements so they're intuitive without explanation
+- [ ] **Picked-team probability mismatch** — When a team is advanced, the number next to their name doesn't match the probability from the matchup screen; clarify the relationship between per-game probability and path probability, and decide on display approach
+- [ ] **Simulation workflow clarity** — Clarify the intended user flow: can a user run simulation at start and after every pick? Running simulation updates per-game probabilities (visible from matchup screen) but doesn't auto-fill the bracket — make this clear in the UI
+- [ ] **Ownership model transparency** — Document or expose what factors drive ownership estimates (seed, conference, media profile, historical over-pick patterns) so users understand the numbers
+- [ ] **Backtest results interpretation guide** — Add in-app explanation of how to interpret backtest results: what Brier Score means, what the calibration chart shows, what "improvement over baseline" represents, and what good/bad values look like
+
+### Batch 7 — Performance & Polish _(parallel)_
+
+- [ ] **Simulation performance optimization** — Target 50K sims in <5 seconds (deferred from Phase 3)
+- [ ] **Simulation progress reporting** — Real-time progress indicator for long-running simulations (deferred from Phase 3)
+- [ ] **Performance audit** — Bundle analyzer, API response time benchmarks (deferred from Phase 11)
+- [ ] **Responsive / mobile design polish** — Tablet horizontal scroll, mobile region-by-region bracket view (deferred from Phase 5 and Phase 11)
+
+### Batch 8 — Custom Domain
+
+- [ ] **Custom domain setup** — Configure custom domain on deployment provider (Render)
+
+### Claude Code Skills _(completed)_
+
+- [x] `/simulate-matchup` — `.claude/skills/simulate-matchup/SKILL.md`
+- [x] `/generate-narrative` — `.claude/skills/generate-narrative/SKILL.md`
+- [x] `/add-team-data` — `.claude/skills/add-team-data/SKILL.md`
+- [x] `/audit-bracket` — `.claude/skills/audit-bracket/SKILL.md`
+- [x] `/component [name]` — `.claude/skills/component/SKILL.md`
 
 ---
 
