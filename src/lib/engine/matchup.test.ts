@@ -213,6 +213,9 @@ describe("resolveMatchup", () => {
         experienceWeight: 0,
         continuityWeight: 0,
         coachExperienceWeight: 0,
+        opponentAdjustWeight: 0,
+        benchDepthWeight: 0,
+        paceAdjustWeight: 0,
         tempoVarianceWeight: 0,
         threePtVarianceWeight: 0,
       },
@@ -225,6 +228,9 @@ describe("resolveMatchup", () => {
     expect(result.breakdown.experienceAdjustment).toBeCloseTo(0, 5);
     expect(result.breakdown.continuityAdjustment).toBeCloseTo(0, 5);
     expect(result.breakdown.coachAdjustment).toBeCloseTo(0, 5);
+    expect(result.breakdown.opponentAdjustAdjustment).toBeCloseTo(0, 5);
+    expect(result.breakdown.benchDepthAdjustment).toBeCloseTo(0, 5);
+    expect(result.breakdown.paceAdjustAdjustment).toBeCloseTo(0, 5);
     expect(result.breakdown.totalMeanAdjustment).toBeCloseTo(0, 5);
 
     // Variance multipliers should be 1.0
@@ -370,6 +376,9 @@ describe("resolveMatchup", () => {
     expect(typeof b.experienceAdjustment).toBe("number");
     expect(typeof b.continuityAdjustment).toBe("number");
     expect(typeof b.coachAdjustment).toBe("number");
+    expect(typeof b.opponentAdjustAdjustment).toBe("number");
+    expect(typeof b.benchDepthAdjustment).toBe("number");
+    expect(typeof b.paceAdjustAdjustment).toBe("number");
     expect(typeof b.totalMeanAdjustment).toBe("number");
 
     // Override adjustments

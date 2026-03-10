@@ -36,6 +36,9 @@ import {
   calculateExperienceAdjustment,
   calculateContinuityAdjustment,
   calculateCoachAdjustment,
+  calculateOpponentAdjustment,
+  calculateBenchDepthAdjustment,
+  calculatePaceAdjustAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -112,12 +115,30 @@ export function resolveMatchup(
     teamB,
     effectiveLevers.coachExperienceWeight
   );
+  const opponentAdjustAdjustment = calculateOpponentAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.opponentAdjustWeight
+  );
+  const benchDepthAdjustment = calculateBenchDepthAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.benchDepthWeight
+  );
+  const paceAdjustAdjustment = calculatePaceAdjustAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.paceAdjustWeight
+  );
 
   const totalMeanAdjustment =
     fourFactorsAdjustment +
     experienceAdjustment +
     continuityAdjustment +
-    coachAdjustment;
+    coachAdjustment +
+    opponentAdjustAdjustment +
+    benchDepthAdjustment +
+    paceAdjustAdjustment;
 
   // Step 5: Per-matchup override adjustments
   const overrideAdjustments = applyMatchupOverrides(overrides, teamA, teamB);
@@ -169,6 +190,9 @@ export function resolveMatchup(
     experienceAdjustment,
     continuityAdjustment,
     coachAdjustment,
+    opponentAdjustAdjustment,
+    benchDepthAdjustment,
+    paceAdjustAdjustment,
     totalMeanAdjustment,
     overrideAdjustments,
     tempoVarianceMultiplier,

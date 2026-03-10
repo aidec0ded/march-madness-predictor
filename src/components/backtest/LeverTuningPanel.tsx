@@ -88,6 +88,18 @@ export function LeverTuningPanel({ config, onChange }: LeverTuningPanelProps) {
         <div className="lever-tuning__divider" />
 
         <LeverSlider
+          label="Opponent Adjustment"
+          description="Weight for Evan Miya's opponent adjustment metric. Measures how well teams play up/down to competition level."
+          value={config.levers.opponentAdjustWeight}
+          onChange={(v) => updateLever("opponentAdjustWeight", v)}
+          min={0}
+          max={2}
+          step={0.05}
+        />
+
+        <div className="lever-tuning__divider" />
+
+        <LeverSlider
           label="Tempo Variance"
           description="How much pace differences compress or expand outcome distributions. Slower pace increases upset probability."
           value={config.levers.tempoVarianceWeight}

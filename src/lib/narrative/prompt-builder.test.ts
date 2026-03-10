@@ -86,6 +86,9 @@ function makeBreakdown(overrides: Partial<ProbabilityBreakdown> = {}): Probabili
     experienceAdjustment: 0.012,
     continuityAdjustment: 0.005,
     coachAdjustment: 0.008,
+    opponentAdjustAdjustment: 0,
+    benchDepthAdjustment: 0,
+    paceAdjustAdjustment: 0,
     totalMeanAdjustment: 0.05,
     overrideAdjustments: {
       injury: 0,
