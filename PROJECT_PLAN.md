@@ -281,15 +281,15 @@
 
 > Prioritized work queue. Items are grouped into execution batches.
 
-### Batch 1 — Testing Gaps & Skill _(parallel)_
+### Batch 1 — Testing Gaps & Skill _(parallel)_ ✅
 
-- [ ] **Auth integration tests** — End-to-end auth flow tests (deferred from Phase 4)
-- [ ] **Bracket component tests** — Unit and component tests for bracket UI (deferred from Phase 5)
-- [ ] `/backtest-year [year]` skill — Full backtesting workflow: load archived data, simulate, Brier Score, seed baseline comparison
+- [x] **Auth integration tests** — 9 test files, 56 tests covering sign-in/up/forgot/reset password, AuthProvider, API routes, middleware
+- [x] **Bracket component tests** — 11 test files, 152 tests covering TeamCard, ProbabilityBar, OwnershipBadge, MatchupSlot, SimulationButton, BracketProvider, PoolSizeSelector, GuidancePanel, SimulationResultsOverlay, BracketShell
+- [x] `/backtest-year [year]` skill — `.claude/skills/backtest-year/SKILL.md` — full backtesting workflow with 8-step process
 
-### Batch 2 — Matchup Bug Fix
+### Batch 2 — Matchup Bug Fix ✅
 
-- [ ] **Defensive metrics display bug** — Defensive metrics all read 0 on the matchup screen; diagnose and fix
+- [x] **Defensive metrics display bug** — Root cause: `num()` in transforms.ts converted NULL → 0, masking missing data. Fix: made `fourFactorsDefense` and `shootingDefense` nullable on TeamSeason; transforms return null when all DB fields are NULL; engine skips four factors adjustment when defensive data is missing; UI shows "—" instead of 0.0%
 
 ### Batch 3 — Teams API
 
