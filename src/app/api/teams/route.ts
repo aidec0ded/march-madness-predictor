@@ -1,24 +1,35 @@
 /**
  * API Route: GET /api/teams
  *
- * Public endpoint for retrieving team data. Supports optional filtering
- * by season and team ID.
+ * Public endpoint for retrieving team data from Supabase. Supports optional
+ * filtering by season and team ID. Returns fully-hydrated TeamSeason objects
+ * with joined team, coach, and tournament entry data.
  *
  * Query parameters:
- * - `season` (optional): Filter by season year (e.g., 2025)
+ * - `season` (optional): Filter by season year (e.g., 2026). Defaults to 2026.
  * - `teamId` (optional): Filter by specific team UUID
+ * - `tournamentOnly` (optional): If "true", returns only teams with tournament entries
  *
  * Response:
- * - 200: Array of team season records (or placeholder while DB is not connected)
+ * - 200: Array of TeamSeason objects
  * - 400: Invalid query parameters
  * - 500: Unexpected server error
  */
 
 import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/client";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import {
+  transformTeamSeasonRows,
+  type TeamSeasonJoinedRow,
+} from "@/lib/supabase/transforms";
+import type { TournamentEntryRow } from "@/lib/supabase/types";
 
 const rateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60_000 });
+
+/** Default season when none is specified */
+const DEFAULT_SEASON = 2026;
 
 export async function GET(request: Request) {
   try {
@@ -41,9 +52,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const seasonParam = searchParams.get("season");
     const teamIdParam = searchParams.get("teamId");
+    const tournamentOnlyParam = searchParams.get("tournamentOnly");
 
     // --- Validate season if provided ---
-    let season: number | undefined;
+    let season: number = DEFAULT_SEASON;
     if (seasonParam !== null) {
       season = parseInt(seasonParam, 10);
       if (!Number.isInteger(season) || season < 2000 || season > 2100) {
@@ -76,30 +88,68 @@ export async function GET(request: Request) {
       teamId = teamIdParam;
     }
 
-    // TODO: Replace placeholder response with Supabase query once connected.
-    //
-    // Implementation plan:
-    //   1. Import createServerClient from @/lib/supabase
-    //   2. Build query: supabase.from("team_seasons").select("*, teams(*), coaches(*)")
-    //   3. Apply filters:
-    //      - If season is provided: .eq("season", season)
-    //      - If teamId is provided: .eq("team_id", teamId)
-    //   4. Order by team name or season
-    //   5. Transform DB rows to TeamSeason application types
-    //   6. Return transformed data
+    const tournamentOnly = tournamentOnlyParam === "true";
+
+    // --- Query Supabase ---
+    const supabase = createAdminClient();
+
+    // Build team_seasons query with joins to teams and coaches
+    let teamQuery = supabase
+      .from("team_seasons")
+      .select("*, teams!inner(*), coaches(*)")
+      .eq("season", season);
+
+    if (teamId) {
+      teamQuery = teamQuery.eq("team_id", teamId);
+    }
+
+    const { data: teamSeasonRows, error: teamsError } = await teamQuery;
+
+    if (teamsError) {
+      logger.error(
+        "Teams API: failed to fetch team_seasons",
+        new Error(teamsError.message)
+      );
+      return NextResponse.json(
+        { success: false, error: "Failed to fetch team data." },
+        { status: 500 }
+      );
+    }
+
+    // Fetch tournament entries for the same season
+    const { data: entries, error: entriesError } = await supabase
+      .from("tournament_entries")
+      .select("*")
+      .eq("season", season);
+
+    if (entriesError) {
+      logger.warn("Teams API: failed to fetch tournament_entries", {
+        error: entriesError.message,
+      });
+      // Non-fatal: proceed without tournament data
+    }
+
+    // --- Transform DB rows to application types ---
+    const allTeams = transformTeamSeasonRows(
+      (teamSeasonRows ?? []) as unknown as TeamSeasonJoinedRow[],
+      (entries ?? []) as unknown as TournamentEntryRow[]
+    );
+
+    // Optionally filter to tournament teams only
+    const teams = tournamentOnly
+      ? allTeams.filter((t) => t.tournamentEntry)
+      : allTeams;
 
     return NextResponse.json({
       success: true,
-      message:
-        "Team data endpoint is active but not yet connected to the database. " +
-        "Supabase integration will be completed in a subsequent phase.",
-      filters: {
-        season: season ?? null,
-        teamId: teamId ?? null,
-      },
       data: {
-        teams: [],
-        count: 0,
+        teams,
+        count: teams.length,
+        season,
+        filters: {
+          teamId: teamId ?? null,
+          tournamentOnly,
+        },
       },
     });
   } catch (error) {
