@@ -268,24 +268,39 @@ export async function POST(request: Request) {
           off_to_pct: nanToNull(fourFactorsOffense?.toPct),
           off_orb_pct: nanToNull(fourFactorsOffense?.orbPct),
           off_ft_rate: nanToNull(fourFactorsOffense?.ftRate),
-          // Four Factors (defense) — shared columns
-          def_efg_pct: nanToNull(fourFactorsDefense?.efgPct),
-          def_to_pct: nanToNull(fourFactorsDefense?.toPct),
-          def_orb_pct: nanToNull(fourFactorsDefense?.orbPct),
-          def_ft_rate: nanToNull(fourFactorsDefense?.ftRate),
           // Shooting (offense)
           off_three_pt_pct: nanToNull(shootingOffense?.threePtPct),
           off_three_pt_rate: nanToNull(shootingOffense?.threePtRate),
           off_ft_pct: nanToNull(shootingOffense?.ftPct),
-          // Shooting (defense)
-          def_three_pt_pct: nanToNull(shootingDefense?.threePtPct),
-          def_three_pt_rate: nanToNull(shootingDefense?.threePtRate),
-          def_ft_pct: nanToNull(shootingDefense?.ftPct),
           // Tempo
           adj_tempo: nanToNull(adjTempo),
           // Merge data_sources
           data_sources: mergedSources,
         };
+
+        // Four Factors (defense) — from fffinal CSV. Include only when
+        // available so a failed fffinal fetch doesn't null out KenPom-
+        // provided values for these shared columns.
+        if (fourFactorsDefense) {
+          const defEfg = nanToNull(fourFactorsDefense.efgPct);
+          const defTo = nanToNull(fourFactorsDefense.toPct);
+          const defOrb = nanToNull(fourFactorsDefense.orbPct);
+          const defFt = nanToNull(fourFactorsDefense.ftRate);
+          if (defEfg !== null) record.def_efg_pct = defEfg;
+          if (defTo !== null) record.def_to_pct = defTo;
+          if (defOrb !== null) record.def_orb_pct = defOrb;
+          if (defFt !== null) record.def_ft_rate = defFt;
+        }
+
+        // Shooting (defense) — from fffinal CSV. Same conditional pattern.
+        if (shootingDefense) {
+          const defThreePt = nanToNull(shootingDefense.threePtPct);
+          const defThreeRate = nanToNull(shootingDefense.threePtRate);
+          const defFtPct = nanToNull(shootingDefense.ftPct);
+          if (defThreePt !== null) record.def_three_pt_pct = defThreePt;
+          if (defThreeRate !== null) record.def_three_pt_rate = defThreeRate;
+          if (defFtPct !== null) record.def_ft_pct = defFtPct;
+        }
 
         // Height & experience — only present from Teams Table CSV upload.
         // Include only when available so the API-fetch path doesn't null

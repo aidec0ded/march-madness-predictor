@@ -138,18 +138,20 @@ interface TeamSeasonRecord {
   off_to_pct: number | null;
   off_orb_pct: number | null;
   off_ft_rate: number | null;
-  def_efg_pct: number | null;
-  def_to_pct: number | null;
-  def_orb_pct: number | null;
-  def_ft_rate: number | null;
+  // Defensive fields are optional — only included when fffinal CSV has data
+  def_efg_pct?: number | null;
+  def_to_pct?: number | null;
+  def_orb_pct?: number | null;
+  def_ft_rate?: number | null;
   off_three_pt_pct: number | null;
   off_three_pt_rate: number | null;
   off_ft_pct: number | null;
-  def_three_pt_pct: number | null;
-  def_three_pt_rate: number | null;
-  def_ft_pct: number | null;
+  def_three_pt_pct?: number | null;
+  def_three_pt_rate?: number | null;
+  def_ft_pct?: number | null;
   adj_tempo: number | null;
   data_sources: string[];
+  [key: string]: unknown; // Allow dynamic columns
 }
 
 // ---------------------------------------------------------------------------
@@ -418,7 +420,8 @@ class TorvikSeeder {
 
       const torvik = record.ratings?.torvik;
 
-      seasonRecords.push({
+      // Build the base record with always-available columns
+      const seasonRecord: { team_id: string; season: number; [key: string]: unknown } = {
         team_id: teamId,
         season: this.season,
         torvik_adj_oe: nanToNull(torvik?.adjOE),
@@ -428,19 +431,37 @@ class TorvikSeeder {
         off_to_pct: nanToNull(record.fourFactorsOffense?.toPct),
         off_orb_pct: nanToNull(record.fourFactorsOffense?.orbPct),
         off_ft_rate: nanToNull(record.fourFactorsOffense?.ftRate),
-        def_efg_pct: nanToNull(record.fourFactorsDefense?.efgPct),
-        def_to_pct: nanToNull(record.fourFactorsDefense?.toPct),
-        def_orb_pct: nanToNull(record.fourFactorsDefense?.orbPct),
-        def_ft_rate: nanToNull(record.fourFactorsDefense?.ftRate),
         off_three_pt_pct: nanToNull(record.shootingOffense?.threePtPct),
         off_three_pt_rate: nanToNull(record.shootingOffense?.threePtRate),
         off_ft_pct: nanToNull(record.shootingOffense?.ftPct),
-        def_three_pt_pct: nanToNull(record.shootingDefense?.threePtPct),
-        def_three_pt_rate: nanToNull(record.shootingDefense?.threePtRate),
-        def_ft_pct: nanToNull(record.shootingDefense?.ftPct),
         adj_tempo: nanToNull(record.adjTempo),
         data_sources: ["torvik"],
-      });
+      };
+
+      // Defensive Four Factors — from fffinal CSV. Only include when
+      // available so a failed fetch doesn't null out existing values.
+      if (record.fourFactorsDefense) {
+        const defEfg = nanToNull(record.fourFactorsDefense.efgPct);
+        const defTo = nanToNull(record.fourFactorsDefense.toPct);
+        const defOrb = nanToNull(record.fourFactorsDefense.orbPct);
+        const defFt = nanToNull(record.fourFactorsDefense.ftRate);
+        if (defEfg !== null) seasonRecord.def_efg_pct = defEfg;
+        if (defTo !== null) seasonRecord.def_to_pct = defTo;
+        if (defOrb !== null) seasonRecord.def_orb_pct = defOrb;
+        if (defFt !== null) seasonRecord.def_ft_rate = defFt;
+      }
+
+      // Defensive Shooting — from fffinal CSV. Same conditional pattern.
+      if (record.shootingDefense) {
+        const defThreePt = nanToNull(record.shootingDefense.threePtPct);
+        const defThreeRate = nanToNull(record.shootingDefense.threePtRate);
+        const defFtPct = nanToNull(record.shootingDefense.ftPct);
+        if (defThreePt !== null) seasonRecord.def_three_pt_pct = defThreePt;
+        if (defThreeRate !== null) seasonRecord.def_three_pt_rate = defThreeRate;
+        if (defFtPct !== null) seasonRecord.def_ft_pct = defFtPct;
+      }
+
+      seasonRecords.push(seasonRecord);
     }
 
     console.log(`  Upserting ${seasonRecords.length} team season records...`);

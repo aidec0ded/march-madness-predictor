@@ -235,32 +235,24 @@ export async function POST(request: Request) {
         const existing = existingSourcesMap.get(teamId) || [];
         const mergedSources = Array.from(new Set([...existing, "kenpom"]));
 
-        return {
+        // Build the base record with KenPom-exclusive and always-available columns
+        const record: { team_id: string; season: number; [key: string]: unknown } = {
           team_id: teamId,
           season: seasonNum,
-          // KenPom efficiency ratings
+          // KenPom efficiency ratings (always available from main CSV)
           kenpom_adj_oe: nanToNull(ratings?.kenpom?.adjOE),
           kenpom_adj_de: nanToNull(ratings?.kenpom?.adjDE),
           kenpom_adj_em: nanToNull(ratings?.kenpom?.adjEM),
-          // Four Factors (offense) - shared columns
+          // Four Factors (offense) — always available from main CSV
           off_efg_pct: nanToNull(fourFactorsOffense?.efgPct),
           off_to_pct: nanToNull(fourFactorsOffense?.toPct),
           off_orb_pct: nanToNull(fourFactorsOffense?.orbPct),
           off_ft_rate: nanToNull(fourFactorsOffense?.ftRate),
-          // Four Factors (defense) - shared columns
-          def_efg_pct: nanToNull(fourFactorsDefense?.efgPct),
-          def_to_pct: nanToNull(fourFactorsDefense?.toPct),
-          def_orb_pct: nanToNull(fourFactorsDefense?.orbPct),
-          def_ft_rate: nanToNull(fourFactorsDefense?.ftRate),
-          // Shooting (offense)
+          // Shooting (offense) — always available from main CSV
           off_three_pt_pct: nanToNull(shootingOffense?.threePtPct),
           off_three_pt_rate: nanToNull(shootingOffense?.threePtRate),
           off_ft_pct: nanToNull(shootingOffense?.ftPct),
-          // Shooting (defense)
-          def_three_pt_pct: nanToNull(shootingDefense?.threePtPct),
-          def_three_pt_rate: nanToNull(shootingDefense?.threePtRate),
-          def_ft_pct: nanToNull(shootingDefense?.ftPct),
-          // Tempo
+          // Tempo — always available from main CSV
           adj_tempo: nanToNull(adjTempo),
           // Roster & Experience (KenPom exclusive)
           bench_minutes_pct: nanToNull(benchMinutesPct),
@@ -272,6 +264,33 @@ export async function POST(request: Request) {
           // Merge data_sources
           data_sources: mergedSources,
         };
+
+        // Defensive Four Factors — from the optional defense CSV.
+        // Only include when available so we don't null out Torvik-provided
+        // values for these shared columns.
+        if (fourFactorsDefense) {
+          const defEfg = nanToNull(fourFactorsDefense.efgPct);
+          const defTo = nanToNull(fourFactorsDefense.toPct);
+          const defOrb = nanToNull(fourFactorsDefense.orbPct);
+          const defFt = nanToNull(fourFactorsDefense.ftRate);
+          if (defEfg !== null) record.def_efg_pct = defEfg;
+          if (defTo !== null) record.def_to_pct = defTo;
+          if (defOrb !== null) record.def_orb_pct = defOrb;
+          if (defFt !== null) record.def_ft_rate = defFt;
+        }
+
+        // Defensive Shooting — from the optional defense CSV.
+        // Same conditional pattern to preserve Torvik data.
+        if (shootingDefense) {
+          const defThreePt = nanToNull(shootingDefense.threePtPct);
+          const defThreeRate = nanToNull(shootingDefense.threePtRate);
+          const defFtPct = nanToNull(shootingDefense.ftPct);
+          if (defThreePt !== null) record.def_three_pt_pct = defThreePt;
+          if (defThreeRate !== null) record.def_three_pt_rate = defThreeRate;
+          if (defFtPct !== null) record.def_ft_pct = defFtPct;
+        }
+
+        return record;
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
 
