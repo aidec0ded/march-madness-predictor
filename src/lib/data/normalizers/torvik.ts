@@ -124,10 +124,12 @@ export function normalizeTorvik(
     }
 
     // --- Four Factors (offense) ---
-    const efgO = requireNumber(row.efg_o, "efg_o", i, rowErrors);
-    const toO = requireNumber(row.to_o, "to_o", i, rowErrors);
-    const orbO = requireNumber(row.orb_o, "orb_o", i, rowErrors);
-    const ftrO = requireNumber(row.ftr_o, "ftr_o", i, rowErrors);
+    // Four Factors are optional — the fffinal CSV may be unavailable for
+    // older seasons. When missing, we simply omit them rather than erroring.
+    const efgO = isValidNumber(row.efg_o) ? row.efg_o : null;
+    const toO = isValidNumber(row.to_o) ? row.to_o : null;
+    const orbO = isValidNumber(row.orb_o) ? row.orb_o : null;
+    const ftrO = isValidNumber(row.ftr_o) ? row.ftr_o : null;
 
     let fourFactorsOffense: FourFactors | undefined;
     if (efgO !== null && toO !== null && orbO !== null && ftrO !== null) {
@@ -140,10 +142,10 @@ export function normalizeTorvik(
     }
 
     // --- Four Factors (defense) ---
-    const efgD = requireNumber(row.efg_d, "efg_d", i, rowErrors);
-    const toD = requireNumber(row.to_d, "to_d", i, rowErrors);
-    const orbD = requireNumber(row.orb_d, "orb_d", i, rowErrors);
-    const ftrD = requireNumber(row.ftr_d, "ftr_d", i, rowErrors);
+    const efgD = isValidNumber(row.efg_d) ? row.efg_d : null;
+    const toD = isValidNumber(row.to_d) ? row.to_d : null;
+    const orbD = isValidNumber(row.orb_d) ? row.orb_d : null;
+    const ftrD = isValidNumber(row.ftr_d) ? row.ftr_d : null;
 
     let fourFactorsDefense: FourFactors | undefined;
     if (efgD !== null && toD !== null && orbD !== null && ftrD !== null) {
@@ -184,7 +186,13 @@ export function normalizeTorvik(
     }
 
     // --- Tempo ---
-    const adjTempo = requireNumber(row.adj_t, "adj_t", i, rowErrors);
+    // Tempo is optional — older Torvik seasons return 0 for all teams (likely
+    // due to anti-scraping protections or unavailable data). A tempo of 0 is
+    // physically impossible (real values are 55-85), so we treat it as missing
+    // rather than generating hundreds of validation errors. This allows the
+    // efficiency ratings and Four Factors to be imported even without tempo.
+    const rawTempo = isValidNumber(row.adj_t) ? row.adj_t : null;
+    const adjTempo = rawTempo !== null && rawTempo > 0 ? rawTempo : null;
 
     // --- Build partial TeamSeason ---
     const teamSeason: Partial<TeamSeason> = {

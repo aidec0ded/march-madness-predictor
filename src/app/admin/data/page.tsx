@@ -974,6 +974,105 @@ function KenPomPanel({ adminKey }: { adminKey: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Torvik Preview Table
+// ---------------------------------------------------------------------------
+
+function TorvikPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }) {
+  if (!teams || teams.length === 0) return null;
+
+  const preview = teams.slice(0, 5);
+
+  const getValue = (team: Record<string, unknown>, path: string): unknown => {
+    const parts = path.split(".");
+    let current: unknown = team;
+    for (const part of parts) {
+      if (current === null || current === undefined || typeof current !== "object") return undefined;
+      current = (current as Record<string, unknown>)[part];
+    }
+    return current;
+  };
+
+  const columns: { path: string; label: string; format?: "number" }[] = [
+    { path: "team.name", label: "Team" },
+    { path: "ratings.torvik.adjOE", label: "AdjOE", format: "number" },
+    { path: "ratings.torvik.adjDE", label: "AdjDE", format: "number" },
+    { path: "ratings.torvik.adjEM", label: "AdjEM", format: "number" },
+    { path: "adjTempo", label: "Tempo", format: "number" },
+    { path: "fourFactorsOffense.efgPct", label: "eFG%", format: "number" },
+    { path: "fourFactorsOffense.toPct", label: "TO%", format: "number" },
+    { path: "fourFactorsOffense.orbPct", label: "ORB%", format: "number" },
+    { path: "shootingOffense.threePtPct", label: "3P%", format: "number" },
+  ];
+
+  const visibleColumns = columns.filter((col) =>
+    preview.some((t) => {
+      const v = getValue(t, col.path);
+      return v !== undefined && v !== null && v !== "";
+    })
+  );
+
+  if (visibleColumns.length === 0) return null;
+
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <div
+        className="text-xs font-semibold uppercase tracking-wider mb-2"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Preview (first {preview.length} teams)
+      </div>
+      <table className="w-full text-xs font-mono">
+        <thead>
+          <tr>
+            {visibleColumns.map((col) => (
+              <th
+                key={col.path}
+                className="text-left px-2 py-1.5 border-b whitespace-nowrap"
+                style={{
+                  color: "var(--text-muted)",
+                  borderColor: "var(--border-subtle)",
+                }}
+              >
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {preview.map((row, i) => (
+            <tr key={i}>
+              {visibleColumns.map((col) => {
+                const val = getValue(row, col.path);
+                let display = "-";
+                if (val !== undefined && val !== null && val !== "") {
+                  if (col.format === "number" && typeof val === "number") {
+                    display = val.toFixed(1);
+                  } else {
+                    display = String(val);
+                  }
+                }
+                return (
+                  <td
+                    key={col.path}
+                    className="px-2 py-1 border-b whitespace-nowrap"
+                    style={{
+                      color: "var(--text-secondary)",
+                      borderColor: "var(--border-subtle)",
+                    }}
+                  >
+                    {display}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Torvik Panel
 // ---------------------------------------------------------------------------
 
@@ -981,10 +1080,14 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
   const [season, setSeason] = useState(2026);
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [commitStatus, setCommitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
 
   const handleFetch = async () => {
     setStatus("loading");
     setResult(null);
+    setCommitResult(null);
+    setCommitStatus("idle");
 
     try {
       const resp = await fetch("/api/admin/import/torvik", {
@@ -1008,6 +1111,38 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
     }
   };
 
+  const handleCommit = async () => {
+    if (!result?.data?.teams) return;
+    setCommitStatus("loading");
+    setCommitResult(null);
+
+    try {
+      const resp = await fetch("/api/admin/import/torvik/commit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({ season, teams: result.data.teams }),
+      });
+
+      const data: CommitResult = await resp.json();
+      setCommitResult(data);
+      setCommitStatus(data.success ? "success" : "error");
+    } catch (err) {
+      setCommitResult({
+        success: false,
+        error: err instanceof Error ? err.message : "Network error",
+      });
+      setCommitStatus("error");
+    }
+  };
+
+  const canCommit =
+    result?.success &&
+    result.data?.validation?.valid &&
+    commitStatus !== "success";
+
   return (
     <PanelCard title="Torvik Import" status={status}>
       <div className="space-y-4">
@@ -1022,6 +1157,8 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
           }}
         >
           Note: Torvik has a 10-second crawl delay. The fetch may take a moment.
+          Older seasons (pre-2022) may return incomplete data due to Torvik&apos;s
+          anti-scraping protections.
         </div>
 
         <button
@@ -1085,7 +1222,7 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
                       {result.data.fetchWarnings.join("; ")}
                     </div>
                   )}
-                <PreviewTable teams={result.data.teams} />
+                <TorvikPreviewTable teams={result.data.teams} />
                 <ErrorList errors={result.data.validation.errors} />
               </div>
             ) : (
@@ -1097,6 +1234,64 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
                 }}
               >
                 {result.error || "Fetch failed."}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Commit button */}
+        {canCommit && (
+          <button
+            onClick={handleCommit}
+            disabled={commitStatus === "loading"}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+            style={{
+              backgroundColor: "var(--accent-success)",
+              color: "#fff",
+            }}
+          >
+            {commitStatus === "loading" && <Spinner />}
+            {commitStatus === "loading"
+              ? "Saving to Database..."
+              : "Confirm & Save to Database"}
+          </button>
+        )}
+
+        {/* Commit result */}
+        {commitResult && (
+          <div className="mt-2">
+            {commitResult.success && commitResult.data ? (
+              <div
+                className="text-sm rounded-lg px-3 py-2"
+                style={{
+                  color: "var(--accent-success)",
+                  backgroundColor: "rgba(52, 211, 153, 0.08)",
+                  border: "1px solid rgba(52, 211, 153, 0.2)",
+                }}
+              >
+                <div className="font-semibold mb-1">
+                  {commitResult.data.teamSeasonsUpserted} teams saved to database
+                </div>
+                <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  {commitResult.data.teamsUpserted} team records |{" "}
+                  {commitResult.data.teamSeasonsUpserted} season records |{" "}
+                  {commitResult.data.nameMappingsUpserted} name mappings
+                  {commitResult.data.errors.length > 0 && (
+                    <span style={{ color: "var(--accent-warning)" }}>
+                      {" "}| {commitResult.data.errors.length} warning(s)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="text-sm rounded-lg px-3 py-2"
+                style={{
+                  color: "var(--accent-danger)",
+                  backgroundColor: "rgba(239, 68, 68, 0.06)",
+                }}
+              >
+                {commitResult.error || "Save failed."}
               </div>
             )}
           </div>
