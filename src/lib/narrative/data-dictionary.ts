@@ -50,6 +50,11 @@ The four most important statistical categories for predicting wins. Each has an 
 - **Coach Tournament Record**: Wins/Games in the NCAA tournament. Indicates experience with tournament-specific pressure, adjustments, and short-preparation matchups.
 - **Final Fours / Championships**: Elite postseason pedigree. Coaches with F4 experience have demonstrated the ability to prepare teams for neutral-site, one-and-done pressure.
 
+### Evan Miya Metrics
+- **Opponent Adjustment**: Measures how a team's performance scales relative to competition level. Positive = team "plays up" against strong opponents (overperforms vs. quality). Negative = team "plays down" (underperforms vs. weaker opponents). A high seed with strong opponent adjust is less upset-prone in early rounds. A high seed with negative opponent adjust is more vulnerable to upsets than ratings suggest.
+- **Pace Adjustment**: How a team performs in faster vs. slower games relative to their typical pace. Positive = better in faster games. Key interaction: when two teams with a tempo mismatch meet, the team with pace adjustment aligned to the expected game pace has an edge.
+- **Kill Shots (10-0 Runs)**: Number of 10-0 scoring runs a team produces (and allows) per game. Teams with high kill shots per game are "closers" — they can manufacture decisive momentum swings. High kill shots allowed indicates vulnerability to opponent runs. Kill shots margin (made minus allowed) is a proxy for composure and ability to control game flow. Key interaction: high kill shot margin in a close game makes a team more dangerous as they can flip momentum when it matters.
+
 ### Matchup Context
 - **Win Probability**: Output of the composite model after all lever adjustments. Range: 0-1.
 - **Point Spread**: Estimated margin of victory derived from the adjusted rating differential. Negative = Team A favored.
@@ -68,4 +73,6 @@ The four most important statistical categories for predicting wins. Each has an 
 4. **Rebounding dominance + poor shooting**: A team that shoots poorly but dominates the offensive glass gets more second chances, partially compensating for shooting woes.
 5. **Coach tournament pedigree + short prep**: Coaches with extensive tournament experience may have edges in the 1-2 day preparation windows between tournament games.
 6. **FT rate mismatch + aggressive play**: When one team gets to the line frequently against a defense that fouls a lot, free throws become a significant scoring channel.
+7. **Opponent adjust + seed mismatch**: A high seed with negative opponent adjustment is more vulnerable to upsets than raw ratings suggest — they may not elevate their play against a motivated underdog.
+8. **Kill shots + close game projection**: When the model projects a close game (spread < 5), teams with high kill shot margins have a meaningful edge — they can manufacture the decisive run that flips the outcome.
 `;

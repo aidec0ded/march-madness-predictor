@@ -148,6 +148,14 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
               updateLevers({ coachExperienceWeight })
             }
           />
+          <LeverSlider
+            label="Opponent Adjustment"
+            description="Weight for Evan Miya's opponent adjustment metric. Measures how well teams play up/down to competition level. Particularly relevant for high seeds in early rounds."
+            value={globalLevers.opponentAdjustWeight}
+            onChange={(opponentAdjustWeight) =>
+              updateLevers({ opponentAdjustWeight })
+            }
+          />
         </Section>
 
         {/* Variance — default collapsed */}

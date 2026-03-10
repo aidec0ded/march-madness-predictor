@@ -197,6 +197,73 @@ export function MatchupOverridePanel({
         />
       </OverrideSection>
 
+      {/* Bench Depth — lever weight override (default 0 globally) */}
+      <OverrideSection
+        title="Bench Depth"
+        description="Activate to factor in bench depth advantage. Deeper benches handle foul trouble and second-half fatigue. Useful when a key player is in foul trouble."
+      >
+        <Slider
+          label="Bench Depth Weight"
+          min={0}
+          max={2}
+          step={0.1}
+          value={overrides?.leverOverrides?.benchDepthWeight ?? 0}
+          onChange={(v) =>
+            updateOverride({
+              leverOverrides: {
+                ...overrides?.leverOverrides,
+                benchDepthWeight: v,
+              },
+            })
+          }
+        />
+      </OverrideSection>
+
+      {/* Pace Adjustment — lever weight override (default 0 globally) */}
+      <OverrideSection
+        title="Pace Adjustment"
+        description="Activate to factor in how each team adapts to pace mismatches. Based on Evan Miya's pace adjustment metric."
+      >
+        <Slider
+          label="Pace Adjust Weight"
+          min={0}
+          max={2}
+          step={0.1}
+          value={overrides?.leverOverrides?.paceAdjustWeight ?? 0}
+          onChange={(v) =>
+            updateOverride({
+              leverOverrides: {
+                ...overrides?.leverOverrides,
+                paceAdjustWeight: v,
+              },
+            })
+          }
+        />
+      </OverrideSection>
+
+      {/* 2-Foul Participation — manual entry, narrative context only */}
+      <OverrideSection
+        title="2-Foul Participation"
+        description="Rate at which coach keeps players with 2 fouls in the game (0-1). Narrative context only — does not affect probability. Find on kenpom.com under team page."
+      >
+        <Slider
+          label={`${teamA.team.shortName} 2FP`}
+          min={0}
+          max={1}
+          step={0.01}
+          value={overrides?.twoFoulParticipationA ?? 0}
+          onChange={(v) => updateOverride({ twoFoulParticipationA: v })}
+        />
+        <Slider
+          label={`${teamB.team.shortName} 2FP`}
+          min={0}
+          max={1}
+          step={0.01}
+          value={overrides?.twoFoulParticipationB ?? 0}
+          onChange={(v) => updateOverride({ twoFoulParticipationB: v })}
+        />
+      </OverrideSection>
+
       <style jsx>{`
         .override-panel {
           display: flex;

@@ -80,6 +80,30 @@ export interface GlobalLevers {
    */
   coachExperienceWeight: number;
 
+  /**
+   * Evan Miya Opponent Adjustment weight.
+   * Measures how well a team plays up/down to competition level.
+   * Particularly relevant for high seeds in early rounds.
+   * 0 = ignore, 1 = default.
+   */
+  opponentAdjustWeight: number;
+
+  /**
+   * Bench depth weight.
+   * Deeper benches handle foul trouble and fatigue better.
+   * Default 0 (off globally, activate per-matchup for injury/foul scenarios).
+   * 0 = ignore, 1 = default.
+   */
+  benchDepthWeight: number;
+
+  /**
+   * Evan Miya Pace Adjustment weight.
+   * How well a team adapts to pace mismatches.
+   * Default 0 (off globally, activate per-matchup).
+   * 0 = ignore, 1 = default.
+   */
+  paceAdjustWeight: number;
+
   // --- Variance-adjusting levers ---
 
   /**
@@ -161,6 +185,18 @@ export interface MatchupOverrides {
   restAdjustmentB?: number;
 
   /**
+   * 2-Foul Participation for team A (manual entry, 0-1).
+   * Rate at which coach keeps players with 2 fouls in the game.
+   * Used for narrative context only, not probability calculation.
+   */
+  twoFoulParticipationA?: number;
+
+  /**
+   * 2-Foul Participation for team B (manual entry, 0-1).
+   */
+  twoFoulParticipationB?: number;
+
+  /**
    * Override any global lever for this specific matchup.
    * Only the fields that differ from global are specified.
    */
@@ -225,6 +261,15 @@ export interface ProbabilityBreakdown {
 
   /** Mean adjustment from coach experience comparison */
   coachAdjustment: number;
+
+  /** Mean adjustment from Evan Miya opponent adjustment comparison */
+  opponentAdjustAdjustment: number;
+
+  /** Mean adjustment from bench depth comparison */
+  benchDepthAdjustment: number;
+
+  /** Mean adjustment from Evan Miya pace adjustment comparison */
+  paceAdjustAdjustment: number;
 
   /** Total mean adjustment from all levers */
   totalMeanAdjustment: number;
@@ -318,6 +363,9 @@ export const DEFAULT_GLOBAL_LEVERS: GlobalLevers = {
   experienceWeight: 1.0,
   continuityWeight: 1.0,
   coachExperienceWeight: 1.0,
+  opponentAdjustWeight: 1.0, // Active globally (high seeds playing down)
+  benchDepthWeight: 0, // Matchup-level only
+  paceAdjustWeight: 0, // Matchup-level only
   tempoVarianceWeight: 1.0,
   threePtVarianceWeight: 1.0,
 };

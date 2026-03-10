@@ -8,6 +8,9 @@ import {
   calculateExperienceAdjustment,
   calculateContinuityAdjustment,
   calculateCoachAdjustment,
+  calculateOpponentAdjustment,
+  calculateBenchDepthAdjustment,
+  calculatePaceAdjustAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -313,6 +316,114 @@ describe("calculateCoachAdjustment", () => {
     // Difference should be capped at 1.0 (15*0.1=1.5 capped to 1.0, minus 0)
     const result = calculateCoachAdjustment(teamA, teamB, 1.0);
     expect(result).toBeCloseTo(1.0, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Opponent Adjustment
+// ---------------------------------------------------------------------------
+
+describe("calculateOpponentAdjustment", () => {
+  it("returns 0 for equal opponent adjust values", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaOpponentAdjust: 10 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaOpponentAdjust: 10 });
+    const result = calculateOpponentAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("returns positive when team A plays up better", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaOpponentAdjust: 30 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaOpponentAdjust: -10 });
+    const result = calculateOpponentAdjustment(teamA, teamB, 1.0);
+    // (30 - (-10)) * 0.02 * 1.0 = 40 * 0.02 = 0.8
+    expect(result).toBeCloseTo(0.8, 5);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaOpponentAdjust: 50 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaOpponentAdjust: -20 });
+    const result = calculateOpponentAdjustment(teamA, teamB, 0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("scales correctly: 60-point diff → 1.2 eff pts at default weight", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaOpponentAdjust: 30 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaOpponentAdjust: -30 });
+    const result = calculateOpponentAdjustment(teamA, teamB, 1.0);
+    // 60 * 0.02 * 1.0 = 1.2
+    expect(result).toBeCloseTo(1.2, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bench Depth
+// ---------------------------------------------------------------------------
+
+describe("calculateBenchDepthAdjustment", () => {
+  it("returns 0 for equal bench minutes", () => {
+    const teamA = createMockTeamSeason({ id: "a", benchMinutesPct: 30 });
+    const teamB = createMockTeamSeason({ id: "b", benchMinutesPct: 30 });
+    const result = calculateBenchDepthAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("returns positive when team A has deeper bench", () => {
+    const teamA = createMockTeamSeason({ id: "a", benchMinutesPct: 38 });
+    const teamB = createMockTeamSeason({ id: "b", benchMinutesPct: 25 });
+    const result = calculateBenchDepthAdjustment(teamA, teamB, 1.0);
+    // (38 - 25) * 0.08 * 1.0 = 13 * 0.08 = 1.04
+    expect(result).toBeCloseTo(1.04, 5);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createMockTeamSeason({ id: "a", benchMinutesPct: 40 });
+    const teamB = createMockTeamSeason({ id: "b", benchMinutesPct: 20 });
+    const result = calculateBenchDepthAdjustment(teamA, teamB, 0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("scales correctly: 10pp diff → 0.8 eff pts at default weight", () => {
+    const teamA = createMockTeamSeason({ id: "a", benchMinutesPct: 35 });
+    const teamB = createMockTeamSeason({ id: "b", benchMinutesPct: 25 });
+    const result = calculateBenchDepthAdjustment(teamA, teamB, 1.0);
+    // 10 * 0.08 * 1.0 = 0.8
+    expect(result).toBeCloseTo(0.8, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pace Adjustment
+// ---------------------------------------------------------------------------
+
+describe("calculatePaceAdjustAdjustment", () => {
+  it("returns 0 for equal pace adjust values", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaPaceAdjust: 5 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaPaceAdjust: 5 });
+    const result = calculatePaceAdjustAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("returns positive when team A adapts better to pace", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaPaceAdjust: 20 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaPaceAdjust: -15 });
+    const result = calculatePaceAdjustAdjustment(teamA, teamB, 1.0);
+    // (20 - (-15)) * 0.03 * 1.0 = 35 * 0.03 = 1.05
+    expect(result).toBeCloseTo(1.05, 5);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaPaceAdjust: 30 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaPaceAdjust: -10 });
+    const result = calculatePaceAdjustAdjustment(teamA, teamB, 0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("scales correctly: 40-point diff → 1.2 eff pts at default weight", () => {
+    const teamA = createMockTeamSeason({ id: "a", evanmiyaPaceAdjust: 20 });
+    const teamB = createMockTeamSeason({ id: "b", evanmiyaPaceAdjust: -20 });
+    const result = calculatePaceAdjustAdjustment(teamA, teamB, 1.0);
+    // 40 * 0.03 * 1.0 = 1.2
+    expect(result).toBeCloseTo(1.2, 5);
   });
 });
 

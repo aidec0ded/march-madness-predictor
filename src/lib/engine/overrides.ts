@@ -138,6 +138,15 @@ export function mergeLevers(
   if (lo.coachExperienceWeight !== undefined) {
     merged.coachExperienceWeight = lo.coachExperienceWeight;
   }
+  if (lo.opponentAdjustWeight !== undefined) {
+    merged.opponentAdjustWeight = lo.opponentAdjustWeight;
+  }
+  if (lo.benchDepthWeight !== undefined) {
+    merged.benchDepthWeight = lo.benchDepthWeight;
+  }
+  if (lo.paceAdjustWeight !== undefined) {
+    merged.paceAdjustWeight = lo.paceAdjustWeight;
+  }
   if (lo.tempoVarianceWeight !== undefined) {
     merged.tempoVarianceWeight = lo.tempoVarianceWeight;
   }

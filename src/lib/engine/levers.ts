@@ -50,6 +50,18 @@ const COACH_MIN_GAMES = 5;
 /** Default coach win rate when sample size is too small */
 const COACH_DEFAULT_WIN_RATE = 0.5;
 
+/** Efficiency points per 1 unit of Miya opponent adjustment difference.
+ *  Typical range is -60 to +60, so at 0.02 scaling a 60-point diff → 1.2 eff pts. */
+const OPPONENT_ADJUST_SCALING = 0.02;
+
+/** Efficiency points per 1 percentage point of bench minutes difference.
+ *  At 0.08 scaling, a 10pp bench depth advantage → 0.8 eff pts. */
+const BENCH_SCALING = 0.08;
+
+/** Efficiency points per 1 unit of Miya pace adjustment difference.
+ *  Typical range is -40 to +40, so at 0.03 scaling a 40-point diff → 1.2 eff pts. */
+const PACE_ADJUST_SCALING = 0.03;
+
 /** Baseline D1 average tempo (possessions per 40 minutes) */
 const BASELINE_TEMPO = 68;
 
@@ -255,6 +267,80 @@ function computeCoachScore(coach: TeamSeason["coach"]): number {
   );
 
   return winRateScore + finalFourBonus;
+}
+
+/**
+ * Calculates the Evan Miya opponent adjustment efficiency point adjustment.
+ *
+ * Compares how well each team plays up/down to competition level.
+ * Positive opponent adjustment means a team "plays up" vs strong opponents
+ * and performs worse against weak ones. This is particularly relevant for
+ * high seeds who must play down in early rounds — a high seed with negative
+ * opponent adjust is more upset-prone.
+ *
+ * @param teamA - First team's season data
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default, 2 = double)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculateOpponentAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number
+): number {
+  return (
+    (teamA.evanmiyaOpponentAdjust - teamB.evanmiyaOpponentAdjust) *
+    OPPONENT_ADJUST_SCALING *
+    weight
+  );
+}
+
+/**
+ * Calculates the bench depth efficiency point adjustment.
+ *
+ * Compares bench minutes percentages between teams. Deeper benches handle
+ * foul trouble and second-half fatigue better. This lever defaults to 0
+ * globally and is intended to be activated per-matchup when injury or
+ * foul trouble context makes bench depth particularly relevant.
+ *
+ * @param teamA - First team's season data
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default, 2 = double)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculateBenchDepthAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number
+): number {
+  return (
+    (teamA.benchMinutesPct - teamB.benchMinutesPct) * BENCH_SCALING * weight
+  );
+}
+
+/**
+ * Calculates the Evan Miya pace adjustment efficiency point adjustment.
+ *
+ * Compares how well each team adapts to pace mismatches. A positive pace
+ * adjustment means the team performs better in faster games. This lever
+ * defaults to 0 globally and is activated per-matchup when a significant
+ * pace mismatch exists between the teams.
+ *
+ * @param teamA - First team's season data
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default, 2 = double)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculatePaceAdjustAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number
+): number {
+  return (
+    (teamA.evanmiyaPaceAdjust - teamB.evanmiyaPaceAdjust) *
+    PACE_ADJUST_SCALING *
+    weight
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -118,6 +118,13 @@ export interface NarrativeTeamData {
   // Style
   twoFoulParticipation: number;
 
+  // Evan Miya metrics
+  evanmiyaOpponentAdjust?: number;
+  evanmiyaPaceAdjust?: number;
+  evanmiyaKillShotsPerGame?: number;
+  evanmiyaKillShotsAllowedPerGame?: number;
+  evanmiyaKillShotsMargin?: number;
+
   // Coach
   coachName: string;
   coachTournamentWins: number;
