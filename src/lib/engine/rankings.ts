@@ -65,7 +65,7 @@ const STAT_RANK_DEFS: StatRankDef[] = [
   },
   {
     key: "eFG% (Def)",
-    extract: (t) => t.fourFactorsDefense.efgPct,
+    extract: (t) => t.fourFactorsDefense?.efgPct ?? null,
     higherIsBetter: false,
   },
   {
@@ -75,7 +75,7 @@ const STAT_RANK_DEFS: StatRankDef[] = [
   },
   {
     key: "TO% (Def)",
-    extract: (t) => t.fourFactorsDefense.toPct,
+    extract: (t) => t.fourFactorsDefense?.toPct ?? null,
     higherIsBetter: true,
   },
   {
@@ -85,7 +85,7 @@ const STAT_RANK_DEFS: StatRankDef[] = [
   },
   {
     key: "ORB% (Def)",
-    extract: (t) => t.fourFactorsDefense.orbPct,
+    extract: (t) => t.fourFactorsDefense?.orbPct ?? null,
     higherIsBetter: false,
   },
   {
@@ -95,7 +95,7 @@ const STAT_RANK_DEFS: StatRankDef[] = [
   },
   {
     key: "FT Rate (Def)",
-    extract: (t) => t.fourFactorsDefense.ftRate,
+    extract: (t) => t.fourFactorsDefense?.ftRate ?? null,
     higherIsBetter: false,
   },
   // Shooting

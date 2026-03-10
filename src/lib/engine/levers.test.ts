@@ -75,6 +75,28 @@ describe("calculateFourFactorsAdjustment", () => {
     expect(result).toBeLessThan(0);
   });
 
+  it("returns 0 when team A defensive four factors are null", () => {
+    const teamA = createMockTeamSeason({ id: "a", fourFactorsDefense: null });
+    const teamB = createWeakTeam({ id: "b" });
+    const result = calculateFourFactorsAdjustment(
+      teamA,
+      teamB,
+      DEFAULT_FOUR_FACTORS_WEIGHTS
+    );
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("returns 0 when team B defensive four factors are null", () => {
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createMockTeamSeason({ id: "b", fourFactorsDefense: null });
+    const result = calculateFourFactorsAdjustment(
+      teamA,
+      teamB,
+      DEFAULT_FOUR_FACTORS_WEIGHTS
+    );
+    expect(result).toBeCloseTo(0, 5);
+  });
+
   it("returns 0 when all weights are 0", () => {
     const teamA = createStrongTeam({ id: "a" });
     const teamB = createWeakTeam({ id: "b" });

@@ -98,6 +98,10 @@ const THREE_PT_VARIANCE_MAX = 1.5;
  * team B's defense and vice versa, then differencing. The raw advantage is
  * scaled into efficiency points using a scaling constant of 0.15.
  *
+ * If either team's defensive four factors are null (data not loaded), the
+ * adjustment is 0 — we cannot compute a meaningful comparison without both
+ * teams' offensive AND defensive data.
+ *
  * @param teamA - First team's season data
  * @param teamB - Second team's season data
  * @param weights - Per-factor lever weights (0 = ignore, 1 = default, 2 = double)
@@ -108,6 +112,11 @@ export function calculateFourFactorsAdjustment(
   teamB: TeamSeason,
   weights: FourFactorsLeverWeights
 ): number {
+  // If either team's defensive four factors are missing, skip this adjustment
+  if (!teamA.fourFactorsDefense || !teamB.fourFactorsDefense) {
+    return 0;
+  }
+
   let totalAdjustment = 0;
 
   // --- eFG% ---
@@ -122,27 +131,6 @@ export function calculateFourFactorsAdjustment(
   totalAdjustment += efgAdvA - efgAdvB;
 
   // --- Turnover % ---
-  // NOTE: Lower TO% is better for offense, higher TO% forced is better for defense.
-  // Team A's offense vs Team B's defense:
-  //   B's defensive TO% (forced) minus A's offensive TO% (committed)
-  //   Positive means B forces more turnovers than A commits -> bad for A
-  //   So we flip: A's advantage = A's low TO rate - B's forced TO rate (negative = bad)
-  //   Actually: advantage for A = (teamB.fourFactorsDefense.toPct - teamA.fourFactorsOffense.toPct)
-  //   Wait — if B forces a high TO%, that's *bad* for A. So A's matchup advantage on the
-  //   offensive end is when A has low turnovers *and* B doesn't force many.
-  //   advantage_A_off = (teamB.fourFactorsDefense.toPct - teamA.fourFactorsOffense.toPct)
-  //   This is WRONG — if B's defense forces 22% TOs and A commits 18%, then (22-18) = +4
-  //   means B is forcing 4% more than A gives up on average -> bad for A.
-  //   So A's advantage on offense = A's low TO minus B's high forced = negative of (B_def - A_off).
-  //   Simplify: A_off advantage = teamA.fourFactorsOffense.toPct subtracted from norm.
-  //   Per the spec: advantage = (teamB.def.toPct - teamA.off.toPct) * weight
-  //   This means: if B's defense doesn't force many TOs (low value) and A commits few (low value),
-  //   the difference is small. If B forces a lot (high) and A commits few (low), the value is
-  //   positive. But that's bad for A — B's defense is tough.
-  //   The spec says: "TO% advantage: (teamB.fourFactorsDefense.toPct - teamA.fourFactorsOffense.toPct) * weight"
-  //   This gives a positive value when B's defense forces more TOs than A's offense commits
-  //   on average — that should be NEGATIVE for A (bad for A's offense).
-  //   BUT then we subtract the symmetric version. Let's follow the spec literally:
   const toAdvA =
     (teamB.fourFactorsDefense.toPct - teamA.fourFactorsOffense.toPct) *
     weights.toPctOffense;

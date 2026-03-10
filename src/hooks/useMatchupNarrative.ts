@@ -62,16 +62,16 @@ function serializeTeamData(team: TeamSeason): NarrativeTeamData {
     offOrbPct: team.fourFactorsOffense.orbPct,
     offFtRate: team.fourFactorsOffense.ftRate,
 
-    defEfgPct: team.fourFactorsDefense.efgPct,
-    defToPct: team.fourFactorsDefense.toPct,
-    defOrbPct: team.fourFactorsDefense.orbPct,
-    defFtRate: team.fourFactorsDefense.ftRate,
+    defEfgPct: team.fourFactorsDefense?.efgPct ?? 0,
+    defToPct: team.fourFactorsDefense?.toPct ?? 0,
+    defOrbPct: team.fourFactorsDefense?.orbPct ?? 0,
+    defFtRate: team.fourFactorsDefense?.ftRate ?? 0,
 
     offThreePtPct: team.shootingOffense.threePtPct,
     offThreePtRate: team.shootingOffense.threePtRate,
     offFtPct: team.shootingOffense.ftPct,
-    defThreePtPct: team.shootingDefense.threePtPct,
-    defThreePtRate: team.shootingDefense.threePtRate,
+    defThreePtPct: team.shootingDefense?.threePtPct ?? 0,
+    defThreePtRate: team.shootingDefense?.threePtRate ?? 0,
 
     adjTempo: team.adjTempo,
     avgPossLengthOff: team.avgPossLengthOff,

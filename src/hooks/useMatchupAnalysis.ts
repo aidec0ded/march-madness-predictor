@@ -96,8 +96,8 @@ export function buildStatCategories(
     },
     {
       label: "eFG% (Def)",
-      valueA: teamA.fourFactorsDefense.efgPct,
-      valueB: teamB.fourFactorsDefense.efgPct,
+      valueA: teamA.fourFactorsDefense?.efgPct ?? null,
+      valueB: teamB.fourFactorsDefense?.efgPct ?? null,
       higherIsBetter: false,
       format: "pct",
       group: "four_factors",
@@ -114,8 +114,8 @@ export function buildStatCategories(
     },
     {
       label: "TO% (Def)",
-      valueA: teamA.fourFactorsDefense.toPct,
-      valueB: teamB.fourFactorsDefense.toPct,
+      valueA: teamA.fourFactorsDefense?.toPct ?? null,
+      valueB: teamB.fourFactorsDefense?.toPct ?? null,
       higherIsBetter: true,
       format: "pct",
       group: "four_factors",
@@ -132,8 +132,8 @@ export function buildStatCategories(
     },
     {
       label: "ORB% (Def)",
-      valueA: teamA.fourFactorsDefense.orbPct,
-      valueB: teamB.fourFactorsDefense.orbPct,
+      valueA: teamA.fourFactorsDefense?.orbPct ?? null,
+      valueB: teamB.fourFactorsDefense?.orbPct ?? null,
       higherIsBetter: false,
       format: "pct",
       group: "four_factors",
@@ -150,8 +150,8 @@ export function buildStatCategories(
     },
     {
       label: "FT Rate (Def)",
-      valueA: teamA.fourFactorsDefense.ftRate,
-      valueB: teamB.fourFactorsDefense.ftRate,
+      valueA: teamA.fourFactorsDefense?.ftRate ?? null,
+      valueB: teamB.fourFactorsDefense?.ftRate ?? null,
       higherIsBetter: false,
       format: "decimal",
       group: "four_factors",
