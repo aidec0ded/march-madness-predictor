@@ -216,11 +216,13 @@ export interface TeamSeason {
 
   // --- Four Factors (offensive and defensive) ---
   fourFactorsOffense: FourFactors;
-  fourFactorsDefense: FourFactors;
+  /** Null when defensive four-factors data has not been loaded. */
+  fourFactorsDefense: FourFactors | null;
 
   // --- Shooting splits (offensive and defensive) ---
   shootingOffense: ShootingSplits;
-  shootingDefense: ShootingSplits;
+  /** Null when defensive shooting data has not been loaded. */
+  shootingDefense: ShootingSplits | null;
 
   // --- Tempo & Pace ---
   /** Adjusted tempo — possessions per 40 minutes, adjusted for opponent */

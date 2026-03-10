@@ -157,8 +157,17 @@ function buildFourFactorsOffense(row: TeamSeasonRow): FourFactors {
 
 /**
  * Build defensive FourFactors from the team_season row.
+ * Returns null when all four fields are null (data not loaded).
  */
-function buildFourFactorsDefense(row: TeamSeasonRow): FourFactors {
+function buildFourFactorsDefense(row: TeamSeasonRow): FourFactors | null {
+  if (
+    row.def_efg_pct === null &&
+    row.def_to_pct === null &&
+    row.def_orb_pct === null &&
+    row.def_ft_rate === null
+  ) {
+    return null;
+  }
   return {
     efgPct: num(row.def_efg_pct),
     toPct: num(row.def_to_pct),
@@ -180,8 +189,16 @@ function buildShootingOffense(row: TeamSeasonRow): ShootingSplits {
 
 /**
  * Build defensive ShootingSplits from the team_season row.
+ * Returns null when all three fields are null (data not loaded).
  */
-function buildShootingDefense(row: TeamSeasonRow): ShootingSplits {
+function buildShootingDefense(row: TeamSeasonRow): ShootingSplits | null {
+  if (
+    row.def_three_pt_pct === null &&
+    row.def_three_pt_rate === null &&
+    row.def_ft_pct === null
+  ) {
+    return null;
+  }
   return {
     threePtPct: num(row.def_three_pt_pct),
     threePtRate: num(row.def_three_pt_rate),
