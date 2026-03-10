@@ -173,6 +173,13 @@ export interface Database {
           // Style
           two_foul_participation: number | null;
 
+          // Evan Miya-specific metrics
+          evanmiya_opponent_adjust: number | null;
+          evanmiya_pace_adjust: number | null;
+          evanmiya_kill_shots_per_game: number | null;
+          evanmiya_kill_shots_allowed_per_game: number | null;
+          evanmiya_kill_shots_margin: number | null;
+
           // Metadata
           data_sources: DbDataSource[];
           created_at: string;
@@ -225,6 +232,12 @@ export interface Database {
 
           two_foul_participation?: number | null;
 
+          evanmiya_opponent_adjust?: number | null;
+          evanmiya_pace_adjust?: number | null;
+          evanmiya_kill_shots_per_game?: number | null;
+          evanmiya_kill_shots_allowed_per_game?: number | null;
+          evanmiya_kill_shots_margin?: number | null;
+
           data_sources?: DbDataSource[];
           created_at?: string;
           updated_at?: string;
@@ -275,6 +288,12 @@ export interface Database {
           avg_height?: number | null;
 
           two_foul_participation?: number | null;
+
+          evanmiya_opponent_adjust?: number | null;
+          evanmiya_pace_adjust?: number | null;
+          evanmiya_kill_shots_per_game?: number | null;
+          evanmiya_kill_shots_allowed_per_game?: number | null;
+          evanmiya_kill_shots_margin?: number | null;
 
           data_sources?: DbDataSource[];
           created_at?: string;

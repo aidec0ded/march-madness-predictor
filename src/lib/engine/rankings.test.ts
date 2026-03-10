@@ -87,6 +87,11 @@ function makeTeam(overrides: {
     minutesContinuity: 0.55,
     avgHeight: 77.5,
     twoFoulParticipation: 0.4,
+    evanmiyaOpponentAdjust: 0,
+    evanmiyaPaceAdjust: 0,
+    evanmiyaKillShotsPerGame: 0,
+    evanmiyaKillShotsAllowedPerGame: 0,
+    evanmiyaKillShotsMargin: 0,
     coach: {
       name: "Coach",
       tournamentGames: 10,

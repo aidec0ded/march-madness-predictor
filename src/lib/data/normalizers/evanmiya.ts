@@ -1,21 +1,19 @@
 /**
  * Evan Miya data normalizer for the March Madness Bracket Predictor.
  *
- * Transforms raw Evan Miya data rows (EvanMiyaRawRow) into partial
- * TeamSeason records. Evan Miya provides only Bayesian Performance
- * Ratings (BPR):
+ * Transforms raw Evan Miya CSV rows (EvanMiyaCsvRow) into partial
+ * TeamSeason records. Evan Miya provides:
  *
  * - **BPR** = overall Bayesian Performance Rating (equivalent to AdjEM)
  * - **OBPR** = Offensive BPR (equivalent to AdjOE)
  * - **DBPR** = Defensive BPR (equivalent to AdjDE)
- *
- * Evan Miya does not provide Four Factors, shooting splits, tempo, or
- * roster metrics. Those fields are filled by KenPom and/or Torvik
- * during the merge step.
+ * - **Opponent Adjustment** — plays up/down to competition
+ * - **Pace Adjustment** — performance in fast vs slow games
+ * - **Kill Shots** — 10-0 scoring runs (per game, allowed, margin)
  */
 
 import type { TeamSeason, EfficiencyRatings } from "@/types";
-import type { EvanMiyaRawRow, ValidationError } from "@/types";
+import type { EvanMiyaCsvRow, ValidationError } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,9 +34,6 @@ export interface EvanMiyaNormalizerResult {
 /**
  * Safely parses a string value to a number. Returns null if the value
  * is empty, undefined, or not a valid number.
- *
- * @param value - The raw string value.
- * @returns The parsed number, or null if parsing fails.
  */
 function safeParseFloat(value: string | undefined): number | null {
   if (value === undefined || value === null || value.trim() === "") {
@@ -49,14 +44,7 @@ function safeParseFloat(value: string | undefined): number | null {
 }
 
 /**
- * Parses a required numeric field from an Evan Miya row. Pushes a
- * ValidationError if the value cannot be parsed.
- *
- * @param value - Raw string from the data row.
- * @param fieldName - Field name for error reporting.
- * @param rowIndex - Row index for error reporting.
- * @param errors - Accumulator for validation errors.
- * @returns The parsed number, or null on failure.
+ * Parses a required numeric field. Pushes a ValidationError if parsing fails.
  */
 function parseRequiredNumber(
   value: string | undefined,
@@ -82,23 +70,18 @@ function parseRequiredNumber(
 // ---------------------------------------------------------------------------
 
 /**
- * Normalizes an array of raw Evan Miya rows into partial TeamSeason records.
+ * Normalizes an array of Evan Miya CSV rows into partial TeamSeason records.
  *
- * Each row yields only efficiency ratings (in the `evanmiya` slot) and the
- * team name. All other TeamSeason fields remain unset and will be filled
- * by KenPom/Torvik data during merging.
+ * Each row yields efficiency ratings (in the `evanmiya` slot), the 5
+ * Miya-specific metrics, and the team name. All other TeamSeason fields
+ * remain unset and will be filled by KenPom/Torvik during merging.
  *
- * @param rows - Array of raw Evan Miya rows.
+ * @param rows - Array of parsed Evan Miya CSV rows.
  * @param season - The season year to attach to each record.
  * @returns An object containing normalized data and any validation errors.
- *
- * @example
- * ```ts
- * const { data, errors } = normalizeEvanMiya(evanMiyaRows, 2025);
- * ```
  */
 export function normalizeEvanMiya(
-  rows: EvanMiyaRawRow[],
+  rows: EvanMiyaCsvRow[],
   season: number
 ): EvanMiyaNormalizerResult {
   const data: Partial<TeamSeason>[] = [];
@@ -108,7 +91,7 @@ export function normalizeEvanMiya(
     const row = rows[i];
     const rowErrors: ValidationError[] = [];
 
-    // --- Parse BPR values ---
+    // --- Parse BPR values (required) ---
     const bpr = parseRequiredNumber(row.bpr, "bpr", i, rowErrors);
     const obpr = parseRequiredNumber(row.obpr, "obpr", i, rowErrors);
     const dbpr = parseRequiredNumber(row.dbpr, "dbpr", i, rowErrors);
@@ -124,6 +107,13 @@ export function normalizeEvanMiya(
         },
       };
     }
+
+    // --- Parse Miya-specific metrics (optional — null if missing) ---
+    const opponentAdjust = safeParseFloat(row.opponent_adjust);
+    const paceAdjust = safeParseFloat(row.pace_adjust);
+    const killShotsPerGame = safeParseFloat(row.runs_per_game);
+    const killShotsAllowedPerGame = safeParseFloat(row.runs_conceded_per_game);
+    const killShotsMargin = safeParseFloat(row.runs_margin);
 
     // --- Build partial TeamSeason ---
     const teamSeason: Partial<TeamSeason> = {
@@ -143,6 +133,13 @@ export function normalizeEvanMiya(
     }
 
     if (ratings) teamSeason.ratings = ratings;
+
+    // Attach Miya-specific metrics
+    if (opponentAdjust !== null) teamSeason.evanmiyaOpponentAdjust = opponentAdjust;
+    if (paceAdjust !== null) teamSeason.evanmiyaPaceAdjust = paceAdjust;
+    if (killShotsPerGame !== null) teamSeason.evanmiyaKillShotsPerGame = killShotsPerGame;
+    if (killShotsAllowedPerGame !== null) teamSeason.evanmiyaKillShotsAllowedPerGame = killShotsAllowedPerGame;
+    if (killShotsMargin !== null) teamSeason.evanmiyaKillShotsMargin = killShotsMargin;
 
     errors.push(...rowErrors);
     data.push(teamSeason);

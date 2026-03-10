@@ -72,6 +72,13 @@ const FIELD_RANGES: Record<string, FieldRange> = {
 
   // Coaching style
   twoFoulParticipation: { min: 0, max: 100, label: "2-Foul Participation %" },
+
+  // Evan Miya-specific metrics
+  evanmiyaOpponentAdjust: { min: -100, max: 100, label: "Opponent Adjustment" },
+  evanmiyaPaceAdjust: { min: -100, max: 100, label: "Pace Adjustment" },
+  evanmiyaKillShotsPerGame: { min: 0, max: 5, label: "Kill Shots Per Game" },
+  evanmiyaKillShotsAllowedPerGame: { min: 0, max: 5, label: "Kill Shots Allowed Per Game" },
+  evanmiyaKillShotsMargin: { min: -5, max: 5, label: "Kill Shots Margin" },
 };
 
 // ---------------------------------------------------------------------------

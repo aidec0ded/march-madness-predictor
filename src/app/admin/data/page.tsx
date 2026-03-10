@@ -1110,39 +1110,134 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
 // Evan Miya Panel
 // ---------------------------------------------------------------------------
 
+function EvanMiyaPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }) {
+  if (!teams || teams.length === 0) return null;
+
+  const preview = teams.slice(0, 5);
+
+  const getValue = (team: Record<string, unknown>, path: string): unknown => {
+    const parts = path.split(".");
+    let current: unknown = team;
+    for (const part of parts) {
+      if (current === null || current === undefined || typeof current !== "object") return undefined;
+      current = (current as Record<string, unknown>)[part];
+    }
+    return current;
+  };
+
+  const columns: { path: string; label: string; format?: "number" }[] = [
+    { path: "team.name", label: "Team" },
+    { path: "ratings.evanmiya.adjOE", label: "OBPR", format: "number" },
+    { path: "ratings.evanmiya.adjDE", label: "DBPR", format: "number" },
+    { path: "ratings.evanmiya.adjEM", label: "BPR", format: "number" },
+    { path: "evanmiyaOpponentAdjust", label: "OppAdj", format: "number" },
+    { path: "evanmiyaPaceAdjust", label: "PaceAdj", format: "number" },
+    { path: "evanmiyaKillShotsPerGame", label: "KS/G", format: "number" },
+    { path: "evanmiyaKillShotsAllowedPerGame", label: "KSA/G", format: "number" },
+    { path: "evanmiyaKillShotsMargin", label: "KS±", format: "number" },
+  ];
+
+  const visibleColumns = columns.filter((col) =>
+    preview.some((t) => {
+      const v = getValue(t, col.path);
+      return v !== undefined && v !== null && v !== "";
+    })
+  );
+
+  if (visibleColumns.length === 0) return null;
+
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <div
+        className="text-xs font-semibold uppercase tracking-wider mb-2"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Preview (first {preview.length} teams)
+      </div>
+      <table className="w-full text-xs font-mono">
+        <thead>
+          <tr>
+            {visibleColumns.map((col) => (
+              <th
+                key={col.path}
+                className="text-left px-2 py-1.5 border-b whitespace-nowrap"
+                style={{
+                  color: "var(--text-muted)",
+                  borderColor: "var(--border-subtle)",
+                }}
+              >
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {preview.map((row, i) => (
+            <tr key={i}>
+              {visibleColumns.map((col) => {
+                const val = getValue(row, col.path);
+                let display = "-";
+                if (val !== undefined && val !== null && val !== "") {
+                  if (col.format === "number" && typeof val === "number") {
+                    display = val.toFixed(1);
+                  } else {
+                    display = String(val);
+                  }
+                }
+                return (
+                  <td
+                    key={col.path}
+                    className="px-2 py-1 border-b whitespace-nowrap"
+                    style={{
+                      color: "var(--text-secondary)",
+                      borderColor: "var(--border-subtle)",
+                    }}
+                  >
+                    {display}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
   const [season, setSeason] = useState(2026);
-  const [jsonContent, setJsonContent] = useState("");
+  const [csvContent, setCsvContent] = useState("");
+  const [csvFileName, setCsvFileName] = useState("");
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [commitStatus, setCommitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
 
-  const handleSubmit = async () => {
-    setParseError(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileLoaded = csvContent.trim().length > 0;
 
-    // Try to parse JSON
-    let entries: unknown;
-    try {
-      entries = JSON.parse(jsonContent);
-    } catch {
-      setParseError(
-        'Invalid JSON. Expected an array of objects: [{ "team": "...", "bpr": "...", "obpr": "...", "dbpr": "..." }]'
-      );
-      return;
-    }
+  const readFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCsvContent((e.target?.result as string) || "");
+      setCsvFileName(file.name);
+      // Reset validation & commit state when file changes
+      setResult(null);
+      setCommitResult(null);
+      setCommitStatus("idle");
+      setStatus("idle");
+    };
+    reader.readAsText(file);
+  }, []);
 
-    if (!Array.isArray(entries)) {
-      setParseError("JSON must be an array of objects.");
-      return;
-    }
-
-    if (entries.length === 0) {
-      setParseError("Array must not be empty.");
-      return;
-    }
-
+  const handleValidate = async () => {
+    if (!fileLoaded) return;
     setStatus("loading");
     setResult(null);
+    setCommitResult(null);
+    setCommitStatus("idle");
 
     try {
       const resp = await fetch("/api/admin/import/evanmiya", {
@@ -1151,7 +1246,7 @@ function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
           "Content-Type": "application/json",
           "x-admin-key": adminKey,
         },
-        body: JSON.stringify({ season, entries }),
+        body: JSON.stringify({ season, csvContent }),
       });
 
       const data: ImportResult = await resp.json();
@@ -1166,62 +1261,167 @@ function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
     }
   };
 
+  const handleCommit = async () => {
+    if (!result?.data?.teams) return;
+    setCommitStatus("loading");
+    setCommitResult(null);
+
+    try {
+      const resp = await fetch("/api/admin/import/evanmiya/commit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({ season, teams: result.data.teams }),
+      });
+
+      const data: CommitResult = await resp.json();
+      setCommitResult(data);
+      setCommitStatus(data.success ? "success" : "error");
+    } catch (err) {
+      setCommitResult({
+        success: false,
+        error: err instanceof Error ? err.message : "Network error",
+      });
+      setCommitStatus("error");
+    }
+  };
+
+  const canCommit =
+    result?.success &&
+    result.data?.validation?.valid &&
+    commitStatus !== "success";
+
   return (
     <PanelCard title="Evan Miya Import" status={status}>
       <div className="space-y-4">
         <SeasonSelector value={season} onChange={setSeason} />
 
-        <div>
-          <label
-            className="block text-xs font-medium uppercase tracking-wider mb-1.5"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Paste JSON entries
-          </label>
-          <textarea
-            value={jsonContent}
+        {/* CSV file upload */}
+        <div
+          className="rounded-lg border p-3 cursor-pointer transition-colors"
+          style={{
+            borderColor: isDragging
+              ? "var(--accent-primary)"
+              : fileLoaded
+              ? "var(--accent-success)"
+              : "var(--border-default)",
+            backgroundColor: isDragging
+              ? "rgba(74, 144, 217, 0.06)"
+              : "var(--bg-elevated)",
+            borderStyle: fileLoaded ? "solid" : "dashed",
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files[0];
+            if (file) readFile(file);
+          }}
+          onClick={() => inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,.txt"
+            className="hidden"
             onChange={(e) => {
-              setJsonContent(e.target.value);
-              setParseError(null);
-            }}
-            rows={8}
-            placeholder={`[\n  { "team": "Connecticut", "bpr": "31.2", "obpr": "121.5", "dbpr": "90.3" },\n  { "team": "Houston", "bpr": "28.7", "obpr": "115.1", "dbpr": "86.4" }\n]`}
-            className="w-full rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1"
-            style={{
-              backgroundColor: "var(--bg-elevated)",
-              border: `1px solid ${parseError ? "var(--accent-danger)" : "var(--border-default)"}`,
-              color: "var(--text-primary)",
-              minHeight: "120px",
+              const file = e.target.files?.[0];
+              if (file) readFile(file);
+              e.target.value = "";
             }}
           />
-          {parseError && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: fileLoaded
+                    ? "var(--accent-success)"
+                    : "var(--text-muted)",
+                }}
+              />
+              <span
+                className="text-sm font-medium truncate"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Evan Miya CSV
+                <span
+                  className="ml-1 text-xs"
+                  style={{ color: "var(--accent-danger)" }}
+                >
+                  *
+                </span>
+              </span>
+            </div>
+            <span
+              className="text-xs flex-shrink-0"
+              style={{ color: fileLoaded ? "var(--accent-success)" : "var(--text-muted)" }}
+            >
+              {fileLoaded ? "Loaded" : "Not loaded"}
+            </span>
+          </div>
+          {fileLoaded && csvFileName && (
+            <div
+              className="mt-1 text-xs font-mono truncate"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {csvFileName}
+            </div>
+          )}
+          {!fileLoaded && (
             <div
               className="mt-1 text-xs"
-              style={{ color: "var(--accent-danger)" }}
+              style={{ color: "var(--text-muted)" }}
             >
-              {parseError}
+              BPR ratings, opponent/pace adjustments, kill shots
             </div>
           )}
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={status === "loading" || !jsonContent.trim()}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-          style={{
-            backgroundColor: "var(--accent-primary)",
-            color: "#fff",
-          }}
-        >
-          {status === "loading" && <Spinner />}
-          Validate & Import
-        </button>
+        {/* Actions row */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleValidate}
+            disabled={status === "loading" || !fileLoaded}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+            style={{
+              backgroundColor: "var(--accent-primary)",
+              color: "#fff",
+            }}
+          >
+            {status === "loading" && <Spinner />}
+            Validate & Preview
+          </button>
 
-        {/* Result */}
+          {canCommit && (
+            <button
+              onClick={handleCommit}
+              disabled={commitStatus === "loading"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+              style={{
+                backgroundColor: "var(--accent-success)",
+                color: "#fff",
+              }}
+            >
+              {commitStatus === "loading" && <Spinner />}
+              {commitStatus === "loading"
+                ? "Saving..."
+                : "Confirm & Save to Database"}
+            </button>
+          )}
+        </div>
+
+        {/* Validation result */}
         {result && (
           <div className="mt-2">
             {result.success && result.data ? (
-              <div>
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span style={{ color: "var(--accent-success)" }}>
                     {result.data.teamCount} teams processed
@@ -1249,7 +1449,8 @@ function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
                     </span>
                   )}
                 </div>
-                <PreviewTable teams={result.data.teams} />
+
+                <EvanMiyaPreviewTable teams={result.data.teams} />
                 <ErrorList errors={result.data.validation.errors} />
               </div>
             ) : (
@@ -1261,6 +1462,46 @@ function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
                 }}
               >
                 {result.error || "Import failed."}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Commit result */}
+        {commitResult && (
+          <div className="mt-2">
+            {commitResult.success && commitResult.data ? (
+              <div
+                className="text-sm rounded-lg px-3 py-2"
+                style={{
+                  color: "var(--accent-success)",
+                  backgroundColor: "rgba(52, 211, 153, 0.08)",
+                  border: "1px solid rgba(52, 211, 153, 0.2)",
+                }}
+              >
+                <div className="font-semibold mb-1">
+                  {commitResult.data.teamSeasonsUpserted} teams saved to database
+                </div>
+                <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  {commitResult.data.teamsUpserted} team records |{" "}
+                  {commitResult.data.teamSeasonsUpserted} season records |{" "}
+                  {commitResult.data.nameMappingsUpserted} name mappings
+                  {commitResult.data.errors.length > 0 && (
+                    <span style={{ color: "var(--accent-warning)" }}>
+                      {" "}| {commitResult.data.errors.length} warning(s)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="text-sm rounded-lg px-3 py-2"
+                style={{
+                  color: "var(--accent-danger)",
+                  backgroundColor: "rgba(239, 68, 68, 0.06)",
+                }}
+              >
+                {commitResult.error || "Save failed."}
               </div>
             )}
           </div>

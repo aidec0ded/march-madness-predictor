@@ -86,6 +86,11 @@ export function createMockTeam(options: MockTeamOptions = {}): TeamSeason {
     minutesContinuity: options.minutesContinuity ?? 55.0,
     avgHeight: 77,
     twoFoulParticipation: 35.0,
+    evanmiyaOpponentAdjust: 0,
+    evanmiyaPaceAdjust: 0,
+    evanmiyaKillShotsPerGame: 0,
+    evanmiyaKillShotsAllowedPerGame: 0,
+    evanmiyaKillShotsMargin: 0,
     coach: {
       name: options.coachName ?? "Coach Test",
       tournamentGames: options.coachTournamentGames ?? 15,

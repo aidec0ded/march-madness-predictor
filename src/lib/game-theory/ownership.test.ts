@@ -60,6 +60,11 @@ function makeTeam(overrides: {
     minutesContinuity: 0.55,
     avgHeight: 77,
     twoFoulParticipation: 0.50,
+    evanmiyaOpponentAdjust: 0,
+    evanmiyaPaceAdjust: 0,
+    evanmiyaKillShotsPerGame: 0,
+    evanmiyaKillShotsAllowedPerGame: 0,
+    evanmiyaKillShotsMargin: 0,
     coach: {
       name: "Coach Test",
       tournamentGames: 20,

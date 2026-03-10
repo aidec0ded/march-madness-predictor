@@ -261,6 +261,24 @@ export interface EvanMiyaRawRow {
   [key: string]: string;
 }
 
+/**
+ * Raw Evan Miya CSV row.
+ * Column names match the Evan Miya CSV export format.
+ * Extra columns (ranks, colors, tooltips) are ignored via the index signature.
+ */
+export interface EvanMiyaCsvRow {
+  team: string;
+  obpr: string;
+  dbpr: string;
+  bpr: string;
+  opponent_adjust: string;
+  pace_adjust: string;
+  runs_per_game: string;
+  runs_conceded_per_game: string;
+  runs_margin: string;
+  [key: string]: string;
+}
+
 // ---------------------------------------------------------------------------
 // Import pipeline types
 // ---------------------------------------------------------------------------

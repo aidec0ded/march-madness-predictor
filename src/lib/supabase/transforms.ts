@@ -274,6 +274,12 @@ export function transformTeamSeasonRows(
 
       twoFoulParticipation: num(row.two_foul_participation),
 
+      evanmiyaOpponentAdjust: num(row.evanmiya_opponent_adjust),
+      evanmiyaPaceAdjust: num(row.evanmiya_pace_adjust),
+      evanmiyaKillShotsPerGame: num(row.evanmiya_kill_shots_per_game),
+      evanmiyaKillShotsAllowedPerGame: num(row.evanmiya_kill_shots_allowed_per_game),
+      evanmiyaKillShotsMargin: num(row.evanmiya_kill_shots_margin),
+
       tournamentEntry,
 
       updatedAt: row.updated_at,

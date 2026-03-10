@@ -243,6 +243,19 @@ export interface TeamSeason {
   // --- Coaching & Style ---
   /** 2-Foul Participation — tendency to keep players in with 2 fouls */
   twoFoulParticipation: number;
+
+  // --- Evan Miya-specific metrics ---
+  /** Opponent Adjustment — how well team plays up/down to competition (positive = plays UP) */
+  evanmiyaOpponentAdjust: number;
+  /** Pace Adjustment — how well team performs in fast vs slow games (positive = better in fast games) */
+  evanmiyaPaceAdjust: number;
+  /** Kill Shots Per Game — 10-0 scoring runs made per game */
+  evanmiyaKillShotsPerGame: number;
+  /** Kill Shots Allowed Per Game — 10-0 scoring runs conceded per game */
+  evanmiyaKillShotsAllowedPerGame: number;
+  /** Kill Shots Margin — kill shots made minus allowed per game */
+  evanmiyaKillShotsMargin: number;
+
   /** Coach record */
   coach: CoachRecord;
 
