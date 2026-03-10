@@ -22,7 +22,8 @@ function makeCsvRow(overrides: Partial<TorvikCsvRow> = {}): TorvikCsvRow {
     "TOV%": "16.3",
     "TOV% D": "20.1",
     "O REB%": "31.4",
-    "OP REB%": "25.6",
+    "OP REB%": "",
+    "OP OREB%": "25.6",
     "RAW T": "68.5",
     "2P %": "52.3",
     "2P % D.": "44.1",
@@ -153,6 +154,18 @@ describe("normalizeTorvikCsv", () => {
     const row = makeCsvRow({ TEAM: "  Duke  " });
     const { data } = normalizeTorvikCsv([row], 2025);
     expect(data[0].team?.name).toBe("Duke");
+  });
+
+  it("accepts old OP REB% column name for defensive rebounding", () => {
+    // Some older CSVs use "OP REB%" instead of "OP OREB%"
+    const row = makeCsvRow();
+    delete (row as Record<string, unknown>)["OP OREB%"];
+    (row as Record<string, unknown>)["OP REB%"] = "25.6";
+
+    const { data, errors } = normalizeTorvikCsv([row], 2025);
+
+    expect(errors).toHaveLength(0);
+    expect(data[0].fourFactorsDefense?.orbPct).toBe(25.6);
   });
 
   it("skips Four Factors when any field is missing", () => {

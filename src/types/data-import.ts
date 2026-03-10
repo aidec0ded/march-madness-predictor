@@ -270,6 +270,7 @@ export interface TorvikCsvRow {
   "TOV% D": string;
   "O REB%": string;
   "OP REB%": string;
+  "OP OREB%": string;
   "RAW T": string;
   "2P %": string;
   "2P % D.": string;

@@ -340,7 +340,7 @@ export function normalizeTorvikCsv(
     // --- Four Factors (defense) ---
     const efgD = safeParseFloat(row["EFG D."]);
     const toD = safeParseFloat(row["TOV% D"]);
-    const orbD = safeParseFloat(row["OP REB%"]);
+    const orbD = safeParseFloat(row["OP OREB%"] ?? row["OP REB%"]);
     const ftrD = safeParseFloat(row["FT RATE D"]);
 
     let fourFactorsDefense: FourFactors | undefined;
