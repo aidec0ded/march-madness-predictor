@@ -37,6 +37,34 @@ export const BRACKET_SEED_MATCHUPS: [number, number][] = [
 ];
 
 /**
+ * Standard NCAA bracket positions for seeds within a region.
+ *
+ * These determine the initial R64 matchup pairings:
+ * Position 1 vs 2 (seed 1 vs 16), 3 vs 4 (seed 8 vs 9), etc.
+ *
+ * Used by the admin tournament-entries API to auto-calculate
+ * bracket_position from seed.
+ */
+export const SEED_TO_BRACKET_POSITION: Record<number, number> = {
+  1: 1,
+  16: 2,
+  8: 3,
+  9: 4,
+  5: 5,
+  12: 6,
+  4: 7,
+  13: 8,
+  6: 9,
+  11: 10,
+  3: 11,
+  14: 12,
+  7: 13,
+  10: 14,
+  2: 15,
+  15: 16,
+};
+
+/**
  * Standard Final Four pairing: East vs West, South vs Midwest.
  * Each tuple is [regionA, regionB] for the two semifinal games.
  */

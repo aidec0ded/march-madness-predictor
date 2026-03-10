@@ -8,6 +8,7 @@
 
 import type { TeamSeason, Region, Seed } from "@/types/team";
 import { createMockTeamSeason } from "@/lib/engine/test-helpers";
+import { SEED_TO_BRACKET_POSITION } from "@/lib/engine/bracket";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -42,29 +43,7 @@ const SEED_ADJEMS: Record<number, number> = {
   16: -3,
 };
 
-/**
- * Standard NCAA bracket positions for seeds within a region.
- * These determine the initial matchup pairings:
- * Position 1 vs 16, 8 vs 9, 5 vs 12, 4 vs 13, 6 vs 11, 3 vs 14, 7 vs 10, 2 vs 15
- */
-const SEED_TO_BRACKET_POSITION: Record<number, number> = {
-  1: 1,
-  16: 2,
-  8: 3,
-  9: 4,
-  5: 5,
-  12: 6,
-  4: 7,
-  13: 8,
-  6: 9,
-  11: 10,
-  3: 11,
-  14: 12,
-  7: 13,
-  10: 14,
-  2: 15,
-  15: 16,
-};
+// SEED_TO_BRACKET_POSITION is imported from bracket.ts (shared module)
 
 // ---------------------------------------------------------------------------
 // Team name generators (for readability in test output)

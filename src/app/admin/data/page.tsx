@@ -1947,6 +1947,634 @@ function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Tournament Bracket Panel
+// ---------------------------------------------------------------------------
+
+interface ParsedBracketEntry {
+  team: string;
+  seed: number;
+  region: string;
+  isPlayIn: boolean;
+}
+
+interface BracketCommitResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: {
+    season: number;
+    entriesInserted: number;
+    nameMappingsUsed: string[];
+  };
+  details?: string[];
+  unresolvedTeams?: string[];
+  missingTeamSeasons?: string[];
+}
+
+interface ExistingEntry {
+  id: string;
+  seed: number;
+  region: string;
+  teams: { name: string; short_name: string };
+}
+
+function TournamentBracketPanel({ adminKey }: { adminKey: string }) {
+  const [season, setSeason] = useState(2026);
+  const [status, setStatus] = useState<SourceStatus>("idle");
+  const [csvContent, setCsvContent] = useState("");
+  const [csvFileName, setCsvFileName] = useState("");
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Parsed entries from CSV
+  const [parsedEntries, setParsedEntries] = useState<ParsedBracketEntry[]>([]);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
+
+  // Commit state
+  const [commitStatus, setCommitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [commitResult, setCommitResult] = useState<BracketCommitResult | null>(null);
+
+  // Existing entries
+  const [existingEntries, setExistingEntries] = useState<ExistingEntry[]>([]);
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
+  const VALID_REGIONS = ["East", "West", "South", "Midwest"];
+
+  // --- CSV parsing ---
+  const parseCsv = useCallback((content: string) => {
+    const lines = content
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) {
+      setParseErrors(["CSV is empty."]);
+      setParsedEntries([]);
+      return;
+    }
+
+    // Detect header row
+    const firstLine = lines[0].toLowerCase();
+    const hasHeader =
+      firstLine.includes("team") ||
+      firstLine.includes("seed") ||
+      firstLine.includes("region");
+    const dataLines = hasHeader ? lines.slice(1) : lines;
+
+    const entries: ParsedBracketEntry[] = [];
+    const errors: string[] = [];
+    const regionSeedTracker: Record<string, number[]> = {};
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const line = dataLines[i];
+      // Handle quoted CSV values
+      const parts = line.split(",").map((p) => p.trim().replace(/^"|"$/g, ""));
+
+      if (parts.length < 3) {
+        errors.push(`Row ${i + 1}: expected 3 columns (Team, Seed, Region), found ${parts.length}.`);
+        continue;
+      }
+
+      const [team, seedStr, region] = parts;
+
+      if (!team) {
+        errors.push(`Row ${i + 1}: missing team name.`);
+        continue;
+      }
+
+      const seed = parseInt(seedStr, 10);
+      if (!Number.isInteger(seed) || seed < 1 || seed > 16) {
+        errors.push(`Row ${i + 1} ("${team}"): invalid seed "${seedStr}".`);
+        continue;
+      }
+
+      // Normalize region casing (e.g., "east" → "East")
+      const normalizedRegion =
+        VALID_REGIONS.find((r) => r.toLowerCase() === region.toLowerCase()) ?? region;
+
+      if (!VALID_REGIONS.includes(normalizedRegion)) {
+        errors.push(`Row ${i + 1} ("${team}"): invalid region "${region}".`);
+        continue;
+      }
+
+      // Track for play-in detection
+      if (!regionSeedTracker[normalizedRegion]) {
+        regionSeedTracker[normalizedRegion] = [];
+      }
+      regionSeedTracker[normalizedRegion].push(seed);
+
+      entries.push({
+        team,
+        seed,
+        region: normalizedRegion,
+        isPlayIn: false, // Will be set below
+      });
+    }
+
+    // Mark play-in entries (duplicate seed+region)
+    for (const entry of entries) {
+      const key = `${entry.region}-${entry.seed}`;
+      const count = entries.filter(
+        (e) => e.region === entry.region && e.seed === entry.seed
+      ).length;
+      if (count > 1) {
+        entry.isPlayIn = true;
+      }
+    }
+
+    // Validate total count
+    if (entries.length !== 68 && errors.length === 0) {
+      errors.push(`Expected 68 entries, found ${entries.length}.`);
+    }
+
+    setParsedEntries(entries);
+    setParseErrors(errors);
+  }, []);
+
+  const readCsvFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = (e.target?.result as string) || "";
+        setCsvContent(content);
+        setCsvFileName(file.name);
+        setCommitResult(null);
+        setCommitStatus("idle");
+        setStatus("idle");
+        parseCsv(content);
+      };
+      reader.readAsText(file);
+    },
+    [parseCsv]
+  );
+
+  // --- Fetch existing entries ---
+  const fetchExisting = useCallback(async () => {
+    if (!adminKey) return;
+    setLoadingExisting(true);
+    try {
+      const resp = await fetch(
+        `/api/admin/tournament-entries?season=${season}`,
+        {
+          headers: { "x-admin-key": adminKey },
+        }
+      );
+      const data = await resp.json();
+      if (data.success) {
+        setExistingEntries(data.data.entries ?? []);
+      }
+    } catch {
+      // Silently fail — not critical
+    } finally {
+      setLoadingExisting(false);
+    }
+  }, [adminKey, season]);
+
+  // Fetch existing entries when season changes
+  const prevSeasonRef = useRef(season);
+  if (season !== prevSeasonRef.current) {
+    prevSeasonRef.current = season;
+    fetchExisting();
+  }
+
+  // --- Commit entries ---
+  const handleCommit = async () => {
+    setCommitStatus("loading");
+    setCommitResult(null);
+
+    try {
+      const resp = await fetch("/api/admin/tournament-entries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({
+          season,
+          entries: parsedEntries.map((e) => ({
+            team: e.team,
+            seed: e.seed,
+            region: e.region,
+          })),
+        }),
+      });
+
+      const data: BracketCommitResult = await resp.json();
+
+      if (data.success) {
+        setCommitStatus("success");
+        setStatus("success");
+        fetchExisting();
+      } else {
+        setCommitStatus("error");
+        setStatus("error");
+      }
+      setCommitResult(data);
+    } catch (err) {
+      setCommitStatus("error");
+      setStatus("error");
+      setCommitResult({
+        success: false,
+        error: err instanceof Error ? err.message : "Network error",
+      });
+    }
+  };
+
+  // --- Clear entries ---
+  const handleClear = async () => {
+    try {
+      const resp = await fetch(
+        `/api/admin/tournament-entries?season=${season}`,
+        {
+          method: "DELETE",
+          headers: { "x-admin-key": adminKey },
+        }
+      );
+      const data = await resp.json();
+      if (data.success) {
+        setExistingEntries([]);
+        setStatus("idle");
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  // Group entries by region for display
+  const entriesByRegion = parsedEntries.reduce(
+    (acc, entry) => {
+      if (!acc[entry.region]) acc[entry.region] = [];
+      acc[entry.region].push(entry);
+      return acc;
+    },
+    {} as Record<string, ParsedBracketEntry[]>
+  );
+
+  const existingByRegion = existingEntries.reduce(
+    (acc, entry) => {
+      if (!acc[entry.region]) acc[entry.region] = [];
+      acc[entry.region].push(entry);
+      return acc;
+    },
+    {} as Record<string, ExistingEntry[]>
+  );
+
+  return (
+    <PanelCard title="Tournament Bracket" status={status}>
+      <div className="space-y-4">
+        {/* Season selector */}
+        <SeasonSelector value={season} onChange={(v) => { setSeason(v); }} />
+
+        {/* Existing entries indicator */}
+        {existingEntries.length > 0 && (
+          <div
+            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+            style={{
+              backgroundColor: "rgba(34, 197, 94, 0.08)",
+              border: "1px solid rgba(34, 197, 94, 0.2)",
+            }}
+          >
+            <span style={{ color: "var(--accent-success)" }}>
+              {existingEntries.length} entries loaded for {season}
+            </span>
+            <button
+              onClick={handleClear}
+              className="text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity"
+              style={{
+                color: "var(--accent-danger)",
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+              }}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {loadingExisting && (
+          <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            <Spinner /> Loading existing entries...
+          </div>
+        )}
+
+        {/* CSV Upload zone */}
+        <div
+          className={`relative rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer ${isDragging ? "border-blue-400" : ""}`}
+          style={{
+            borderColor: isDragging ? "var(--accent-primary)" : "var(--border-default)",
+            backgroundColor: isDragging ? "rgba(59, 130, 246, 0.05)" : "transparent",
+          }}
+          onClick={() => csvInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file && file.name.endsWith(".csv")) readCsvFile(file);
+          }}
+        >
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) readCsvFile(file);
+            }}
+          />
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            {csvFileName
+              ? `Loaded: ${csvFileName}`
+              : "Drop a CSV file here or click to upload"}
+          </p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            Format: Team, Seed, Region (68 rows)
+          </p>
+        </div>
+
+        {/* Parse errors */}
+        {parseErrors.length > 0 && (
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: "var(--accent-danger)",
+              backgroundColor: "rgba(239, 68, 68, 0.06)",
+            }}
+          >
+            <div
+              className="text-xs font-semibold uppercase tracking-wider mb-2"
+              style={{ color: "var(--accent-danger)" }}
+            >
+              Parse Errors ({parseErrors.length})
+            </div>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {parseErrors.map((err, i) => (
+                <p key={i} className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
+                  {err}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Preview table — grouped by region */}
+        {parsedEntries.length > 0 && parseErrors.length === 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Preview — {parsedEntries.length} teams
+                {parsedEntries.filter((e) => e.isPlayIn).length > 0 &&
+                  ` (${parsedEntries.filter((e) => e.isPlayIn).length / 2} play-in games)`}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {VALID_REGIONS.map((region) => {
+                const regionEntries = (entriesByRegion[region] ?? []).sort(
+                  (a, b) => a.seed - b.seed
+                );
+                return (
+                  <div
+                    key={region}
+                    className="rounded-lg border overflow-hidden"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--bg-elevated)",
+                    }}
+                  >
+                    <div
+                      className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider border-b"
+                      style={{
+                        color: "var(--text-secondary)",
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--bg-surface)",
+                      }}
+                    >
+                      {region} ({regionEntries.length})
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {regionEntries.map((entry, i) => (
+                            <tr
+                              key={i}
+                              className="border-b last:border-b-0"
+                              style={{ borderColor: "var(--border-subtle)" }}
+                            >
+                              <td
+                                className="px-2 py-1 font-mono text-right w-8"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {entry.seed}
+                              </td>
+                              <td
+                                className="px-2 py-1"
+                                style={{ color: "var(--text-primary)" }}
+                              >
+                                {entry.team}
+                              </td>
+                              <td className="px-2 py-1 text-right w-16">
+                                {entry.isPlayIn && (
+                                  <span
+                                    className="inline-block px-1.5 py-0.5 rounded text-xs font-medium"
+                                    style={{
+                                      backgroundColor: "rgba(251, 191, 36, 0.15)",
+                                      color: "var(--accent-warning)",
+                                    }}
+                                  >
+                                    Play-In
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Commit button */}
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={handleCommit}
+                disabled={commitStatus === "loading" || !adminKey}
+                className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--accent-primary)",
+                  color: "white",
+                }}
+              >
+                {commitStatus === "loading" ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner /> Saving...
+                  </span>
+                ) : (
+                  `Save ${parsedEntries.length} Entries to Database`
+                )}
+              </button>
+              {!adminKey && (
+                <span className="text-xs" style={{ color: "var(--accent-warning)" }}>
+                  Enter admin key above
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Commit result */}
+        {commitResult && (
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: commitResult.success
+                ? "var(--accent-success)"
+                : "var(--accent-danger)",
+              backgroundColor: commitResult.success
+                ? "rgba(34, 197, 94, 0.06)"
+                : "rgba(239, 68, 68, 0.06)",
+            }}
+          >
+            <p
+              className="text-sm font-medium"
+              style={{
+                color: commitResult.success
+                  ? "var(--accent-success)"
+                  : "var(--accent-danger)",
+              }}
+            >
+              {commitResult.success
+                ? commitResult.message
+                : commitResult.error}
+            </p>
+            {commitResult.details && commitResult.details.length > 0 && (
+              <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
+                {commitResult.details.map((d, i) => (
+                  <p
+                    key={i}
+                    className="text-xs font-mono"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {d}
+                  </p>
+                ))}
+              </div>
+            )}
+            {commitResult.unresolvedTeams && commitResult.unresolvedTeams.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold mb-1" style={{ color: "var(--accent-danger)" }}>
+                  Unresolved Teams:
+                </p>
+                <div className="max-h-32 overflow-y-auto space-y-0.5">
+                  {commitResult.unresolvedTeams.map((t, i) => (
+                    <p
+                      key={i}
+                      className="text-xs font-mono"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {t}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {commitResult.data?.nameMappingsUsed &&
+              commitResult.data.nameMappingsUsed.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-semibold mb-1" style={{ color: "var(--accent-warning)" }}>
+                    Name Mappings Used:
+                  </p>
+                  {commitResult.data.nameMappingsUsed.map((m, i) => (
+                    <p
+                      key={i}
+                      className="text-xs font-mono"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {m}
+                    </p>
+                  ))}
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* Existing entries display */}
+        {existingEntries.length > 0 && commitStatus !== "success" && (
+          <div>
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Current Entries — {existingEntries.length} teams
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              {VALID_REGIONS.map((region) => {
+                const regionEntries = (existingByRegion[region] ?? []).sort(
+                  (a, b) => a.seed - b.seed
+                );
+                return (
+                  <div
+                    key={region}
+                    className="rounded-lg border overflow-hidden"
+                    style={{
+                      borderColor: "var(--border-subtle)",
+                      backgroundColor: "var(--bg-elevated)",
+                    }}
+                  >
+                    <div
+                      className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider border-b"
+                      style={{
+                        color: "var(--text-secondary)",
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--bg-surface)",
+                      }}
+                    >
+                      {region} ({regionEntries.length})
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {regionEntries.map((entry) => (
+                            <tr
+                              key={entry.id}
+                              className="border-b last:border-b-0"
+                              style={{ borderColor: "var(--border-subtle)" }}
+                            >
+                              <td
+                                className="px-2 py-1 font-mono text-right w-8"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {entry.seed}
+                              </td>
+                              <td
+                                className="px-2 py-1"
+                                style={{ color: "var(--text-primary)" }}
+                              >
+                                {entry.teams.name}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </PanelCard>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -2029,6 +2657,11 @@ export default function AdminDataPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TorvikPanel adminKey={adminKey} />
         <EvanMiyaPanel adminKey={adminKey} />
+      </div>
+
+      {/* Tournament Bracket - full width */}
+      <div className="mt-6">
+        <TournamentBracketPanel adminKey={adminKey} />
       </div>
     </div>
   );
