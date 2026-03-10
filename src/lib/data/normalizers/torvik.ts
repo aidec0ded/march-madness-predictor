@@ -1,10 +1,16 @@
 /**
  * Torvik (barttorvik.com) data normalizer for the March Madness Bracket Predictor.
  *
- * Transforms raw Torvik API response rows (TorvikRawRow) into partial
- * TeamSeason records conforming to the unified schema. Torvik provides
- * efficiency ratings and Four Factors with a slightly different naming
- * convention and numeric (not string) field values.
+ * Two normalization paths:
+ *
+ * 1. **normalizeTorvik()** — for rows fetched from the Torvik API (TorvikRawRow).
+ *    Numeric field values, snake_case naming.
+ *
+ * 2. **normalizeTorvikCsv()** — for rows from the Teams Table CSV export
+ *    (TorvikCsvRow). String field values, space-separated column names.
+ *    Provides a richer dataset including height, experience, and talent.
+ *
+ * Both functions produce the same Partial<TeamSeason> output.
  *
  * Torvik data overlaps substantially with KenPom (Four Factors, shooting).
  * When both sources are available, the merger gives KenPom priority for
@@ -18,7 +24,7 @@ import type {
   FourFactors,
   ShootingSplits,
 } from "@/types";
-import type { TorvikRawRow, ValidationError } from "@/types";
+import type { TorvikRawRow, TorvikCsvRow, ValidationError } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -219,6 +225,199 @@ export function normalizeTorvik(
     if (shootingOffense) teamSeason.shootingOffense = shootingOffense;
     if (shootingDefense) teamSeason.shootingDefense = shootingDefense;
     if (adjTempo !== null) teamSeason.adjTempo = adjTempo;
+
+    errors.push(...rowErrors);
+    data.push(teamSeason);
+  }
+
+  return { data, errors };
+}
+
+// ---------------------------------------------------------------------------
+// CSV helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Safely parses a string value to a number. Returns null if the value
+ * is empty, undefined, or not a valid number.
+ */
+function safeParseFloat(value: string | undefined): number | null {
+  if (value === undefined || value === null || value.trim() === "") {
+    return null;
+  }
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * Parses a required numeric field from a CSV string. Pushes a
+ * ValidationError if parsing fails.
+ */
+function parseRequiredNumber(
+  value: string | undefined,
+  fieldName: string,
+  rowIndex: number,
+  errors: ValidationError[]
+): number | null {
+  const parsed = safeParseFloat(value);
+  if (parsed === null) {
+    errors.push({
+      row: rowIndex,
+      field: fieldName,
+      message: `Failed to parse "${fieldName}" as a number`,
+      value: value ?? null,
+    });
+    return null;
+  }
+  return parsed;
+}
+
+// ---------------------------------------------------------------------------
+// CSV normalizer
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalizes an array of Torvik Teams Table CSV rows into partial
+ * TeamSeason records.
+ *
+ * The Teams Table CSV provides a richer dataset than the API fetch,
+ * including height, experience, and additional shooting splits. Column
+ * names use spaces and punctuation (e.g., "ADJ OE", "EFG D.", "3P %").
+ *
+ * @param rows - Array of parsed Torvik Teams Table CSV rows.
+ * @param season - The season year to attach to each record.
+ * @returns An object containing normalized data and any validation errors.
+ *
+ * @example
+ * ```ts
+ * const parsed = parseCsv<TorvikCsvRow>(csvContent);
+ * const { data, errors } = normalizeTorvikCsv(parsed, 2025);
+ * ```
+ */
+export function normalizeTorvikCsv(
+  rows: TorvikCsvRow[],
+  season: number
+): TorvikNormalizerResult {
+  const data: Partial<TeamSeason>[] = [];
+  const errors: ValidationError[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowErrors: ValidationError[] = [];
+
+    // --- Efficiency ratings (required) ---
+    const adjOE = parseRequiredNumber(row["ADJ OE"], "ADJ OE", i, rowErrors);
+    const adjDE = parseRequiredNumber(row["ADJ DE"], "ADJ DE", i, rowErrors);
+
+    let ratings: { torvik?: EfficiencyRatings } | undefined;
+    if (adjOE !== null && adjDE !== null) {
+      ratings = {
+        torvik: {
+          source: "torvik",
+          adjOE,
+          adjDE,
+          adjEM: adjOE - adjDE,
+        },
+      };
+    }
+
+    // --- Four Factors (offense) ---
+    const efgO = safeParseFloat(row["EFG"]);
+    const toO = safeParseFloat(row["TOV%"]);
+    const orbO = safeParseFloat(row["O REB%"]);
+    const ftrO = safeParseFloat(row["FT RATE"]);
+
+    let fourFactorsOffense: FourFactors | undefined;
+    if (efgO !== null && toO !== null && orbO !== null && ftrO !== null) {
+      fourFactorsOffense = {
+        efgPct: efgO,
+        toPct: toO,
+        orbPct: orbO,
+        ftRate: ftrO,
+      };
+    }
+
+    // --- Four Factors (defense) ---
+    const efgD = safeParseFloat(row["EFG D."]);
+    const toD = safeParseFloat(row["TOV% D"]);
+    const orbD = safeParseFloat(row["OP REB%"]);
+    const ftrD = safeParseFloat(row["FT RATE D"]);
+
+    let fourFactorsDefense: FourFactors | undefined;
+    if (efgD !== null && toD !== null && orbD !== null && ftrD !== null) {
+      fourFactorsDefense = {
+        efgPct: efgD,
+        toPct: toD,
+        orbPct: orbD,
+        ftRate: ftrD,
+      };
+    }
+
+    // --- Shooting splits (offense) ---
+    const threePO = safeParseFloat(row["3P %"]);
+    const threePrO = safeParseFloat(row["3P RATE"]);
+    const ftO = safeParseFloat(row["FT%"]);
+
+    let shootingOffense: ShootingSplits | undefined;
+    if (threePO !== null && threePrO !== null && ftO !== null) {
+      shootingOffense = {
+        threePtPct: threePO,
+        threePtRate: threePrO,
+        ftPct: ftO,
+      };
+    }
+
+    // --- Shooting splits (defense) ---
+    const threePD = safeParseFloat(row["3P % D."]);
+    const threePrD = safeParseFloat(row["3P RATE D"]);
+    const ftD = safeParseFloat(row["OP.FT%"]);
+
+    let shootingDefense: ShootingSplits | undefined;
+    if (threePD !== null && threePrD !== null && ftD !== null) {
+      shootingDefense = {
+        threePtPct: threePD,
+        threePtRate: threePrD,
+        ftPct: ftD,
+      };
+    }
+
+    // --- Tempo ---
+    const rawTempo = safeParseFloat(row["ADJ. T"]);
+    const adjTempo = rawTempo !== null && rawTempo > 0 ? rawTempo : null;
+
+    // --- Height & Experience (unique to Teams Table) ---
+    const avgHeight = safeParseFloat(row["AVG HGT."]);
+    const experience = safeParseFloat(row["EXP"]);
+
+    // --- Build partial TeamSeason ---
+    const teamSeason: Partial<TeamSeason> = {
+      season,
+      dataSources: ["torvik"],
+    };
+
+    // Store team name — Teams Table CSV has TEAM as first and last column;
+    // use the first occurrence (it's always the team name, clean of emoji)
+    if (row.TEAM) {
+      const teamName = row.TEAM.trim();
+      teamSeason.team = {
+        id: "",
+        name: teamName,
+        shortName: teamName,
+        // Teams Table CSV lacks a conference column. Set empty to avoid
+        // overwriting KenPom-provided conference data during commit.
+        conference: "",
+        campus: { city: "", state: "", latitude: 0, longitude: 0 },
+      };
+    }
+
+    if (ratings) teamSeason.ratings = ratings;
+    if (fourFactorsOffense) teamSeason.fourFactorsOffense = fourFactorsOffense;
+    if (fourFactorsDefense) teamSeason.fourFactorsDefense = fourFactorsDefense;
+    if (shootingOffense) teamSeason.shootingOffense = shootingOffense;
+    if (shootingDefense) teamSeason.shootingDefense = shootingDefense;
+    if (adjTempo !== null) teamSeason.adjTempo = adjTempo;
+    if (avgHeight !== null) teamSeason.avgHeight = avgHeight;
+    if (experience !== null) teamSeason.experience = experience;
 
     errors.push(...rowErrors);
     data.push(teamSeason);

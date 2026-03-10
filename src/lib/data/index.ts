@@ -20,7 +20,7 @@ export type { KenPomNormalizerResult } from "./normalizers/kenpom";
 export { mergeKenPomCsvs } from "./normalizers/kenpom-csv-merger";
 export type { KenPomMergeResult } from "./normalizers/kenpom-csv-merger";
 
-export { normalizeTorvik } from "./normalizers/torvik";
+export { normalizeTorvik, normalizeTorvikCsv } from "./normalizers/torvik";
 export type { TorvikNormalizerResult } from "./normalizers/torvik";
 
 export { normalizeEvanMiya } from "./normalizers/evanmiya";

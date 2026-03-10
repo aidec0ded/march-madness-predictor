@@ -31,6 +31,7 @@ export type {
   KenPomMergedRow,
   KenPomCsvBundle,
   TorvikRawRow,
+  TorvikCsvRow,
   EvanMiyaRawRow,
   EvanMiyaCsvRow,
   ValidationError,

@@ -1002,6 +1002,8 @@ function TorvikPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
     { path: "fourFactorsOffense.toPct", label: "TO%", format: "number" },
     { path: "fourFactorsOffense.orbPct", label: "ORB%", format: "number" },
     { path: "shootingOffense.threePtPct", label: "3P%", format: "number" },
+    { path: "avgHeight", label: "Hgt", format: "number" },
+    { path: "experience", label: "Exp", format: "number" },
   ];
 
   const visibleColumns = columns.filter((col) =>
@@ -1078,16 +1080,42 @@ function TorvikPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
 
 function TorvikPanel({ adminKey }: { adminKey: string }) {
   const [season, setSeason] = useState(2026);
+  const [mode, setMode] = useState<"fetch" | "csv">("csv");
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [commitStatus, setCommitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
 
-  const handleFetch = async () => {
-    setStatus("loading");
+  // CSV upload state
+  const [csvContent, setCsvContent] = useState("");
+  const [csvFileName, setCsvFileName] = useState("");
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const csvLoaded = csvContent.trim().length > 0;
+
+  const readCsvFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCsvContent((e.target?.result as string) || "");
+      setCsvFileName(file.name);
+      setResult(null);
+      setCommitResult(null);
+      setCommitStatus("idle");
+      setStatus("idle");
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const resetState = () => {
     setResult(null);
     setCommitResult(null);
     setCommitStatus("idle");
+    setStatus("idle");
+  };
+
+  const handleFetch = async () => {
+    setStatus("loading");
+    resetState();
 
     try {
       const resp = await fetch("/api/admin/import/torvik", {
@@ -1097,6 +1125,35 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
           "x-admin-key": adminKey,
         },
         body: JSON.stringify({ season }),
+      });
+
+      const data: ImportResult = await resp.json();
+      setResult(data);
+      setStatus(data.success ? "success" : "error");
+    } catch (err) {
+      setResult({
+        success: false,
+        error: err instanceof Error ? err.message : "Network error",
+      });
+      setStatus("error");
+    }
+  };
+
+  const handleCsvValidate = async () => {
+    if (!csvLoaded) return;
+    setStatus("loading");
+    setResult(null);
+    setCommitResult(null);
+    setCommitStatus("idle");
+
+    try {
+      const resp = await fetch("/api/admin/import/torvik/csv", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({ season, csvContent }),
       });
 
       const data: ImportResult = await resp.json();
@@ -1148,42 +1205,188 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
       <div className="space-y-4">
         <SeasonSelector value={season} onChange={setSeason} />
 
+        {/* Mode tabs */}
         <div
-          className="rounded-lg px-3 py-2 text-xs"
-          style={{
-            backgroundColor: "rgba(245, 158, 11, 0.06)",
-            border: "1px solid rgba(245, 158, 11, 0.15)",
-            color: "var(--accent-warning)",
-          }}
+          className="flex rounded-lg overflow-hidden border"
+          style={{ borderColor: "var(--border-default)" }}
         >
-          Note: Torvik has a 10-second crawl delay. The fetch may take a moment.
-          Older seasons (pre-2022) may return incomplete data due to Torvik&apos;s
-          anti-scraping protections.
+          {(["csv", "fetch"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                setMode(m);
+                resetState();
+              }}
+              className="flex-1 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+              style={{
+                backgroundColor:
+                  mode === m
+                    ? "var(--accent-primary)"
+                    : "var(--bg-elevated)",
+                color: mode === m ? "#fff" : "var(--text-muted)",
+              }}
+            >
+              {m === "csv" ? "CSV Upload (Teams Table)" : "Auto-Fetch (T-Rank)"}
+            </button>
+          ))}
         </div>
 
-        <button
-          onClick={handleFetch}
-          disabled={status === "loading"}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-          style={{
-            backgroundColor: "var(--accent-primary)",
-            color: "#fff",
-          }}
-        >
-          {status === "loading" && <Spinner />}
-          {status === "loading"
-            ? "Fetching from Torvik..."
-            : "Fetch from Torvik"}
-        </button>
+        {/* CSV upload mode */}
+        {mode === "csv" && (
+          <>
+            <div
+              className="rounded-lg px-3 py-2 text-xs"
+              style={{
+                backgroundColor: "rgba(74, 144, 217, 0.06)",
+                border: "1px solid rgba(74, 144, 217, 0.15)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Download the Teams Table CSV from{" "}
+              <span style={{ color: "var(--accent-primary)" }}>
+                barttorvik.com/team-tables_each.php
+              </span>{" "}
+              and upload it here. Provides richer data including height, experience, and more columns
+              than auto-fetch.
+            </div>
 
-        {/* Result */}
+            {/* File drop zone */}
+            <div
+              className="rounded-lg border p-3 cursor-pointer transition-colors"
+              style={{
+                borderColor: isDragging
+                  ? "var(--accent-primary)"
+                  : csvLoaded
+                  ? "var(--accent-success)"
+                  : "var(--border-default)",
+                backgroundColor: isDragging
+                  ? "rgba(74, 144, 217, 0.06)"
+                  : "var(--bg-elevated)",
+                borderStyle: csvLoaded ? "solid" : "dashed",
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files[0];
+                if (file) readCsvFile(file);
+              }}
+              onClick={() => csvInputRef.current?.click()}
+            >
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) readCsvFile(file);
+                  e.target.value = "";
+                }}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                    style={{
+                      backgroundColor: csvLoaded
+                        ? "var(--accent-success)"
+                        : "var(--text-muted)",
+                    }}
+                  />
+                  <span
+                    className="text-sm font-medium truncate"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    Torvik Teams Table CSV
+                    <span
+                      className="ml-1 text-xs"
+                      style={{ color: "var(--accent-danger)" }}
+                    >
+                      *
+                    </span>
+                  </span>
+                </div>
+                {csvLoaded ? (
+                  <span
+                    className="text-xs truncate max-w-[200px]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {csvFileName}
+                  </span>
+                ) : (
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Drop CSV or click to browse
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleCsvValidate}
+              disabled={!csvLoaded || status === "loading"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+              style={{
+                backgroundColor: "var(--accent-primary)",
+                color: "#fff",
+              }}
+            >
+              {status === "loading" && <Spinner />}
+              {status === "loading"
+                ? "Validating..."
+                : "Validate & Preview"}
+            </button>
+          </>
+        )}
+
+        {/* Auto-fetch mode */}
+        {mode === "fetch" && (
+          <>
+            <div
+              className="rounded-lg px-3 py-2 text-xs"
+              style={{
+                backgroundColor: "rgba(245, 158, 11, 0.06)",
+                border: "1px solid rgba(245, 158, 11, 0.15)",
+                color: "var(--accent-warning)",
+              }}
+            >
+              Auto-fetches T-Rank data from barttorvik.com. Has a 10-second crawl delay.
+              Older seasons (pre-2022) may return incomplete data due to
+              anti-scraping protections. For those, use CSV Upload instead.
+            </div>
+
+            <button
+              onClick={handleFetch}
+              disabled={status === "loading"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+              style={{
+                backgroundColor: "var(--accent-primary)",
+                color: "#fff",
+              }}
+            >
+              {status === "loading" && <Spinner />}
+              {status === "loading"
+                ? "Fetching from Torvik..."
+                : "Fetch from Torvik"}
+            </button>
+          </>
+        )}
+
+        {/* Result (shared between both modes) */}
         {result && (
           <div className="mt-2">
             {result.success && result.data ? (
               <div>
                 <div className="flex items-center gap-2 text-sm">
                   <span style={{ color: "var(--accent-success)" }}>
-                    {result.data.teamCount} teams fetched
+                    {result.data.teamCount} teams {mode === "csv" ? "parsed" : "fetched"}
                   </span>
                   {result.data.validation.valid ? (
                     <span
@@ -1233,7 +1436,7 @@ function TorvikPanel({ adminKey }: { adminKey: string }) {
                   backgroundColor: "rgba(239, 68, 68, 0.06)",
                 }}
               >
-                {result.error || "Fetch failed."}
+                {result.error || "Import failed."}
               </div>
             )}
           </div>

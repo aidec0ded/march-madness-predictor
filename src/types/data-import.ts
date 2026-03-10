@@ -250,6 +250,54 @@ export interface TorvikRawRow {
 }
 
 /**
+ * Row from the Torvik Teams Table CSV export.
+ * Column names match the exact headers from barttorvik.com/team-tables_each.php.
+ * All values are strings (CSV parser returns strings).
+ */
+export interface TorvikCsvRow {
+  TEAM: string;
+  "ADJ OE": string;
+  "ADJ DE": string;
+  BARTHAG: string;
+  RECORD: string;
+  WINS: string;
+  GAMES: string;
+  EFG: string;
+  "EFG D.": string;
+  "FT RATE": string;
+  "FT RATE D": string;
+  "TOV%": string;
+  "TOV% D": string;
+  "O REB%": string;
+  "OP REB%": string;
+  "RAW T": string;
+  "2P %": string;
+  "2P % D.": string;
+  "3P %": string;
+  "3P % D.": string;
+  "BLK%": string;
+  "BLKED %": string;
+  "AST %": string;
+  "OP AST %": string;
+  "3P RATE": string;
+  "3P RATE D": string;
+  "ADJ. T": string;
+  "AVG HGT.": string;
+  "EFF HGT.": string;
+  EXP: string;
+  YEAR: string;
+  PAKE: string;
+  PASE: string;
+  TALENT: string;
+  "FT%": string;
+  "OP.FT%": string;
+  "PPP OFF.": string;
+  "PPP DEF.": string;
+  "ELITE SOS": string;
+  [key: string]: string; // Allow extra columns
+}
+
+/**
  * Raw Evan Miya data row.
  * Field names match expected manual entry or paste format.
  */

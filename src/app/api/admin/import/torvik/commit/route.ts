@@ -210,7 +210,7 @@ export async function POST(request: Request) {
           return null;
         }
 
-        // Destructure Torvik-specific fields from normalized data
+        // Destructure Torvik fields from normalized data
         const {
           ratings,
           fourFactorsOffense,
@@ -218,6 +218,8 @@ export async function POST(request: Request) {
           shootingOffense,
           shootingDefense,
           adjTempo,
+          avgHeight,
+          experience,
         } = t as {
           ratings?: {
             torvik?: { adjOE: number; adjDE: number; adjEM: number };
@@ -245,13 +247,16 @@ export async function POST(request: Request) {
             ftPct: number;
           };
           adjTempo?: number;
+          avgHeight?: number;
+          experience?: number;
         };
 
         // Merge data_sources: existing + "torvik" (deduplicated)
         const existing = existingSourcesMap.get(teamId) || [];
         const mergedSources = Array.from(new Set([...existing, "torvik"]));
 
-        return {
+        // Build the base record with core Torvik columns
+        const record: { team_id: string; season: number; [key: string]: unknown } = {
           team_id: teamId,
           season: seasonNum,
           // Torvik efficiency ratings
@@ -281,6 +286,16 @@ export async function POST(request: Request) {
           // Merge data_sources
           data_sources: mergedSources,
         };
+
+        // Height & experience — only present from Teams Table CSV upload.
+        // Include only when available so the API-fetch path doesn't null
+        // out KenPom-provided values for these shared columns.
+        const heightVal = nanToNull(avgHeight);
+        if (heightVal !== null) record.avg_height = heightVal;
+        const expVal = nanToNull(experience);
+        if (expVal !== null) record.experience = expVal;
+
+        return record;
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
 
