@@ -19,9 +19,10 @@
  *   - Optionally seeds coaches into Supabase for a given season
  *
  * Usage:
- *   npx tsx scripts/seed-coaches.ts                    # Generate JSON only
- *   npx tsx scripts/seed-coaches.ts --seed --season 2026  # Seed to Supabase
+ *   npx tsx scripts/seed-coaches.ts                              # Generate JSON only
+ *   npx tsx scripts/seed-coaches.ts --seed --season 2026         # Seed single season
  *   npx tsx scripts/seed-coaches.ts --seed --season 2026 --dry-run  # Preview
+ *   npx tsx scripts/seed-coaches.ts --seed --all-seasons         # Seed all seasons (2002-2026)
  *
  * @module
  */
@@ -614,6 +615,7 @@ async function main() {
   const args = process.argv.slice(2);
   const doSeed = args.includes("--seed");
   const dryRun = args.includes("--dry-run");
+  const allSeasons = args.includes("--all-seasons");
   const seasonArg = args.find((a, i) => args[i - 1] === "--season");
   const season = seasonArg ? parseInt(seasonArg) : 2026;
   const minSeasonArg = args.find((a, i) => args[i - 1] === "--min-season");
@@ -658,8 +660,20 @@ async function main() {
 
   // Optionally seed to Supabase
   if (doSeed) {
-    console.log(`\nSeeding to Supabase for season ${season}${dryRun ? " (DRY RUN)" : ""}...`);
-    await seedToSupabase(snapshots, season, dryRun);
+    if (allSeasons) {
+      // Seed all seasons that have snapshots and team_seasons in the DB
+      const uniqueSeasons = [...new Set(snapshots.map((s) => s.season))].sort();
+      console.log(`\nSeeding coaches for ALL ${uniqueSeasons.length} seasons${dryRun ? " (DRY RUN)" : ""}...`);
+      for (const s of uniqueSeasons) {
+        console.log(`\n${"=".repeat(40)}`);
+        console.log(`  Season ${s}`);
+        console.log("=".repeat(40));
+        await seedToSupabase(snapshots, s, dryRun);
+      }
+    } else {
+      console.log(`\nSeeding to Supabase for season ${season}${dryRun ? " (DRY RUN)" : ""}...`);
+      await seedToSupabase(snapshots, season, dryRun);
+    }
   }
 }
 
