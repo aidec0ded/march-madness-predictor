@@ -2575,6 +2575,732 @@ function TournamentBracketPanel({ adminKey }: { adminKey: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Tournament Sites Panel — CSV upload for venue locations
+// ---------------------------------------------------------------------------
+
+type TournamentRoundLabel = "R64" | "R32" | "S16" | "E8" | "F4" | "NCG";
+
+interface ParsedSite {
+  name: string;
+  city: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+  rounds: TournamentRoundLabel[];
+  regions: string[];
+}
+
+interface ExistingSite {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+  rounds: string[];
+  regions: string[] | null;
+  season: number;
+}
+
+const SITE_ROUND_MAP: Record<string, TournamentRoundLabel> = {
+  First_Four: "R64",
+  First: "R64",
+  Second: "R32",
+  Sweet_Sixteen: "S16",
+  Elite_Eight: "E8",
+  Final_Four: "F4",
+  National_Championship: "NCG",
+};
+
+const SITE_CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  "Dayton, Ohio": { lat: 39.7589, lng: -84.1916 },
+  "Buffalo, New York": { lat: 42.8864, lng: -78.8784 },
+  "Greenville, South Carolina": { lat: 34.8526, lng: -82.394 },
+  "Oklahoma City, Oklahoma": { lat: 35.4676, lng: -97.5164 },
+  "Portland, Oregon": { lat: 45.5152, lng: -122.6784 },
+  "Tampa, Florida": { lat: 27.9506, lng: -82.4572 },
+  "Philadelphia, Pennsylvania": { lat: 39.9526, lng: -75.1652 },
+  "San Diego, California": { lat: 32.7157, lng: -117.1611 },
+  "St. Louis, Missouri": { lat: 38.627, lng: -90.1994 },
+  "Houston, Texas": { lat: 29.7604, lng: -95.3698 },
+  "Chicago, Illinois": { lat: 41.8781, lng: -87.6298 },
+  "Washington, District of Columbia": { lat: 38.9072, lng: -77.0369 },
+  "San Jose, California": { lat: 37.3382, lng: -121.8863 },
+  "Indianapolis, Indiana": { lat: 39.7684, lng: -86.1581 },
+};
+
+function TournamentSitesPanel({ adminKey }: { adminKey: string }) {
+  const [season, setSeason] = useState(2026);
+  const [status, setStatus] = useState<SourceStatus>("idle");
+  const [csvContent, setCsvContent] = useState("");
+  const [csvFileName, setCsvFileName] = useState("");
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Parsed sites from CSV
+  const [parsedSites, setParsedSites] = useState<ParsedSite[]>([]);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
+
+  // Commit state
+  const [commitStatus, setCommitStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [commitMessage, setCommitMessage] = useState("");
+
+  // Existing sites
+  const [existingSites, setExistingSites] = useState<ExistingSite[]>([]);
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
+  // --- CSV parsing (mirrors seed script logic) ---
+  const parseCsv = useCallback((content: string) => {
+    const lines = content
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) {
+      setParseErrors(["CSV is empty."]);
+      setParsedSites([]);
+      return;
+    }
+
+    // Skip header if present
+    const firstLine = lines[0].toLowerCase();
+    const hasHeader =
+      firstLine.includes("round") || firstLine.includes("region");
+    const dataLines = hasHeader ? lines.slice(1) : lines;
+
+    const errors: string[] = [];
+    const siteMap = new Map<
+      string,
+      {
+        city: string;
+        state: string;
+        rounds: Set<TournamentRoundLabel>;
+        regions: Set<string>;
+      }
+    >();
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const parts = dataLines[i].split(",").map((s) => s.trim());
+      if (parts.length < 4) {
+        errors.push(`Row ${i + 1}: expected 4 columns (Round, Region, City, State), found ${parts.length}.`);
+        continue;
+      }
+
+      const [roundStr, regionStr, city, state] = parts;
+
+      const round = SITE_ROUND_MAP[roundStr];
+      if (!round) {
+        errors.push(`Row ${i + 1}: unknown round "${roundStr}".`);
+        continue;
+      }
+
+      const key = `${city}, ${state}`;
+      const coords = SITE_CITY_COORDS[key];
+      if (!coords) {
+        errors.push(`Row ${i + 1}: no coordinates for "${key}". Add to SITE_CITY_COORDS.`);
+        continue;
+      }
+
+      let site = siteMap.get(key);
+      if (!site) {
+        site = { city, state, rounds: new Set(), regions: new Set() };
+        siteMap.set(key, site);
+      }
+
+      site.rounds.add(round);
+      if (regionStr !== "N/A") {
+        site.regions.add(regionStr);
+      }
+    }
+
+    // Convert to ParsedSite array
+    const roundOrder: TournamentRoundLabel[] = ["R64", "R32", "S16", "E8", "F4", "NCG"];
+    const records: ParsedSite[] = [];
+
+    for (const [key, site] of siteMap) {
+      const coords = SITE_CITY_COORDS[key];
+      const rounds = [...site.rounds].sort(
+        (a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)
+      ) as TournamentRoundLabel[];
+      const regions = [...site.regions].sort();
+
+      records.push({
+        name: `${site.city} - ${rounds.join("/")}`,
+        city: site.city,
+        state: site.state,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        rounds,
+        regions,
+      });
+    }
+
+    // Sort by round order then city
+    records.sort((a, b) => {
+      const aFirst = Math.min(
+        ...a.rounds.map((r) => roundOrder.indexOf(r))
+      );
+      const bFirst = Math.min(
+        ...b.rounds.map((r) => roundOrder.indexOf(r))
+      );
+      if (aFirst !== bFirst) return aFirst - bFirst;
+      return a.city.localeCompare(b.city);
+    });
+
+    setParsedSites(records);
+    setParseErrors(errors);
+  }, []);
+
+  const readCsvFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = (e.target?.result as string) || "";
+        setCsvContent(content);
+        setCsvFileName(file.name);
+        setCommitMessage("");
+        setCommitStatus("idle");
+        setStatus("idle");
+        parseCsv(content);
+      };
+      reader.readAsText(file);
+    },
+    [parseCsv]
+  );
+
+  // --- Fetch existing sites ---
+  const fetchExisting = useCallback(async () => {
+    if (!adminKey) return;
+    setLoadingExisting(true);
+    try {
+      const resp = await fetch(
+        `/api/admin/tournament-sites?season=${season}`,
+        { headers: { "x-admin-key": adminKey } }
+      );
+      const data = await resp.json();
+      if (data.success) {
+        setExistingSites(data.sites ?? []);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingExisting(false);
+    }
+  }, [adminKey, season]);
+
+  // Fetch existing sites when season changes
+  const prevSeasonRef = useRef(season);
+  if (season !== prevSeasonRef.current) {
+    prevSeasonRef.current = season;
+    fetchExisting();
+  }
+
+  // --- Commit sites ---
+  const handleCommit = async () => {
+    setCommitStatus("loading");
+    setCommitMessage("");
+
+    try {
+      const resp = await fetch("/api/admin/tournament-sites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({
+          season,
+          sites: parsedSites.map((s) => ({
+            name: s.name,
+            city: s.city,
+            state: s.state,
+            latitude: s.latitude,
+            longitude: s.longitude,
+            rounds: s.rounds,
+            regions: s.regions.length > 0 ? s.regions : [],
+          })),
+        }),
+      });
+
+      const data = await resp.json();
+
+      if (data.success) {
+        setCommitStatus("success");
+        setStatus("success");
+        setCommitMessage(`Saved ${data.count} tournament sites for ${season}.`);
+        fetchExisting();
+      } else {
+        setCommitStatus("error");
+        setStatus("error");
+        setCommitMessage(data.error || "Failed to save sites.");
+      }
+    } catch (err) {
+      setCommitStatus("error");
+      setStatus("error");
+      setCommitMessage(
+        err instanceof Error ? err.message : "Network error"
+      );
+    }
+  };
+
+  // --- Clear sites ---
+  const handleClear = async () => {
+    try {
+      const resp = await fetch(
+        `/api/admin/tournament-sites?season=${season}`,
+        {
+          method: "DELETE",
+          headers: { "x-admin-key": adminKey },
+        }
+      );
+      const data = await resp.json();
+      if (data.success) {
+        setExistingSites([]);
+        setStatus("idle");
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  return (
+    <PanelCard title="Tournament Sites" status={status}>
+      <div className="space-y-4">
+        {/* Season selector */}
+        <SeasonSelector
+          value={season}
+          onChange={(v) => {
+            setSeason(v);
+          }}
+        />
+
+        {/* Existing sites indicator */}
+        {existingSites.length > 0 && (
+          <div
+            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+            style={{
+              backgroundColor: "rgba(34, 197, 94, 0.08)",
+              border: "1px solid rgba(34, 197, 94, 0.2)",
+            }}
+          >
+            <span style={{ color: "var(--accent-success)" }}>
+              {existingSites.length} sites loaded for {season}
+            </span>
+            <button
+              onClick={handleClear}
+              className="text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity"
+              style={{
+                color: "var(--accent-danger)",
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+              }}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {loadingExisting && (
+          <div
+            className="flex items-center gap-2 text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <Spinner /> Loading existing sites...
+          </div>
+        )}
+
+        {/* CSV Upload zone */}
+        <div
+          className={`relative rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer ${isDragging ? "border-blue-400" : ""}`}
+          style={{
+            borderColor: isDragging
+              ? "var(--accent-primary)"
+              : "var(--border-default)",
+            backgroundColor: isDragging
+              ? "rgba(59, 130, 246, 0.05)"
+              : "transparent",
+          }}
+          onClick={() => csvInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file && file.name.endsWith(".csv")) readCsvFile(file);
+          }}
+        >
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) readCsvFile(file);
+              e.target.value = "";
+            }}
+          />
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            {csvFileName
+              ? `Loaded: ${csvFileName}`
+              : "Drop a CSV file here or click to upload"}
+          </p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            Format: Round, Region, City, State
+          </p>
+        </div>
+
+        {/* Parse errors */}
+        {parseErrors.length > 0 && (
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: "var(--accent-danger)",
+              backgroundColor: "rgba(239, 68, 68, 0.06)",
+            }}
+          >
+            <div
+              className="text-xs font-semibold uppercase tracking-wider mb-2"
+              style={{ color: "var(--accent-danger)" }}
+            >
+              Parse Errors ({parseErrors.length})
+            </div>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {parseErrors.map((err, i) => (
+                <p
+                  key={i}
+                  className="text-xs font-mono"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {err}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Preview table */}
+        {parsedSites.length > 0 && parseErrors.length === 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Preview — {parsedSites.length} unique sites
+              </span>
+            </div>
+
+            <div
+              className="rounded-lg border overflow-hidden"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--bg-elevated)",
+              }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr
+                      className="border-b"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--bg-surface)",
+                      }}
+                    >
+                      <th
+                        className="text-left px-3 py-2 font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Site
+                      </th>
+                      <th
+                        className="text-left px-3 py-2 font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Location
+                      </th>
+                      <th
+                        className="text-left px-3 py-2 font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Rounds
+                      </th>
+                      <th
+                        className="text-left px-3 py-2 font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Regions
+                      </th>
+                      <th
+                        className="text-right px-3 py-2 font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Lat/Lng
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parsedSites.map((site, i) => (
+                      <tr
+                        key={i}
+                        className="border-b last:border-b-0"
+                        style={{ borderColor: "var(--border-subtle)" }}
+                      >
+                        <td
+                          className="px-3 py-1.5 font-medium"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {site.name}
+                        </td>
+                        <td
+                          className="px-3 py-1.5"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {site.city}, {site.state}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <div className="flex flex-wrap gap-1">
+                            {site.rounds.map((r) => (
+                              <span
+                                key={r}
+                                className="inline-block px-1.5 py-0.5 rounded text-xs font-mono"
+                                style={{
+                                  backgroundColor: "rgba(74, 144, 217, 0.12)",
+                                  color: "var(--accent-primary)",
+                                }}
+                              >
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5">
+                          {site.regions.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {site.regions.map((reg) => (
+                                <span
+                                  key={reg}
+                                  className="inline-block px-1.5 py-0.5 rounded text-xs"
+                                  style={{
+                                    backgroundColor:
+                                      "rgba(251, 191, 36, 0.12)",
+                                    color: "var(--accent-warning)",
+                                  }}
+                                >
+                                  {reg}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>
+                              —
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="px-3 py-1.5 text-right font-mono whitespace-nowrap"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {site.latitude.toFixed(4)},{" "}
+                          {site.longitude.toFixed(4)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Commit button */}
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={handleCommit}
+                disabled={commitStatus === "loading" || !adminKey}
+                className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--accent-primary)",
+                  color: "white",
+                }}
+              >
+                {commitStatus === "loading" ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner /> Saving...
+                  </span>
+                ) : (
+                  `Save ${parsedSites.length} Sites to Database`
+                )}
+              </button>
+              {!adminKey && (
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--accent-warning)" }}
+                >
+                  Enter admin key above
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Commit result */}
+        {commitMessage && (
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor:
+                commitStatus === "success"
+                  ? "var(--accent-success)"
+                  : "var(--accent-danger)",
+              backgroundColor:
+                commitStatus === "success"
+                  ? "rgba(34, 197, 94, 0.06)"
+                  : "rgba(239, 68, 68, 0.06)",
+            }}
+          >
+            <p
+              className="text-sm font-medium"
+              style={{
+                color:
+                  commitStatus === "success"
+                    ? "var(--accent-success)"
+                    : "var(--accent-danger)",
+              }}
+            >
+              {commitMessage}
+            </p>
+          </div>
+        )}
+
+        {/* Existing sites display */}
+        {existingSites.length > 0 && commitStatus !== "success" && (
+          <div>
+            <span
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Current Sites — {existingSites.length} venues
+            </span>
+            <div
+              className="mt-2 rounded-lg border overflow-hidden"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--bg-elevated)",
+              }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr
+                      className="border-b"
+                      style={{
+                        borderColor: "var(--border-subtle)",
+                        backgroundColor: "var(--bg-surface)",
+                      }}
+                    >
+                      <th
+                        className="text-left px-3 py-2"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Site
+                      </th>
+                      <th
+                        className="text-left px-3 py-2"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Location
+                      </th>
+                      <th
+                        className="text-left px-3 py-2"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Rounds
+                      </th>
+                      <th
+                        className="text-left px-3 py-2"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Regions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {existingSites.map((site) => (
+                      <tr
+                        key={site.id}
+                        className="border-b last:border-b-0"
+                        style={{ borderColor: "var(--border-subtle)" }}
+                      >
+                        <td
+                          className="px-3 py-1.5 font-medium"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {site.name}
+                        </td>
+                        <td
+                          className="px-3 py-1.5"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {site.city}, {site.state}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <div className="flex flex-wrap gap-1">
+                            {site.rounds.map((r) => (
+                              <span
+                                key={r}
+                                className="inline-block px-1.5 py-0.5 rounded text-xs font-mono"
+                                style={{
+                                  backgroundColor:
+                                    "rgba(74, 144, 217, 0.12)",
+                                  color: "var(--accent-primary)",
+                                }}
+                              >
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5">
+                          {site.regions && site.regions.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {site.regions.map((reg) => (
+                                <span
+                                  key={reg}
+                                  className="inline-block px-1.5 py-0.5 rounded text-xs"
+                                  style={{
+                                    backgroundColor:
+                                      "rgba(251, 191, 36, 0.12)",
+                                    color: "var(--accent-warning)",
+                                  }}
+                                >
+                                  {reg}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>
+                              —
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </PanelCard>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -2662,6 +3388,11 @@ export default function AdminDataPage() {
       {/* Tournament Bracket - full width */}
       <div className="mt-6">
         <TournamentBracketPanel adminKey={adminKey} />
+      </div>
+
+      {/* Tournament Sites - full width */}
+      <div className="mt-6">
+        <TournamentSitesPanel adminKey={adminKey} />
       </div>
     </div>
   );
