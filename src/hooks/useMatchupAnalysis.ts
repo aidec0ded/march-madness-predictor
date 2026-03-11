@@ -264,14 +264,15 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
       levers: state.globalLevers,
     };
 
-    // Get per-matchup overrides
+    // Get per-matchup overrides and site coordinates
     const overrides = state.matchupOverrides[gameId];
+    const siteCoords = state.tournamentSiteMap?.get(gameId);
 
     // Run matchup resolver WITH overrides
-    const result = resolveMatchup(teamA, teamB, config, overrides);
+    const result = resolveMatchup(teamA, teamB, config, overrides, siteCoords);
 
     // Run matchup resolver WITHOUT overrides (baseline)
-    const baseResult = resolveMatchup(teamA, teamB, config);
+    const baseResult = resolveMatchup(teamA, teamB, config, undefined, siteCoords);
 
     // Build probability breakdown display items
     const breakdown: ProbabilityBreakdownDisplay[] = [
@@ -301,6 +302,11 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
         format: "adjustment",
       },
       {
+        label: "Site Proximity",
+        value: result.breakdown.siteProximityAdjustment,
+        format: "adjustment",
+      },
+      {
         label: "Tempo Variance",
         value: result.breakdown.tempoVarianceMultiplier,
         format: "multiplier",
@@ -317,9 +323,6 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
       const oa = result.breakdown.overrideAdjustments;
       if (oa.injury !== 0) {
         breakdown.push({ label: "Injury", value: oa.injury, format: "adjustment" });
-      }
-      if (oa.siteProximity !== 0) {
-        breakdown.push({ label: "Site Proximity", value: oa.siteProximity, format: "adjustment" });
       }
       if (oa.recentForm !== 0) {
         breakdown.push({ label: "Recent Form", value: oa.recentForm, format: "adjustment" });
@@ -360,5 +363,5 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
     };
 
     return { analysis, teamA, teamB, stats, matchup };
-  }, [gameId, state.teams, state.picks, state.globalLevers, state.matchupOverrides]);
+  }, [gameId, state.teams, state.picks, state.globalLevers, state.matchupOverrides, state.tournamentSiteMap]);
 }

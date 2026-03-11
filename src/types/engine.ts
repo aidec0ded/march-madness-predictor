@@ -104,6 +104,14 @@ export interface GlobalLevers {
    */
   paceAdjustWeight: number;
 
+  /**
+   * Site proximity weight.
+   * Controls how much campus-to-venue distance affects win probability.
+   * Auto-computed from tournament site data + team campus coordinates.
+   * 0 = ignore proximity, 1 = default.
+   */
+  siteProximityWeight: number;
+
   // --- Variance-adjusting levers ---
 
   /**
@@ -148,17 +156,6 @@ export interface MatchupOverrides {
    * Injury/Availability adjustment for team B.
    */
   injuryAdjustmentB?: number;
-
-  /**
-   * Site proximity bucket for team A.
-   * Determines home-court-style advantage based on travel distance.
-   */
-  siteProximityA?: SiteProximityBucket;
-
-  /**
-   * Site proximity bucket for team B.
-   */
-  siteProximityB?: SiteProximityBucket;
 
   /**
    * Recent form adjustment for team A.
@@ -271,13 +268,15 @@ export interface ProbabilityBreakdown {
   /** Mean adjustment from Evan Miya pace adjustment comparison */
   paceAdjustAdjustment: number;
 
+  /** Mean adjustment from site proximity (campus-to-venue distance) */
+  siteProximityAdjustment: number;
+
   /** Total mean adjustment from all levers */
   totalMeanAdjustment: number;
 
-  /** Per-matchup override adjustments (injury, site, form, rest) */
+  /** Per-matchup override adjustments (injury, form, rest) */
   overrideAdjustments: {
     injury: number;
-    siteProximity: number;
     recentForm: number;
     rest: number;
     total: number;
@@ -366,6 +365,7 @@ export const DEFAULT_GLOBAL_LEVERS: GlobalLevers = {
   opponentAdjustWeight: 1.0, // Active globally (high seeds playing down)
   benchDepthWeight: 0, // Matchup-level only
   paceAdjustWeight: 0, // Matchup-level only
+  siteProximityWeight: 1.0, // Auto-computed from tournament sites
   tempoVarianceWeight: 1.0,
   threePtVarianceWeight: 1.0,
 };
@@ -375,6 +375,21 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   logisticK: 0.0325,
   baseVariance: 11.0,
 };
+
+// ---------------------------------------------------------------------------
+// Site Coordinates (for passing venue location into matchup resolver)
+// ---------------------------------------------------------------------------
+
+/** Coordinates of a tournament game venue, used for site proximity calculations */
+export interface GameSiteCoordinates {
+  latitude: number;
+  longitude: number;
+  /** Venue display name (for UI) */
+  name?: string;
+  /** City/state (for UI) */
+  city?: string;
+  state?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Site Proximity Constants

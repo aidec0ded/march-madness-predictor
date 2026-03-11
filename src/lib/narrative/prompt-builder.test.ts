@@ -90,9 +90,9 @@ function makeBreakdown(overrides: Partial<ProbabilityBreakdown> = {}): Probabili
     benchDepthAdjustment: 0,
     paceAdjustAdjustment: 0,
     totalMeanAdjustment: 0.05,
+    siteProximityAdjustment: 0,
     overrideAdjustments: {
       injury: 0,
-      siteProximity: 0,
       recentForm: 0,
       rest: 0,
       total: 0,
@@ -280,14 +280,12 @@ describe("buildNarrativePrompt", () => {
         overrides: {
           injuryAdjustmentA: -3.0,
           recentFormB: 2.5,
-          siteProximityA: "regional_advantage",
         },
       })
     );
     expect(prompt.userMessage).toContain("PER-MATCHUP OVERRIDES:");
     expect(prompt.userMessage).toContain("Team A injury: -3.0 eff pts");
     expect(prompt.userMessage).toContain("Team B recent form: +2.5 eff pts");
-    expect(prompt.userMessage).toContain("Team A site: regional_advantage");
   });
 
   it("omits override section when no overrides", () => {
@@ -344,7 +342,6 @@ describe("hashNarrativeInput", () => {
         breakdown: makeBreakdown({
           overrideAdjustments: {
             injury: -3.0,
-            siteProximity: 0,
             recentForm: 0,
             rest: 0,
             total: -3.0,

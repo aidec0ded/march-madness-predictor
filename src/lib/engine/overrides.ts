@@ -2,16 +2,18 @@
  * Per-matchup override system for the March Madness probability engine.
  *
  * Handles matchup-specific adjustments that supplement or override global levers.
- * These include injury/availability, site proximity, recent form, and rest
- * adjustments. Also provides lever merging to combine global levers with
- * per-matchup lever overrides.
+ * These include injury/availability, recent form, and rest adjustments.
+ * Also provides lever merging to combine global levers with per-matchup
+ * lever overrides.
+ *
+ * Note: Site proximity was moved from per-matchup overrides to a global lever
+ * (see calculateSiteProximityAdjustment in levers.ts).
  *
  * All functions are pure (no side effects).
  */
 
 import type { TeamSeason } from "@/types/team";
 import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
-import { SITE_PROXIMITY_ADJUSTMENTS } from "@/types/engine";
 
 // ---------------------------------------------------------------------------
 // Override adjustment result
@@ -21,8 +23,6 @@ import { SITE_PROXIMITY_ADJUSTMENTS } from "@/types/engine";
 export interface OverrideAdjustments {
   /** Injury/availability adjustment (positive favors team A) */
   injury: number;
-  /** Site proximity adjustment (positive favors team A) */
-  siteProximity: number;
   /** Recent form adjustment (positive favors team A) */
   recentForm: number;
   /** Rest/schedule density adjustment (positive favors team A) */
@@ -39,13 +39,13 @@ export interface OverrideAdjustments {
  * Computes per-matchup override efficiency point adjustments.
  *
  * Each adjustment is expressed in efficiency points with positive values
- * favoring team A. The function computes four components:
+ * favoring team A. The function computes three components:
  *
  * - **Injury**: Team A's opponent being injured helps A; A being injured hurts A.
- * - **Site proximity**: Looks up the SITE_PROXIMITY_ADJUSTMENTS table for each team's
- *   bucket and returns the difference (A's advantage minus B's advantage).
  * - **Recent form**: Direct form adjustments (A minus B).
  * - **Rest**: Direct rest adjustments (A minus B).
+ *
+ * Note: Site proximity is now handled as a global lever (see levers.ts).
  *
  * @param overrides - Per-matchup overrides (may be undefined for no overrides)
  * @param _teamA - First team's season data (reserved for future use)
@@ -58,7 +58,7 @@ export function applyMatchupOverrides(
   _teamB: TeamSeason
 ): OverrideAdjustments {
   if (!overrides) {
-    return { injury: 0, siteProximity: 0, recentForm: 0, rest: 0, total: 0 };
+    return { injury: 0, recentForm: 0, rest: 0, total: 0 };
   }
 
   // Injury: A's injury (negative value) hurts A, B's injury (negative value) helps A
@@ -66,15 +66,6 @@ export function applyMatchupOverrides(
   // injuryAdjustmentB = -3 means B loses 3 efficiency points → net = +3 for A
   const injury =
     (overrides.injuryAdjustmentA ?? 0) - (overrides.injuryAdjustmentB ?? 0);
-
-  // Site proximity: look up each team's bucket, return A's advantage minus B's
-  const siteA = overrides.siteProximityA
-    ? SITE_PROXIMITY_ADJUSTMENTS[overrides.siteProximityA]
-    : 0;
-  const siteB = overrides.siteProximityB
-    ? SITE_PROXIMITY_ADJUSTMENTS[overrides.siteProximityB]
-    : 0;
-  const siteProximity = siteA - siteB;
 
   // Recent form
   const recentForm =
@@ -84,9 +75,9 @@ export function applyMatchupOverrides(
   const rest =
     (overrides.restAdjustmentA ?? 0) - (overrides.restAdjustmentB ?? 0);
 
-  const total = injury + siteProximity + recentForm + rest;
+  const total = injury + recentForm + rest;
 
-  return { injury, siteProximity, recentForm, rest, total };
+  return { injury, recentForm, rest, total };
 }
 
 // ---------------------------------------------------------------------------
@@ -152,6 +143,9 @@ export function mergeLevers(
   }
   if (lo.threePtVarianceWeight !== undefined) {
     merged.threePtVarianceWeight = lo.threePtVarianceWeight;
+  }
+  if (lo.siteProximityWeight !== undefined) {
+    merged.siteProximityWeight = lo.siteProximityWeight;
   }
 
   return merged;

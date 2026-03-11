@@ -11,7 +11,7 @@
 import { useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { Slider } from "@/components/ui/Slider";
-import type { TeamSeason, SiteProximityBucket } from "@/types/team";
+import type { TeamSeason } from "@/types/team";
 import type { MatchupOverrides } from "@/types/engine";
 
 // ---------------------------------------------------------------------------
@@ -36,22 +36,6 @@ interface MatchupOverridePanelProps {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const PROXIMITY_BUCKETS: { value: SiteProximityBucket; label: string }[] = [
-  { value: "true_home", label: "True Home (<50 mi)" },
-  { value: "regional_advantage", label: "Regional Adv. (50-200 mi)" },
-  { value: "neutral", label: "Neutral (200-500 mi)" },
-  { value: "moderate_travel", label: "Moderate Travel (500-1000 mi)" },
-  { value: "significant_travel", label: "Significant Travel (1000+ mi)" },
-];
-
-const PROXIMITY_INDEX: Record<SiteProximityBucket, number> = {
-  true_home: 0,
-  regional_advantage: 1,
-  neutral: 2,
-  moderate_travel: 3,
-  significant_travel: 4,
-};
 
 // ---------------------------------------------------------------------------
 // Component
@@ -87,8 +71,6 @@ export function MatchupOverridePanel({
   // Current values with defaults
   const injuryA = overrides?.injuryAdjustmentA ?? 0;
   const injuryB = overrides?.injuryAdjustmentB ?? 0;
-  const proximityA = overrides?.siteProximityA ?? "neutral";
-  const proximityB = overrides?.siteProximityB ?? "neutral";
   const formA = overrides?.recentFormA ?? 0;
   const formB = overrides?.recentFormB ?? 0;
   const restA = overrides?.restAdjustmentA ?? 0;
@@ -131,23 +113,6 @@ export function MatchupOverridePanel({
           step={0.5}
           value={injuryB}
           onChange={(v) => updateOverride({ injuryAdjustmentB: v })}
-        />
-      </OverrideSection>
-
-      {/* Site Proximity */}
-      <OverrideSection
-        title="Site Proximity"
-        description="Distance-based advantage from campus to game venue. Closer = home-court-like advantage."
-      >
-        <ProximitySelector
-          label={teamA.team.shortName}
-          value={proximityA}
-          onChange={(v) => updateOverride({ siteProximityA: v })}
-        />
-        <ProximitySelector
-          label={teamB.team.shortName}
-          value={proximityB}
-          onChange={(v) => updateOverride({ siteProximityB: v })}
         />
       </OverrideSection>
 
@@ -358,51 +323,3 @@ function OverrideSection({
   );
 }
 
-function ProximitySelector({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: SiteProximityBucket;
-  onChange: (v: SiteProximityBucket) => void;
-}) {
-  return (
-    <div className="proximity-selector">
-      <label className="proximity-selector__label">{label}</label>
-      <select
-        className="proximity-selector__select"
-        value={value}
-        onChange={(e) => onChange(e.target.value as SiteProximityBucket)}
-        style={{
-          backgroundColor: "var(--bg-elevated)",
-          color: "var(--text-primary)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "4px",
-          padding: "4px 8px",
-          fontSize: "0.75rem",
-          cursor: "pointer",
-          width: "100%",
-        }}
-      >
-        {PROXIMITY_BUCKETS.map((bucket) => (
-          <option key={bucket.value} value={bucket.value}>
-            {bucket.label}
-          </option>
-        ))}
-      </select>
-      <style jsx>{`
-        .proximity-selector {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .proximity-selector__label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-        }
-      `}</style>
-    </div>
-  );
-}

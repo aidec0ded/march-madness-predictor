@@ -171,7 +171,7 @@ function buildMatchupContext(req: NarrativeRequest): string {
 
   // Lever adjustments
   lines.push(
-    `Lever Adjustments: Four Factors ${breakdown.fourFactorsAdjustment >= 0 ? "+" : ""}${breakdown.fourFactorsAdjustment.toFixed(3)} | Experience ${breakdown.experienceAdjustment >= 0 ? "+" : ""}${breakdown.experienceAdjustment.toFixed(3)} | Continuity ${breakdown.continuityAdjustment >= 0 ? "+" : ""}${breakdown.continuityAdjustment.toFixed(3)} | Coach ${breakdown.coachAdjustment >= 0 ? "+" : ""}${breakdown.coachAdjustment.toFixed(3)} | Opp Adj ${breakdown.opponentAdjustAdjustment >= 0 ? "+" : ""}${breakdown.opponentAdjustAdjustment.toFixed(3)} | Bench Depth ${breakdown.benchDepthAdjustment >= 0 ? "+" : ""}${breakdown.benchDepthAdjustment.toFixed(3)} | Pace Adj ${breakdown.paceAdjustAdjustment >= 0 ? "+" : ""}${breakdown.paceAdjustAdjustment.toFixed(3)}`
+    `Lever Adjustments: Four Factors ${breakdown.fourFactorsAdjustment >= 0 ? "+" : ""}${breakdown.fourFactorsAdjustment.toFixed(3)} | Experience ${breakdown.experienceAdjustment >= 0 ? "+" : ""}${breakdown.experienceAdjustment.toFixed(3)} | Continuity ${breakdown.continuityAdjustment >= 0 ? "+" : ""}${breakdown.continuityAdjustment.toFixed(3)} | Coach ${breakdown.coachAdjustment >= 0 ? "+" : ""}${breakdown.coachAdjustment.toFixed(3)} | Opp Adj ${breakdown.opponentAdjustAdjustment >= 0 ? "+" : ""}${breakdown.opponentAdjustAdjustment.toFixed(3)} | Bench Depth ${breakdown.benchDepthAdjustment >= 0 ? "+" : ""}${breakdown.benchDepthAdjustment.toFixed(3)} | Pace Adj ${breakdown.paceAdjustAdjustment >= 0 ? "+" : ""}${breakdown.paceAdjustAdjustment.toFixed(3)} | Site Proximity ${breakdown.siteProximityAdjustment >= 0 ? "+" : ""}${breakdown.siteProximityAdjustment.toFixed(3)}`
   );
 
   // Variance multipliers
@@ -199,12 +199,6 @@ function buildOverrideContext(overrides: MatchupOverrides | undefined): string {
   }
   if (overrides.injuryAdjustmentB && overrides.injuryAdjustmentB !== 0) {
     parts.push(`Team B injury: ${overrides.injuryAdjustmentB.toFixed(1)} eff pts`);
-  }
-  if (overrides.siteProximityA) {
-    parts.push(`Team A site: ${overrides.siteProximityA}`);
-  }
-  if (overrides.siteProximityB) {
-    parts.push(`Team B site: ${overrides.siteProximityB}`);
   }
   if (overrides.recentFormA && overrides.recentFormA !== 0) {
     parts.push(
@@ -376,6 +370,7 @@ export function hashNarrativeInput(request: NarrativeRequest): string {
     request.breakdown.opponentAdjustAdjustment.toFixed(4),
     request.breakdown.benchDepthAdjustment.toFixed(4),
     request.breakdown.paceAdjustAdjustment.toFixed(4),
+    request.breakdown.siteProximityAdjustment.toFixed(4),
     // Include override total (changes with per-matchup overrides)
     request.breakdown.overrideAdjustments.total.toFixed(4),
   ];

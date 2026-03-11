@@ -20,7 +20,9 @@
  */
 
 import type { TeamSeason } from "@/types/team";
-import type { FourFactorsLeverWeights } from "@/types/engine";
+import type { FourFactorsLeverWeights, GameSiteCoordinates } from "@/types/engine";
+import { SITE_PROXIMITY_ADJUSTMENTS } from "@/types/engine";
+import { getSiteProximityBucket } from "@/lib/geo";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -392,4 +394,57 @@ export function calculateThreePtVarianceMultiplier(
     THREE_PT_VARIANCE_MIN,
     Math.min(THREE_PT_VARIANCE_MAX, rawMultiplier)
   );
+}
+
+// ---------------------------------------------------------------------------
+// Site Proximity (mean-adjusting)
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculates the site proximity efficiency point adjustment for a matchup.
+ *
+ * For each team, computes the haversine distance from campus to the game venue,
+ * converts it to a proximity bucket (true_home through significant_travel),
+ * looks up the efficiency point adjustment for that bucket, and returns
+ * the difference (A's advantage minus B's advantage), scaled by weight.
+ *
+ * If siteCoordinates is undefined (no tournament site data loaded), returns 0.
+ *
+ * Note: This function takes a 4th parameter (`siteCoordinates`) which departs
+ * from the `(teamA, teamB, weight)` pattern of other levers because site data
+ * is external to TeamSeason objects and varies per game.
+ *
+ * @param teamA - First team's season data (campus coordinates from teamA.team.campus)
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default)
+ * @param siteCoordinates - Game venue coordinates (optional; no effect if absent)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculateSiteProximityAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number,
+  siteCoordinates?: GameSiteCoordinates
+): number {
+  if (weight === 0 || !siteCoordinates) {
+    return 0;
+  }
+
+  const bucketA = getSiteProximityBucket(
+    teamA.team.campus.latitude,
+    teamA.team.campus.longitude,
+    siteCoordinates.latitude,
+    siteCoordinates.longitude
+  );
+  const bucketB = getSiteProximityBucket(
+    teamB.team.campus.latitude,
+    teamB.team.campus.longitude,
+    siteCoordinates.latitude,
+    siteCoordinates.longitude
+  );
+
+  const adjustmentA = SITE_PROXIMITY_ADJUSTMENTS[bucketA];
+  const adjustmentB = SITE_PROXIMITY_ADJUSTMENTS[bucketB];
+
+  return (adjustmentA - adjustmentB) * weight;
 }

@@ -11,6 +11,7 @@ import {
   calculateOpponentAdjustment,
   calculateBenchDepthAdjustment,
   calculatePaceAdjustAdjustment,
+  calculateSiteProximityAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -577,5 +578,68 @@ describe("calculateThreePtVarianceMultiplier", () => {
     const result = calculateThreePtVarianceMultiplier(teamA, teamB, 1.0);
     // avg = 65, 1.0 + (65-35)*0.02 = 1.0 + 0.6 = 1.6 → clamped to 1.5
     expect(result).toBeCloseTo(1.5, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Site Proximity
+// ---------------------------------------------------------------------------
+
+describe("calculateSiteProximityAdjustment", () => {
+  it("returns 0 when siteCoordinates is undefined", () => {
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0);
+    expect(result).toBe(0);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
+    const siteCoords = { latitude: 38.97, longitude: -95.24 };
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 0, siteCoords);
+    expect(result).toBe(0);
+  });
+
+  it("returns positive when team A is closer to the venue", () => {
+    // Strong team is in Lawrence, KS (38.97, -95.24)
+    // Weak team is in Norfolk, VA (36.85, -76.29)
+    // Place venue near Lawrence → A is true_home, B is significant_travel
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
+    const siteCoords = { latitude: 38.97, longitude: -95.24 };
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
+    // true_home (+3.0) - significant_travel (-1.0) = +4.0
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeCloseTo(4.0, 0);
+  });
+
+  it("returns 0 when both teams are in the same proximity bucket", () => {
+    const teamA = createMockTeamSeason({ id: "a" });
+    const teamB = createMockTeamSeason({ id: "b" });
+    // Both default mock teams are in Springfield, IL (39.78, -89.65)
+    // Place venue far away so both are in the same bucket
+    const siteCoords = { latitude: 25.0, longitude: -80.0 }; // Miami area
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
+    // Both teams are ~1200mi away → same bucket → difference is 0
+    expect(result).toBe(0);
+  });
+
+  it("scales adjustment by weight", () => {
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
+    const siteCoords = { latitude: 38.97, longitude: -95.24 };
+    const result1 = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
+    const result2 = calculateSiteProximityAdjustment(teamA, teamB, 2.0, siteCoords);
+    expect(result2).toBeCloseTo(result1 * 2, 5);
+  });
+
+  it("returns negative when team B is closer to the venue", () => {
+    // Place venue near Norfolk, VA (weak team)
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
+    const siteCoords = { latitude: 36.85, longitude: -76.29 };
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
+    expect(result).toBeLessThan(0);
   });
 });

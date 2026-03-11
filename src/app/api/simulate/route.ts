@@ -33,7 +33,10 @@ import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { runSimulation } from "@/lib/engine/simulator";
-import type { TeamSeason } from "@/types/team";
+import { buildBracketMatchups } from "@/lib/engine/bracket";
+import { buildSiteMap } from "@/lib/engine/site-mapping";
+import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
+import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -289,6 +292,34 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Fetch tournament sites (optional — graceful degradation) ---
+    const { data: sitesRows } = await supabase
+      .from("tournament_sites")
+      .select("*")
+      .eq("season", season);
+
+    // Transform site rows to TournamentSite[] and build site map
+    let siteMap;
+    if (sitesRows && sitesRows.length > 0) {
+      const sites: TournamentSite[] = (sitesRows as TournamentSiteRow[]).map(
+        (row) => ({
+          id: row.id,
+          name: row.name,
+          city: row.city,
+          state: row.state,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          rounds: row.rounds as TournamentRound[],
+          regions: row.regions
+            ? (row.regions as Region[])
+            : undefined,
+          season: row.season,
+        })
+      );
+      const matchups = buildBracketMatchups();
+      siteMap = buildSiteMap(matchups, sites);
+    }
+
     // --- Transform DB rows to application types ---
     const allTeamSeasons = transformTeamSeasonRows(
       teamSeasonRows as unknown as TeamSeasonJoinedRow[],
@@ -329,7 +360,7 @@ export async function POST(request: Request) {
       randomSeed: resolvedSeed,
     };
 
-    const result = runSimulation(teamsMap, simulationConfig);
+    const result = runSimulation(teamsMap, simulationConfig, siteMap);
 
     return NextResponse.json({
       success: true,

@@ -168,23 +168,27 @@ describe("resolveMatchup", () => {
   // Site proximity
   // ---------------------------------------------------------------------------
 
-  it("shifts probability for site proximity: true_home vs significant_travel", () => {
-    const teamA = createMidTeam({ id: "a" });
-    const teamB = createMidTeam({ id: "b" });
+  it("shifts probability for site proximity via siteCoordinates parameter", () => {
+    // Use strong team (Lawrence, KS: 38.97, -95.24) and weak team (Norfolk, VA: 36.85, -76.29)
+    const teamA = createStrongTeam({ id: "a" });
+    const teamB = createWeakTeam({ id: "b" });
 
-    const neutralResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
-    const siteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG, {
-      siteProximityA: "true_home",
-      siteProximityB: "significant_travel",
-    });
+    // Place the game venue very close to team A's campus (Lawrence, KS)
+    // Team A will be "true_home" (<50 mi) → +3.0 eff pts
+    // Team B (Norfolk, VA) will be "significant_travel" (>1000 mi) → -1.0 eff pts
+    const siteCoords = { latitude: 38.97, longitude: -95.24, name: "Near Lawrence" };
 
-    // true_home = +3.0, significant_travel = -1.0 → net +4.0 for team A
-    expect(siteResult.winProbabilityA).toBeGreaterThan(
-      neutralResult.winProbabilityA
+    const noSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
+    const withSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG, undefined, siteCoords);
+
+    // true_home (+3.0) - significant_travel (-1.0) = +4.0 net for team A
+    // So team A should be even more favored with site proximity
+    expect(withSiteResult.winProbabilityA).toBeGreaterThan(
+      noSiteResult.winProbabilityA
     );
-    expect(siteResult.breakdown.overrideAdjustments.siteProximity).toBeCloseTo(
+    expect(withSiteResult.breakdown.siteProximityAdjustment).toBeCloseTo(
       4.0,
-      5
+      0
     );
   });
 
@@ -379,11 +383,11 @@ describe("resolveMatchup", () => {
     expect(typeof b.opponentAdjustAdjustment).toBe("number");
     expect(typeof b.benchDepthAdjustment).toBe("number");
     expect(typeof b.paceAdjustAdjustment).toBe("number");
+    expect(typeof b.siteProximityAdjustment).toBe("number");
     expect(typeof b.totalMeanAdjustment).toBe("number");
 
     // Override adjustments
     expect(b.overrideAdjustments).toHaveProperty("injury");
-    expect(b.overrideAdjustments).toHaveProperty("siteProximity");
     expect(b.overrideAdjustments).toHaveProperty("recentForm");
     expect(b.overrideAdjustments).toHaveProperty("rest");
     expect(b.overrideAdjustments).toHaveProperty("total");
@@ -457,7 +461,6 @@ describe("resolveMatchup", () => {
     const teamB = createWeakTeam({ id: "b" });
     const result = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG, {
       injuryAdjustmentA: -2.0,
-      siteProximityB: "true_home",
       recentFormA: 1.5,
       restAdjustmentB: 1.0,
     });

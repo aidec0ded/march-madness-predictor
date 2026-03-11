@@ -249,6 +249,7 @@ function bracketReducer(
         bracketName: "My Bracket",
         isDirty: false,
         poolSizeBucket: "medium",
+        tournamentSiteMap: null,
       };
     }
 
@@ -265,6 +266,13 @@ function bracketReducer(
         ...state,
         poolSizeBucket: action.poolSizeBucket,
         isDirty: true,
+      };
+    }
+
+    case "SET_TOURNAMENT_SITE_MAP": {
+      return {
+        ...state,
+        tournamentSiteMap: action.siteMap,
       };
     }
 
@@ -322,6 +330,7 @@ export function BracketProvider({
       bracketName: savedBracket?.name ?? "My Bracket",
       isDirty: false,
       poolSizeBucket: "medium",
+      tournamentSiteMap: null,
     }),
     [teamsMap, savedBracket]
   );

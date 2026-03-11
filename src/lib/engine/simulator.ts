@@ -24,6 +24,7 @@ import type {
   SimulationConfig,
   SimulationResult,
 } from "@/types/simulation";
+import type { SiteMap } from "@/lib/engine/site-mapping";
 
 import { resolveMatchup } from "@/lib/engine/matchup";
 import { sampleGameOutcome, createSeededRandom } from "@/lib/engine/sampler";
@@ -53,6 +54,7 @@ import { createStreamingAggregator } from "@/lib/engine/aggregator";
  * @param config - Engine configuration (levers, logistic K, base variance)
  * @param overrides - Optional per-matchup overrides keyed by gameId
  * @param random - Optional random number generator (defaults to Math.random)
+ * @param siteMap - Optional pre-computed game-to-venue coordinate map for site proximity lever
  * @returns A SimulatedBracket with all 63 game results and the champion
  */
 export function simulateBracket(
@@ -61,7 +63,8 @@ export function simulateBracket(
   slots: Map<string, BracketSlot>,
   config: EngineConfig,
   overrides?: Record<string, MatchupOverrides>,
-  random?: () => number
+  random?: () => number,
+  siteMap?: SiteMap
 ): SimulatedBracket {
   const gameResults: Record<string, string> = {};
   const rng = random ?? Math.random;
@@ -91,7 +94,8 @@ export function simulateBracket(
 
     // Get win probability from the matchup resolver
     const matchupOverrides = overrides?.[matchup.gameId];
-    const result = resolveMatchup(teamA, teamB, config, matchupOverrides);
+    const siteCoordinates = siteMap?.get(matchup.gameId);
+    const result = resolveMatchup(teamA, teamB, config, matchupOverrides, siteCoordinates);
 
     // Sample the outcome
     const outcome = sampleGameOutcome(result.winProbabilityA, rng);
@@ -130,6 +134,8 @@ export function simulateBracket(
  * @param teams - Map of teamId to TeamSeason data for all 64 tournament teams
  * @param config - Simulation configuration including number of simulations,
  *   engine config, per-matchup overrides, and optional random seed
+ * @param siteMap - Optional pre-computed game-to-venue coordinate map for
+ *   site proximity lever. Computed once before the simulation loop for efficiency.
  * @returns Aggregated SimulationResult with per-team probabilities, champion
  *   predictions, upset rates, and execution timing
  *
@@ -150,7 +156,8 @@ export function simulateBracket(
  */
 export function runSimulation(
   teams: Map<string, TeamSeason>,
-  config: SimulationConfig
+  config: SimulationConfig,
+  siteMap?: SiteMap
 ): SimulationResult {
   const startTime = performance.now();
 
@@ -180,7 +187,8 @@ export function runSimulation(
       slots,
       config.engineConfig,
       config.matchupOverrides,
-      rng
+      rng,
+      siteMap
     );
     aggregator.addBracket(bracket);
   }

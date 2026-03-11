@@ -158,6 +158,18 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
           />
         </Section>
 
+        {/* Location & Travel — default collapsed */}
+        <Section title="Location &amp; Travel">
+          <LeverSlider
+            label="Site Proximity"
+            description="Weight for campus-to-venue distance advantage. Teams playing closer to home get a boost. Auto-computed from tournament site data."
+            value={globalLevers.siteProximityWeight}
+            onChange={(siteProximityWeight) =>
+              updateLevers({ siteProximityWeight })
+            }
+          />
+        </Section>
+
         {/* Variance — default collapsed */}
         <Section title="Variance">
           <VarianceControls

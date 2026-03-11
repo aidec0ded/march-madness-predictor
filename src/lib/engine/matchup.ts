@@ -7,8 +7,8 @@
  * 1. Merge levers (global + per-matchup overrides)
  * 2. Calculate composite ratings for both teams
  * 3. Calculate base win probability from rating differential
- * 4. Calculate all mean adjustments (Four Factors, experience, continuity, coach)
- * 5. Apply per-matchup overrides (injury, site, form, rest)
+ * 4. Calculate all mean adjustments (Four Factors, experience, continuity, coach, site proximity)
+ * 5. Apply per-matchup overrides (injury, form, rest)
  * 6. Sum mean adjustments and adjust the rating differential
  * 7. Calculate variance multipliers (tempo, 3PT rate)
  * 8. Apply variance to the probability via effective logistic K
@@ -21,6 +21,7 @@
 import type { TeamSeason } from "@/types/team";
 import type {
   EngineConfig,
+  GameSiteCoordinates,
   MatchupOverrides,
   MatchupResult,
   ProbabilityBreakdown,
@@ -39,6 +40,7 @@ import {
   calculateOpponentAdjustment,
   calculateBenchDepthAdjustment,
   calculatePaceAdjustAdjustment,
+  calculateSiteProximityAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -56,8 +58,8 @@ import { applyMatchupOverrides, mergeLevers } from "@/lib/engine/overrides";
  * 1. Merges global levers with any per-matchup overrides
  * 2. Calculates composite ratings from weighted source blends
  * 3. Computes base probability from the raw rating differential
- * 4. Applies mean-adjusting levers (Four Factors, experience, continuity, coach)
- * 5. Applies per-matchup overrides (injury, site proximity, recent form, rest)
+ * 4. Applies mean-adjusting levers (Four Factors, experience, continuity, coach, site proximity)
+ * 5. Applies per-matchup overrides (injury, recent form, rest)
  * 6. Calculates variance multipliers (tempo, 3PT rate)
  * 7. Recalculates final probability using the effective logistic K
  * 8. Returns a full MatchupResult with diagnostic breakdown
@@ -66,13 +68,15 @@ import { applyMatchupOverrides, mergeLevers } from "@/lib/engine/overrides";
  * @param teamB - Second team's season data
  * @param config - Engine configuration (global levers + model parameters)
  * @param overrides - Optional per-matchup overrides
+ * @param siteCoordinates - Optional game venue coordinates for site proximity lever
  * @returns Full matchup result with win probabilities and diagnostic breakdown
  */
 export function resolveMatchup(
   teamA: TeamSeason,
   teamB: TeamSeason,
   config: EngineConfig,
-  overrides?: MatchupOverrides
+  overrides?: MatchupOverrides,
+  siteCoordinates?: GameSiteCoordinates
 ): MatchupResult {
   // Step 1: Merge levers (global + per-matchup overrides)
   const effectiveLevers = mergeLevers(config.levers, overrides);
@@ -130,6 +134,12 @@ export function resolveMatchup(
     teamB,
     effectiveLevers.paceAdjustWeight
   );
+  const siteProximityAdjustment = calculateSiteProximityAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.siteProximityWeight,
+    siteCoordinates
+  );
 
   const totalMeanAdjustment =
     fourFactorsAdjustment +
@@ -138,7 +148,8 @@ export function resolveMatchup(
     coachAdjustment +
     opponentAdjustAdjustment +
     benchDepthAdjustment +
-    paceAdjustAdjustment;
+    paceAdjustAdjustment +
+    siteProximityAdjustment;
 
   // Step 5: Per-matchup override adjustments
   const overrideAdjustments = applyMatchupOverrides(overrides, teamA, teamB);
@@ -193,6 +204,7 @@ export function resolveMatchup(
     opponentAdjustAdjustment,
     benchDepthAdjustment,
     paceAdjustAdjustment,
+    siteProximityAdjustment,
     totalMeanAdjustment,
     overrideAdjustments,
     tempoVarianceMultiplier,

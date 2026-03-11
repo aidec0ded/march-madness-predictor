@@ -10,6 +10,7 @@ import type { TeamSeason, Region, TournamentRound } from "./team";
 import type { GlobalLevers, MatchupOverrides } from "./engine";
 import type { SimulationResult, BracketMatchup } from "./simulation";
 import type { PoolSizeBucket } from "./game-theory";
+import type { SiteMap } from "@/lib/engine/site-mapping";
 
 // ---------------------------------------------------------------------------
 // Bracket State
@@ -51,6 +52,9 @@ export interface BracketState {
 
   /** Pool size bucket for game theory recommendations */
   poolSizeBucket: PoolSizeBucket;
+
+  /** Pre-computed game-to-venue coordinate map for site proximity lever (null if not loaded) */
+  tournamentSiteMap: SiteMap | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +76,8 @@ export type BracketAction =
   | { type: "LOAD_BRACKET"; bracket: SavedBracketData }
   | { type: "CLEAR_BRACKET" }
   | { type: "MARK_SAVED"; bracketId: string }
-  | { type: "SET_POOL_SIZE"; poolSizeBucket: PoolSizeBucket };
+  | { type: "SET_POOL_SIZE"; poolSizeBucket: PoolSizeBucket }
+  | { type: "SET_TOURNAMENT_SITE_MAP"; siteMap: SiteMap };
 
 // ---------------------------------------------------------------------------
 // Matchup Display Data
