@@ -43,3 +43,6 @@ coverage/
 
 # Supabase
 .supabase/
+
+# Kaggle datasets (large, downloaded externally)
+march-machine-learning-mania-2026/
