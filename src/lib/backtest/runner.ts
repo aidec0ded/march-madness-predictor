@@ -36,8 +36,88 @@ import { buildCalibrationBins } from "./calibration";
 // ---------------------------------------------------------------------------
 
 /**
+ * Bidirectional alias map for team name normalization.
+ *
+ * The scraper (scrape-tournament-results.ts) normalizes sports-reference names
+ * to Torvik format via NAME_FIXES, while the DB stores names from the Torvik
+ * API directly. These don't always agree, so we register both directions.
+ *
+ * Each key maps to an array of known aliases for that team.
+ * When building the team lookup, all aliases for a matched team are registered.
+ */
+const TEAM_NAME_ALIASES: Record<string, string[]> = {
+  // Full name ↔ common abbreviation
+  Connecticut: ["UConn"],
+  "North Carolina": ["UNC"],
+  "North Carolina St.": ["NC State", "N.C. State"],
+  "Southern California": ["USC"],
+  "Brigham Young": ["BYU"],
+  "Texas Christian": ["TCU"],
+  "Virginia Commonwealth": ["VCU"],
+  "College of Charleston": ["Charleston"],
+  "Loyola Chicago": ["Loyola-Chi", "Loyola (IL)"],
+  "Loyola MD": ["Loyola (MD)"],
+  "Saint Mary's": ["St. Mary's"],
+  "Saint Joseph's": ["St. Joe's", "St. Joseph's"],
+  "Saint Peter's": ["St. Peter's"],
+  "Saint Bonaventure": ["St. Bonaventure"],
+  "St. John's": ["Saint John's"],
+  "Miami FL": ["Miami", "Miami (FL)"],
+  "Miami OH": ["Miami (OH)"],
+  "Florida Gulf Coast": ["FGCU"],
+  "Middle Tennessee": ["MTSU"],
+  "Stephen F. Austin": ["SFA"],
+  "Fairleigh Dickinson": ["FDU"],
+  Massachusetts: ["UMass"],
+  "South Florida": ["USF"],
+  "Central Florida": ["UCF"],
+  UAB: ["Alabama-Birmingham"],
+  // McNeese: Torvik may use "McNeese St." or "McNeese"
+  McNeese: ["McNeese St."],
+  "McNeese St.": ["McNeese"],
+  // State suffix variants (Torvik uses "St." abbreviation)
+  "Sam Houston St.": ["Sam Houston", "Sam Houston State"],
+  "Grambling St.": ["Grambling", "Grambling State"],
+  "Kennesaw St.": ["Kennesaw State"],
+  "Sacramento St.": ["Sacramento State"],
+  "Cal St. Fullerton": ["Cal State Fullerton"],
+  "Cal St. Bakersfield": ["Cal State Bakersfield"],
+  "Southeast Missouri St.": ["Southeast Missouri State"],
+  "Texas A&M Corpus Christi": [
+    "Texas A&M-Corpus Christi",
+    "Texas A&M–Corpus Christi",
+  ],
+};
+
+/**
+ * Builds a flattened alias lookup: given any name variant, returns an array of
+ * all aliases (including the name itself).
+ */
+function buildAliasLookup(): Map<string, string[]> {
+  const aliasMap = new Map<string, string[]>();
+
+  for (const [canonical, aliases] of Object.entries(TEAM_NAME_ALIASES)) {
+    const allNames = [canonical, ...aliases];
+    for (const name of allNames) {
+      aliasMap.set(name, allNames);
+    }
+  }
+
+  return aliasMap;
+}
+
+const ALIAS_LOOKUP = buildAliasLookup();
+
+/**
  * Builds a team name → TeamSeason lookup map.
- * Uses the team's full name (team.name) and short name (team.shortName) as keys.
+ *
+ * Indexes each team by:
+ * 1. Full name (team.name)
+ * 2. Short name (team.shortName)
+ * 3. All known aliases from the TEAM_NAME_ALIASES table
+ *
+ * This ensures historical result names (from the scraper's NAME_FIXES) match
+ * DB names (from the Torvik API) even when they differ slightly.
  */
 export function buildTeamLookup(
   teams: TeamSeason[]
@@ -45,8 +125,21 @@ export function buildTeamLookup(
   const lookup = new Map<string, TeamSeason>();
 
   for (const team of teams) {
+    // Register primary names
     lookup.set(team.team.name, team);
     lookup.set(team.team.shortName, team);
+
+    // Register all known aliases for this team
+    for (const primaryName of [team.team.name, team.team.shortName]) {
+      const aliases = ALIAS_LOOKUP.get(primaryName);
+      if (aliases) {
+        for (const alias of aliases) {
+          if (!lookup.has(alias)) {
+            lookup.set(alias, team);
+          }
+        }
+      }
+    }
   }
 
   return lookup;
@@ -58,6 +151,13 @@ export function buildTeamLookup(
 
 /**
  * Evaluates a single historical game result against the model.
+ *
+ * Team A is always the higher-seeded team (lower seed number = better seed).
+ * This ensures calibration bins contain a mix of wins (favorites winning)
+ * and losses (upsets), rather than always showing actualOutcome = 1.
+ *
+ * The Brier Score math is symmetric: (p-1)² = ((1-p)-0)², so the average
+ * Brier Score is identical regardless of team assignment order.
  *
  * @param game - Historical game result
  * @param teamLookup - Name → TeamSeason map for the relevant season
@@ -74,9 +174,19 @@ export function evaluateGame(
 } | null {
   const round = game.round as TournamentRound;
 
+  // Assign Team A = higher seed (lower number = better seed).
+  // When seeds are equal, keep the winner as team A (doesn't affect calibration).
+  const higherSeedIsWinner = game.winnerSeed <= game.loserSeed;
+
+  const teamAName = higherSeedIsWinner ? game.winnerName : game.loserName;
+  const teamASeed = higherSeedIsWinner ? game.winnerSeed : game.loserSeed;
+  const teamBName = higherSeedIsWinner ? game.loserName : game.winnerName;
+  const teamBSeed = higherSeedIsWinner ? game.loserSeed : game.winnerSeed;
+  const teamAWon = higherSeedIsWinner; // false when an upset occurs
+
   // Try to resolve both teams from the lookup
-  const teamA = teamLookup.get(game.winnerName);
-  const teamB = teamLookup.get(game.loserName);
+  const teamA = teamLookup.get(teamAName);
+  const teamB = teamLookup.get(teamBName);
 
   let predictedProbA: number;
   let usedBaseline = false;
@@ -87,43 +197,34 @@ export function evaluateGame(
     predictedProbA = result.winProbabilityA;
   } else {
     // One or both teams missing — fall back to seed baseline
-    predictedProbA = getSeedBaselineProbability(
-      game.winnerSeed,
-      game.loserSeed,
-      round
-    );
+    predictedProbA = getSeedBaselineProbability(teamASeed, teamBSeed, round);
     usedBaseline = true;
   }
 
-  // Team A is the winner (actualOutcome = 1 means Team A won)
   const modelScore = createBrierGameScore({
     season: game.season,
     round,
-    teamAName: game.winnerName,
-    teamASeed: game.winnerSeed,
-    teamBName: game.loserName,
-    teamBSeed: game.loserSeed,
+    teamAName,
+    teamASeed,
+    teamBName,
+    teamBSeed,
     predictedProbA,
-    teamAWon: true,
+    teamAWon,
     usedBaseline,
   });
 
   // Baseline always uses seed-based probability
-  const baselineProbA = getSeedBaselineProbability(
-    game.winnerSeed,
-    game.loserSeed,
-    round
-  );
+  const baselineProbA = getSeedBaselineProbability(teamASeed, teamBSeed, round);
 
   const baselineScore = createBrierGameScore({
     season: game.season,
     round,
-    teamAName: game.winnerName,
-    teamASeed: game.winnerSeed,
-    teamBName: game.loserName,
-    teamBSeed: game.loserSeed,
+    teamAName,
+    teamASeed,
+    teamBName,
+    teamBSeed,
     predictedProbA: baselineProbA,
-    teamAWon: true,
+    teamAWon,
     usedBaseline: true,
   });
 

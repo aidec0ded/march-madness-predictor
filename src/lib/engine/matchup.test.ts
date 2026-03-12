@@ -68,7 +68,7 @@ vi.mock("@/lib/engine/composite-rating", () => ({
 
 vi.mock("@/lib/engine/win-probability", () => ({
   calculateWinProbability: (ratingDiff: number, logisticK?: number) => {
-    const k = logisticK ?? 0.0325;
+    const k = logisticK ?? 0.11;
     return 1 / (1 + Math.exp(-k * ratingDiff));
   },
   clampProbability: (p: number) => Math.max(0.005, Math.min(0.995, p)),
@@ -107,24 +107,22 @@ describe("resolveMatchup", () => {
     const teamA = createStrongTeam({ id: "a" });
     const teamB = createWeakTeam({ id: "b" });
 
-    // With default K=0.0325, probabilities are moderate even for large diffs.
-    // Use a higher K (0.075, roughly calibrated to historical 1v16 outcomes ~97%)
-    // to verify the engine can produce extreme probabilities.
-    const highKConfig = { ...DEFAULT_ENGINE_CONFIG, logisticK: 0.075 };
-    const result = resolveMatchup(teamA, teamB, highKConfig);
+    // With default K=0.11, the logistic curve is steep enough to produce
+    // strong favorites for large efficiency margin differences.
+    const result = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
 
     expect(result.winProbabilityA).toBeGreaterThan(0.9);
     expect(result.winProbabilityB).toBeLessThan(0.1);
   });
 
-  it("strongly favors the better team even with default K (1-seed vs 16-seed)", () => {
+  it("strongly favors the better team with default K (1-seed vs 16-seed)", () => {
     const teamA = createStrongTeam({ id: "a" });
     const teamB = createWeakTeam({ id: "b" });
     const result = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
 
-    // With default K=0.0325, a ~30-point efficiency margin yields ~0.72-0.78
-    expect(result.winProbabilityA).toBeGreaterThan(0.7);
-    expect(result.winProbabilityA).toBeLessThan(0.85);
+    // With default K=0.11, a ~30-point efficiency margin yields ~0.93-0.97
+    expect(result.winProbabilityA).toBeGreaterThan(0.9);
+    expect(result.winProbabilityA).toBeLessThan(0.99);
   });
 
   // ---------------------------------------------------------------------------

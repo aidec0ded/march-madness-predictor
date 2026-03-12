@@ -10,7 +10,7 @@ import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 // Constants for readability
 // ---------------------------------------------------------------------------
 
-const DEFAULT_K = DEFAULT_ENGINE_CONFIG.logisticK; // 0.0325
+const DEFAULT_K = DEFAULT_ENGINE_CONFIG.logisticK; // 0.11
 
 describe("calculateWinProbability", () => {
   describe("basic properties", () => {
@@ -67,46 +67,44 @@ describe("calculateWinProbability", () => {
     });
   });
 
-  describe("typical tournament matchups (with default k=0.0325)", () => {
-    // Note: The default k=0.0325 produces moderate single-game probabilities.
-    // The model is intentionally not too steep — the Monte Carlo simulation
-    // compounds these per-game probabilities across rounds to produce the
-    // more extreme path probabilities users expect (e.g., 1-seed reaching F4).
+  describe("typical tournament matchups (with default k=0.11)", () => {
+    // The default k=0.11 is derived from the standard basketball variance model:
+    //   k = (possessions/100) / (σ_game × π/√3) ≈ 0.68 / 6.27 ≈ 0.11
     //
     // Computed values:
-    //   P(20) = 1/(1 + exp(-0.65)) ≈ 0.657 (1 vs 16)
-    //   P(5)  = 1/(1 + exp(-0.1625)) ≈ 0.541 (5 vs 12)
-    //   P(1)  = 1/(1 + exp(-0.0325)) ≈ 0.508 (8 vs 9)
+    //   P(35) = 1/(1 + exp(-3.85)) ≈ 0.979 (1 vs 16, ~35 pt EM diff)
+    //   P(10) = 1/(1 + exp(-1.10)) ≈ 0.750 (5 vs 12, ~10 pt EM diff)
+    //   P(2)  = 1/(1 + exp(-0.22)) ≈ 0.555 (8 vs 9, ~2 pt EM diff)
 
-    it("1-seed vs 16-seed (~20 point EM diff) yields clear favorite", () => {
-      const p = calculateWinProbability(20);
-      // With k=0.0325: P ≈ 0.657
-      expect(p).toBeGreaterThanOrEqual(0.64);
-      expect(p).toBeLessThanOrEqual(0.68);
+    it("1-seed vs 16-seed (~35 point EM diff) yields strong favorite", () => {
+      const p = calculateWinProbability(35);
+      // With k=0.11: P ≈ 0.979
+      expect(p).toBeGreaterThanOrEqual(0.97);
+      expect(p).toBeLessThanOrEqual(0.99);
     });
 
-    it("5-seed vs 12-seed (~5 point EM diff) yields moderate edge", () => {
-      const p = calculateWinProbability(5);
-      // With k=0.0325: P ≈ 0.541
-      expect(p).toBeGreaterThanOrEqual(0.53);
-      expect(p).toBeLessThanOrEqual(0.56);
+    it("5-seed vs 12-seed (~10 point EM diff) yields clear edge", () => {
+      const p = calculateWinProbability(10);
+      // With k=0.11: P ≈ 0.750
+      expect(p).toBeGreaterThanOrEqual(0.73);
+      expect(p).toBeLessThanOrEqual(0.77);
     });
 
-    it("8-seed vs 9-seed (~1 point EM diff) yields near coin-flip", () => {
-      const p = calculateWinProbability(1);
-      // With k=0.0325: P ≈ 0.508
-      expect(p).toBeGreaterThanOrEqual(0.5);
-      expect(p).toBeLessThanOrEqual(0.52);
+    it("8-seed vs 9-seed (~2 point EM diff) yields slight favorite", () => {
+      const p = calculateWinProbability(2);
+      // With k=0.11: P ≈ 0.555
+      expect(p).toBeGreaterThanOrEqual(0.54);
+      expect(p).toBeLessThanOrEqual(0.57);
     });
 
-    it("strong 2-seed vs weak 15-seed (~18 point EM diff) yields clear favorite", () => {
-      const p = calculateWinProbability(18);
-      // With k=0.0325: P ≈ 0.642
-      expect(p).toBeGreaterThan(0.63);
+    it("strong 2-seed vs weak 15-seed (~25 point EM diff) yields strong favorite", () => {
+      const p = calculateWinProbability(25);
+      // With k=0.11: P ≈ 0.940
+      expect(p).toBeGreaterThan(0.93);
     });
 
-    it("produces more decisive outcomes with a steeper k (historical calibration)", () => {
-      // With a steeper k more typical of KenPom's implied model (~0.175):
+    it("produces more decisive outcomes with a steeper k", () => {
+      // With a steeper k (~0.175):
       // P(20) ≈ 0.97, which matches the ~97% historical 1-vs-16 win rate
       const k_steep = 0.175;
       const p = calculateWinProbability(20, k_steep);
@@ -117,8 +115,8 @@ describe("calculateWinProbability", () => {
 
   describe("clamping behavior", () => {
     it("never returns a probability greater than 0.999", () => {
-      // Need an extremely large differential to trigger clamping with k=0.0325.
-      // exp(-0.0325 * 500) = exp(-16.25) ≈ 8.8e-8, so P ≈ 0.99999991
+      // With k=0.11, even moderate differentials can hit the clamp:
+      // exp(-0.11 * 100) = exp(-11) ≈ 1.7e-5, so P ≈ 0.99998 → clamped to 0.999
       const p = calculateWinProbability(500);
       expect(p).toBeLessThanOrEqual(0.999);
       expect(p).toBe(0.999);
@@ -157,16 +155,16 @@ describe("calculateWinProbability", () => {
 
     it("higher k produces more extreme probabilities", () => {
       const diff = 10;
-      const pDefault = calculateWinProbability(diff, 0.0325);
-      const pHighK = calculateWinProbability(diff, 0.065); // Double k
+      const pDefault = calculateWinProbability(diff, 0.11);
+      const pHighK = calculateWinProbability(diff, 0.22); // Double k
 
       expect(pHighK).toBeGreaterThan(pDefault);
     });
 
     it("lower k produces more moderate probabilities (closer to 0.5)", () => {
       const diff = 10;
-      const pDefault = calculateWinProbability(diff, 0.0325);
-      const pLowK = calculateWinProbability(diff, 0.016); // Half k
+      const pDefault = calculateWinProbability(diff, 0.11);
+      const pLowK = calculateWinProbability(diff, 0.055); // Half k
 
       expect(pLowK).toBeLessThan(pDefault);
       expect(pLowK).toBeGreaterThan(0.5);
@@ -181,7 +179,7 @@ describe("calculateWinProbability", () => {
 
   describe("mathematical correctness", () => {
     it("matches the logistic formula exactly for known inputs", () => {
-      const k = 0.0325;
+      const k = 0.11;
       const diff = 15;
       const expected = 1 / (1 + Math.exp(-k * diff));
       expect(calculateWinProbability(diff, k)).toBeCloseTo(expected, 10);

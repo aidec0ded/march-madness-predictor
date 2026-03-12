@@ -12,7 +12,13 @@
  *
  * where:
  *   - ratingDiff = compositeAdjEM(A) - compositeAdjEM(B)
- *   - k is a scaling factor calibrated from historical tournament data (default 0.0325)
+ *   - k is a scaling factor derived from game-to-game variance (default 0.11)
+ *
+ * Derivation of default k = 0.11:
+ *   Game-to-game point margin σ ≈ 11. With ~68 possessions per game,
+ *   expected margin = AdjEM_diff × 68/100. Using the logistic-normal
+ *   approximation (logistic scale = σ × √3/π ≈ 1.814σ):
+ *     k = (68/100) / (11 × π/√3) ≈ 0.68 / 6.27 ≈ 0.11
  *
  * Properties of this model:
  *   - When ratingDiff = 0, P(A) = 0.5 (perfectly even matchup)
@@ -68,7 +74,7 @@ const MAX_PROBABILITY = 0.999;
  * @param ratingDiff - The adjusted efficiency margin differential (team A - team B)
  *                     in points per 100 possessions. Positive means A is stronger.
  * @param k - The logistic scaling factor. Controls curve steepness.
- *            Default: 0.0325 (from DEFAULT_ENGINE_CONFIG.logisticK).
+ *            Default: 0.11 (from DEFAULT_ENGINE_CONFIG.logisticK).
  *            Higher k = steeper curve = more decisive outcomes.
  *            Lower k = flatter curve = more upsets.
  * @returns The probability that team A wins, clamped to [0.001, 0.999].
@@ -78,11 +84,14 @@ const MAX_PROBABILITY = 0.999;
  * // Even matchup
  * calculateWinProbability(0); // 0.5
  *
- * // 1-seed vs 16-seed (~20 point EM diff)
- * calculateWinProbability(20); // ~0.96
+ * // 1-seed vs 16-seed (~35 point EM diff)
+ * calculateWinProbability(35); // ~0.98
  *
- * // 5-seed vs 12-seed (~5 point EM diff)
- * calculateWinProbability(5); // ~0.60
+ * // 5-seed vs 12-seed (~10 point EM diff)
+ * calculateWinProbability(10); // ~0.75
+ *
+ * // 8-seed vs 9-seed (~2 point EM diff)
+ * calculateWinProbability(2); // ~0.55
  * ```
  */
 export function calculateWinProbability(

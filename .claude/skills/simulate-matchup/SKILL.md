@@ -120,7 +120,7 @@ KEY STATS COMPARISON
 The `resolveMatchup()` function runs this 10-step pipeline:
 1. Merge levers (global + per-matchup overrides)
 2. Calculate composite ratings for both teams
-3. Calculate base win probability from rating differential (log5, k=0.0325)
+3. Calculate base win probability from rating differential (log5, k=0.11)
 4. Calculate Four Factors adjustment (8 sub-levers, scaling factor 0.15)
 5. Calculate experience adjustment (0.75 eff pts / year)
 6. Calculate continuity adjustment (0.05 eff pts / pct point)

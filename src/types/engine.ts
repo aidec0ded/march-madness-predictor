@@ -396,7 +396,7 @@ export const DEFAULT_GLOBAL_LEVERS: GlobalLevers = {
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   levers: { ...DEFAULT_GLOBAL_LEVERS },
-  logisticK: 0.0325,
+  logisticK: 0.11,
   baseVariance: 11.0,
 };
 

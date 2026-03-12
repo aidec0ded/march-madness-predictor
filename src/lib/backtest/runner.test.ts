@@ -67,6 +67,10 @@ function makeTeamSeason(
     minutesContinuity: 0.5,
     avgHeight: 76,
     twoFoulParticipation: 0.7,
+    sosNetRating: 0,
+    sosOffRating: 0,
+    sosDefRating: 0,
+    luck: 0,
     evanmiyaOpponentAdjust: 0,
     evanmiyaPaceAdjust: 0,
     evanmiyaKillShotsPerGame: 0,
@@ -149,6 +153,27 @@ describe("buildTeamLookup", () => {
     const lookup = buildTeamLookup(teams);
     expect(lookup.size).toBeGreaterThanOrEqual(2);
   });
+
+  it("registers team name aliases for known variants", () => {
+    const teams = [
+      makeTeamSeason({ name: "North Carolina St.", shortName: "NC State" }),
+    ];
+    const lookup = buildTeamLookup(teams);
+    // Primary names
+    expect(lookup.get("North Carolina St.")).toBeDefined();
+    expect(lookup.get("NC State")).toBeDefined();
+    // Alias from TEAM_NAME_ALIASES
+    expect(lookup.get("N.C. State")).toBeDefined();
+  });
+
+  it("registers aliases from short name too", () => {
+    const teams = [
+      makeTeamSeason({ name: "Connecticut", shortName: "UConn" }),
+    ];
+    const lookup = buildTeamLookup(teams);
+    expect(lookup.get("Connecticut")).toBeDefined();
+    expect(lookup.get("UConn")).toBeDefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -173,9 +198,9 @@ describe("evaluateGame", () => {
 
     expect(result).not.toBeNull();
     expect(result!.modelScore.usedBaseline).toBe(false);
-    // Duke (strong, +28 AdjEM) should have high predicted probability vs Vermont (-5 AdjEM)
+    // Duke (1-seed, higher seed) is Team A; should have high predicted probability
     expect(result!.modelScore.predictedProbA).toBeGreaterThan(0.7);
-    // Team A (Duke) won, so actualOutcome = 1
+    // Duke (1-seed, Team A) won, so actualOutcome = 1
     expect(result!.modelScore.actualOutcome).toBe(1);
     // Brier should be relatively low (good prediction)
     expect(result!.modelScore.brierScore).toBeLessThan(0.15);
@@ -190,7 +215,7 @@ describe("evaluateGame", () => {
 
     expect(result).not.toBeNull();
     expect(result!.modelScore.usedBaseline).toBe(true);
-    // 1v16 seed baseline ≈ 0.993
+    // 1v16 seed baseline ≈ 0.993 (Team A is Duke, the 1-seed)
     expect(result!.modelScore.predictedProbA).toBeCloseTo(0.993, 2);
   });
 
@@ -204,20 +229,44 @@ describe("evaluateGame", () => {
     const result = evaluateGame(makeGame(), lookup, config);
 
     expect(result!.baselineScore.usedBaseline).toBe(true);
-    // 1v16 baseline
+    // 1v16 baseline (Team A = 1-seed Duke)
     expect(result!.baselineScore.predictedProbA).toBeCloseTo(0.993, 2);
   });
 
-  it("correctly marks actualOutcome as 1 (winner is always Team A)", () => {
+  it("assigns higher seed as Team A for balanced calibration", () => {
     const teams = [
       makeTeamSeason({ name: "Duke" }),
       makeTeamSeason({ name: "Vermont" }),
     ];
     const lookup = buildTeamLookup(teams);
 
+    // Standard game: Duke (1) beats Vermont (16)
     const result = evaluateGame(makeGame(), lookup, config);
-    expect(result!.modelScore.actualOutcome).toBe(1);
+    expect(result!.modelScore.teamAName).toBe("Duke"); // 1-seed = Team A
+    expect(result!.modelScore.teamBName).toBe("Vermont"); // 16-seed = Team B
+    expect(result!.modelScore.actualOutcome).toBe(1); // Higher seed won
     expect(result!.baselineScore.actualOutcome).toBe(1);
+  });
+
+  it("marks actualOutcome as 0 when an upset occurs", () => {
+    const teams = [
+      makeTeamSeason({ name: "Duke" }),
+      makeTeamSeason({ name: "Vermont" }),
+    ];
+    const lookup = buildTeamLookup(teams);
+
+    // Upset: Vermont (16) beats Duke (1)
+    const upsetGame = makeGame({
+      winnerName: "Vermont",
+      winnerSeed: 16,
+      loserName: "Duke",
+      loserSeed: 1,
+    });
+    const result = evaluateGame(upsetGame, lookup, config);
+    expect(result!.modelScore.teamAName).toBe("Duke"); // 1-seed still Team A
+    expect(result!.modelScore.teamBName).toBe("Vermont"); // 16-seed still Team B
+    expect(result!.modelScore.actualOutcome).toBe(0); // Higher seed lost (upset)
+    expect(result!.baselineScore.actualOutcome).toBe(0);
   });
 });
 
