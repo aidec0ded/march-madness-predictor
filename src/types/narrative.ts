@@ -118,6 +118,10 @@ export interface NarrativeTeamData {
   // Style
   twoFoulParticipation: number;
 
+  // Schedule & Luck
+  sosNetRating?: number;
+  luck?: number;
+
   // Evan Miya metrics
   evanmiyaOpponentAdjust?: number;
   evanmiyaPaceAdjust?: number;

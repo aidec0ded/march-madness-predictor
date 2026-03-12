@@ -63,6 +63,20 @@ const BENCH_SCALING = 0.08;
  *  Typical range is -40 to +40, so at 0.03 scaling a 40-point diff → 1.2 eff pts. */
 const PACE_ADJUST_SCALING = 0.03;
 
+/**
+ * Efficiency points per 1.0 SoS Net Rating point difference.
+ * Conservative because adjusted efficiency ratings already incorporate SoS.
+ * For a 10-point SoS differential (very large), yields ±1.0 eff pts.
+ */
+const SOS_SCALING = 0.10;
+
+/**
+ * Scaling for KenPom Luck regression.
+ * Luck ranges roughly -0.08 to +0.16 in the tournament field.
+ * At 8.0 scaling, +0.08 luck → -0.64 eff pt penalty.
+ */
+const LUCK_SCALING = 8.0;
+
 /** Baseline D1 average tempo (possessions per 40 minutes) */
 const BASELINE_TEMPO = 68;
 
@@ -351,6 +365,51 @@ export function calculatePaceAdjustAdjustment(
     PACE_ADJUST_SCALING *
     weight
   );
+}
+
+/**
+ * Calculates the strength of schedule efficiency point adjustment.
+ *
+ * Adds extra credit for teams whose efficiency was earned against tougher
+ * opponents. Since adjusted ratings already partially incorporate SoS, this
+ * lever is supplementary — the scaling is conservative at 0.10 eff pts per
+ * 1.0 SoS point difference.
+ *
+ * @param teamA - First team's season data
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculateSosAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number
+): number {
+  return (teamA.sosNetRating - teamB.sosNetRating) * SOS_SCALING * weight;
+}
+
+/**
+ * Calculates the luck regression efficiency point adjustment.
+ *
+ * KenPom Luck measures per-game over/underperformance vs efficiency. Positive
+ * luck means a team won more close games than their efficiency predicted —
+ * these teams tend to regress in tournament play. This lever penalizes lucky
+ * teams and rewards unlucky ones.
+ *
+ * Note the sign: team A's positive luck HURTS them (regression), so we negate
+ * luckA's contribution: adjustment = (luckB - luckA) * scaling * weight.
+ *
+ * @param teamA - First team's season data
+ * @param teamB - Second team's season data
+ * @param weight - Lever weight (0 = ignore, 1 = default)
+ * @returns Efficiency point adjustment (positive favors team A)
+ */
+export function calculateLuckRegressionAdjustment(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  weight: number
+): number {
+  return (teamB.luck - teamA.luck) * LUCK_SCALING * weight;
 }
 
 // ---------------------------------------------------------------------------

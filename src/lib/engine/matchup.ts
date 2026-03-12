@@ -41,6 +41,8 @@ import {
   calculateBenchDepthAdjustment,
   calculatePaceAdjustAdjustment,
   calculateSiteProximityAdjustment,
+  calculateSosAdjustment,
+  calculateLuckRegressionAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -140,6 +142,16 @@ export function resolveMatchup(
     effectiveLevers.siteProximityWeight,
     siteCoordinates
   );
+  const sosAdjustment = calculateSosAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.sosWeight
+  );
+  const luckRegressionAdjustment = calculateLuckRegressionAdjustment(
+    teamA,
+    teamB,
+    effectiveLevers.luckRegressionWeight
+  );
 
   const totalMeanAdjustment =
     fourFactorsAdjustment +
@@ -149,7 +161,9 @@ export function resolveMatchup(
     opponentAdjustAdjustment +
     benchDepthAdjustment +
     paceAdjustAdjustment +
-    siteProximityAdjustment;
+    siteProximityAdjustment +
+    sosAdjustment +
+    luckRegressionAdjustment;
 
   // Step 5: Per-matchup override adjustments
   const overrideAdjustments = applyMatchupOverrides(overrides, teamA, teamB);
@@ -205,6 +219,8 @@ export function resolveMatchup(
     benchDepthAdjustment,
     paceAdjustAdjustment,
     siteProximityAdjustment,
+    sosAdjustment,
+    luckRegressionAdjustment,
     totalMeanAdjustment,
     overrideAdjustments,
     tempoVarianceMultiplier,

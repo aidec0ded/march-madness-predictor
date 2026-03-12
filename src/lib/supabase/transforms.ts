@@ -291,6 +291,11 @@ export function transformTeamSeasonRows(
 
       twoFoulParticipation: num(row.two_foul_participation),
 
+      sosNetRating: num(row.sos_net_rating),
+      sosOffRating: num(row.sos_off_rating),
+      sosDefRating: num(row.sos_def_rating),
+      luck: num(row.luck),
+
       evanmiyaOpponentAdjust: num(row.evanmiya_opponent_adjust),
       evanmiyaPaceAdjust: num(row.evanmiya_pace_adjust),
       evanmiyaKillShotsPerGame: num(row.evanmiya_kill_shots_per_game),

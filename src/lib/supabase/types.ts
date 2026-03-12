@@ -180,6 +180,12 @@ export interface Database {
           evanmiya_kill_shots_allowed_per_game: number | null;
           evanmiya_kill_shots_margin: number | null;
 
+          // Strength of Schedule & Luck (KenPom)
+          sos_net_rating: number | null;
+          sos_off_rating: number | null;
+          sos_def_rating: number | null;
+          luck: number | null;
+
           // Metadata
           data_sources: DbDataSource[];
           created_at: string;
@@ -238,6 +244,11 @@ export interface Database {
           evanmiya_kill_shots_allowed_per_game?: number | null;
           evanmiya_kill_shots_margin?: number | null;
 
+          sos_net_rating?: number | null;
+          sos_off_rating?: number | null;
+          sos_def_rating?: number | null;
+          luck?: number | null;
+
           data_sources?: DbDataSource[];
           created_at?: string;
           updated_at?: string;
@@ -294,6 +305,11 @@ export interface Database {
           evanmiya_kill_shots_per_game?: number | null;
           evanmiya_kill_shots_allowed_per_game?: number | null;
           evanmiya_kill_shots_margin?: number | null;
+
+          sos_net_rating?: number | null;
+          sos_off_rating?: number | null;
+          sos_def_rating?: number | null;
+          luck?: number | null;
 
           data_sources?: DbDataSource[];
           created_at?: string;

@@ -131,6 +131,18 @@ export function buildTeamDataBlock(
   // Style
   lines.push(`Style: 2-Foul Part ${team.twoFoulParticipation.toFixed(2)}`);
 
+  // Schedule & Luck
+  if (team.sosNetRating !== undefined) {
+    lines.push(
+      `Schedule: SoS Net ${team.sosNetRating >= 0 ? "+" : ""}${team.sosNetRating.toFixed(2)}`
+    );
+  }
+  if (team.luck !== undefined) {
+    lines.push(
+      `Luck: ${team.luck >= 0 ? "+" : ""}${team.luck.toFixed(3)}`
+    );
+  }
+
   // Evan Miya metrics (only if data loaded)
   if (team.evanmiyaOpponentAdjust !== undefined) {
     const oppAdj = team.evanmiyaOpponentAdjust;
@@ -171,7 +183,7 @@ function buildMatchupContext(req: NarrativeRequest): string {
 
   // Lever adjustments
   lines.push(
-    `Lever Adjustments: Four Factors ${breakdown.fourFactorsAdjustment >= 0 ? "+" : ""}${breakdown.fourFactorsAdjustment.toFixed(3)} | Experience ${breakdown.experienceAdjustment >= 0 ? "+" : ""}${breakdown.experienceAdjustment.toFixed(3)} | Continuity ${breakdown.continuityAdjustment >= 0 ? "+" : ""}${breakdown.continuityAdjustment.toFixed(3)} | Coach ${breakdown.coachAdjustment >= 0 ? "+" : ""}${breakdown.coachAdjustment.toFixed(3)} | Opp Adj ${breakdown.opponentAdjustAdjustment >= 0 ? "+" : ""}${breakdown.opponentAdjustAdjustment.toFixed(3)} | Bench Depth ${breakdown.benchDepthAdjustment >= 0 ? "+" : ""}${breakdown.benchDepthAdjustment.toFixed(3)} | Pace Adj ${breakdown.paceAdjustAdjustment >= 0 ? "+" : ""}${breakdown.paceAdjustAdjustment.toFixed(3)} | Site Proximity ${breakdown.siteProximityAdjustment >= 0 ? "+" : ""}${breakdown.siteProximityAdjustment.toFixed(3)}`
+    `Lever Adjustments: Four Factors ${breakdown.fourFactorsAdjustment >= 0 ? "+" : ""}${breakdown.fourFactorsAdjustment.toFixed(3)} | Experience ${breakdown.experienceAdjustment >= 0 ? "+" : ""}${breakdown.experienceAdjustment.toFixed(3)} | Continuity ${breakdown.continuityAdjustment >= 0 ? "+" : ""}${breakdown.continuityAdjustment.toFixed(3)} | Coach ${breakdown.coachAdjustment >= 0 ? "+" : ""}${breakdown.coachAdjustment.toFixed(3)} | Opp Adj ${breakdown.opponentAdjustAdjustment >= 0 ? "+" : ""}${breakdown.opponentAdjustAdjustment.toFixed(3)} | Bench Depth ${breakdown.benchDepthAdjustment >= 0 ? "+" : ""}${breakdown.benchDepthAdjustment.toFixed(3)} | Pace Adj ${breakdown.paceAdjustAdjustment >= 0 ? "+" : ""}${breakdown.paceAdjustAdjustment.toFixed(3)} | Site Proximity ${breakdown.siteProximityAdjustment >= 0 ? "+" : ""}${breakdown.siteProximityAdjustment.toFixed(3)} | SoS ${breakdown.sosAdjustment >= 0 ? "+" : ""}${breakdown.sosAdjustment.toFixed(3)} | Luck Reg ${breakdown.luckRegressionAdjustment >= 0 ? "+" : ""}${breakdown.luckRegressionAdjustment.toFixed(3)}`
   );
 
   // Variance multipliers
@@ -218,24 +230,6 @@ function buildOverrideContext(overrides: MatchupOverrides | undefined): string {
   if (overrides.restAdjustmentB && overrides.restAdjustmentB !== 0) {
     parts.push(
       `Team B rest: ${overrides.restAdjustmentB > 0 ? "+" : ""}${overrides.restAdjustmentB.toFixed(1)} eff pts`
-    );
-  }
-
-  // 2-Foul Participation (manual entry, narrative context)
-  if (
-    overrides.twoFoulParticipationA !== undefined &&
-    overrides.twoFoulParticipationA !== 0
-  ) {
-    parts.push(
-      `Team A 2-Foul Part: ${overrides.twoFoulParticipationA.toFixed(2)} (manual entry)`
-    );
-  }
-  if (
-    overrides.twoFoulParticipationB !== undefined &&
-    overrides.twoFoulParticipationB !== 0
-  ) {
-    parts.push(
-      `Team B 2-Foul Part: ${overrides.twoFoulParticipationB.toFixed(2)} (manual entry)`
     );
   }
 
@@ -371,6 +365,8 @@ export function hashNarrativeInput(request: NarrativeRequest): string {
     request.breakdown.benchDepthAdjustment.toFixed(4),
     request.breakdown.paceAdjustAdjustment.toFixed(4),
     request.breakdown.siteProximityAdjustment.toFixed(4),
+    request.breakdown.sosAdjustment.toFixed(4),
+    request.breakdown.luckRegressionAdjustment.toFixed(4),
     // Include override total (changes with per-matchup overrides)
     request.breakdown.overrideAdjustments.total.toFixed(4),
   ];

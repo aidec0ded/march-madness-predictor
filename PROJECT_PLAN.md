@@ -298,8 +298,8 @@
 
 ### Batch 4 — Data Ingestion _(sequential)_
 
-- [ ] **Populate real 2026 bracket teams** — Replace test data with likely tournament field using Bracket Matrix as guide; define methodology for inputting the actual bracket post-Selection Sunday
-- [ ] **Historical tournament data for backtesting** — Integrate Kaggle March Machine Learning Mania dataset (https://www.kaggle.com/competitions/march-machine-learning-mania-2023/data) for additional historical coverage; identify gaps and fill for tournaments not included
+- [x] **Populate real 2026 bracket teams** — Tournament bracket population admin tooling, tournament entries seeded via admin panel
+- [x] **Historical tournament data for backtesting** — Kaggle March Machine Learning Mania dataset integrated, historical tournament results scraped and seeded
 - [x] **Coach data ingestion** — Kaggle tournament results pipeline (`scripts/seed-coaches.ts`), `--all-seasons` flag for historical data, coach table with win/loss/F4/championship records
 - [x] **Tournament venue / location data** — Admin API (`POST/GET/DELETE /api/admin/tournament-sites`), `tournament_sites` Supabase table, `buildSiteMap()` for round/region→venue mapping, continuous exponential decay distance model for site proximity global lever, auto-computed from campus-to-venue haversine distance
 - [ ] **NET Ranking / Strength of Schedule lever** — Add NET ranking or SoS-based lever (requires manual data capture + DB ingestion pipeline)
@@ -327,9 +327,10 @@
 - [ ] **Performance audit** — Bundle analyzer, API response time benchmarks (deferred from Phase 11)
 - [ ] **Responsive / mobile design polish** — Tablet horizontal scroll, mobile region-by-region bracket view (deferred from Phase 5 and Phase 11)
 
-### Batch 8 — Custom Domain
+### Batch 8 — Infrastructure & Tooling
 
 - [ ] **Custom domain setup** — Configure custom domain on deployment provider (Render)
+- [ ] **Fix Vitest / Vite ESM compatibility** — Vitest 4.0.x CJS entrypoint cannot `require()` ESM-only Vite 7.x; likely fix is adding `"type": "module"` to `package.json` or pinning Vite to v6
 
 ### Claude Code Skills _(completed)_
 

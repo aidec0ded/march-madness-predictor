@@ -50,6 +50,10 @@ The four most important statistical categories for predicting wins. Each has an 
 - **Coach Tournament Record**: Wins/Games in the NCAA tournament. Indicates experience with tournament-specific pressure, adjustments, and short-preparation matchups.
 - **Final Fours / Championships**: Elite postseason pedigree. Coaches with F4 experience have demonstrated the ability to prepare teams for neutral-site, one-and-done pressure.
 
+### Schedule & Luck (KenPom)
+- **SoS Net Rating**: Average net efficiency rating of opponents faced. Measures schedule difficulty. D-1 avg ≈ 0. Positive = faced tougher-than-average opponents. Adjusted efficiency ratings already partially account for schedule strength, so this signal is supplementary — it gives extra credit for teams that earned their numbers against elite competition.
+- **Luck**: Per-game over/underperformance vs. efficiency. Positive = won more close games than expected. Range roughly -0.08 to +0.16 for tournament teams. Key insight: high-luck teams tend to regress in single-elimination play because their record was partially inflated by unsustainable close-game outcomes. A team with +0.10 luck should be treated with more skepticism than their record suggests.
+
 ### Evan Miya Metrics
 - **Opponent Adjustment**: Measures how a team's performance scales relative to competition level. Positive = team "plays up" against strong opponents (overperforms vs. quality). Negative = team "plays down" (underperforms vs. weaker opponents). A high seed with strong opponent adjust is less upset-prone in early rounds. A high seed with negative opponent adjust is more vulnerable to upsets than ratings suggest.
 - **Pace Adjustment**: How a team performs in faster vs. slower games relative to their typical pace. Positive = better in faster games. Key interaction: when two teams with a tempo mismatch meet, the team with pace adjustment aligned to the expected game pace has an edge.
@@ -75,4 +79,6 @@ The four most important statistical categories for predicting wins. Each has an 
 6. **FT rate mismatch + aggressive play**: When one team gets to the line frequently against a defense that fouls a lot, free throws become a significant scoring channel.
 7. **Opponent adjust + seed mismatch**: A high seed with negative opponent adjustment is more vulnerable to upsets than raw ratings suggest — they may not elevate their play against a motivated underdog.
 8. **Kill shots + close game projection**: When the model projects a close game (spread < 5), teams with high kill shot margins have a meaningful edge — they can manufacture the decisive run that flips the outcome.
+9. **SoS + similar ratings**: When two teams have similar adjusted efficiency margins but one faced a significantly tougher schedule, the SoS adjustment gives credit to the team that earned their numbers against better opponents.
+10. **High luck + close spread**: A team with high positive luck facing a tight matchup is especially vulnerable — their record was partly inflated by unsustainable close-game outcomes, and single-elimination play is unforgiving.
 `;

@@ -206,29 +206,6 @@ export function MatchupOverridePanel({
         />
       </OverrideSection>
 
-      {/* 2-Foul Participation — manual entry, narrative context only */}
-      <OverrideSection
-        title="2-Foul Participation"
-        description="Rate at which coach keeps players with 2 fouls in the game (0-1). Narrative context only — does not affect probability. Find on kenpom.com under team page."
-      >
-        <Slider
-          label={`${teamA.team.shortName} 2FP`}
-          min={0}
-          max={1}
-          step={0.01}
-          value={overrides?.twoFoulParticipationA ?? 0}
-          onChange={(v) => updateOverride({ twoFoulParticipationA: v })}
-        />
-        <Slider
-          label={`${teamB.team.shortName} 2FP`}
-          min={0}
-          max={1}
-          step={0.01}
-          value={overrides?.twoFoulParticipationB ?? 0}
-          onChange={(v) => updateOverride({ twoFoulParticipationB: v })}
-        />
-      </OverrideSection>
-
       <style jsx>{`
         .override-panel {
           display: flex;

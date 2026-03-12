@@ -84,6 +84,9 @@ function serializeTeamData(team: TeamSeason): NarrativeTeamData {
 
     twoFoulParticipation: team.twoFoulParticipation,
 
+    sosNetRating: team.sosNetRating,
+    luck: team.luck,
+
     coachName: team.coach.name,
     coachTournamentWins: team.coach.tournamentWins,
     coachTournamentGames: team.coach.tournamentGames,

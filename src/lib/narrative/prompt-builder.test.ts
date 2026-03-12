@@ -91,6 +91,8 @@ function makeBreakdown(overrides: Partial<ProbabilityBreakdown> = {}): Probabili
     paceAdjustAdjustment: 0,
     totalMeanAdjustment: 0.05,
     siteProximityAdjustment: 0,
+    sosAdjustment: 0,
+    luckRegressionAdjustment: 0,
     overrideAdjustments: {
       injury: 0,
       recentForm: 0,

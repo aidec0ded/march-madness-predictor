@@ -246,6 +246,16 @@ export interface TeamSeason {
   /** 2-Foul Participation — tendency to keep players in with 2 fouls */
   twoFoulParticipation: number;
 
+  // --- Schedule & Luck (KenPom) ---
+  /** Strength of Schedule — average opponent net efficiency rating */
+  sosNetRating: number;
+  /** Offensive SoS — average opponent offensive efficiency */
+  sosOffRating: number;
+  /** Defensive SoS — average opponent defensive efficiency */
+  sosDefRating: number;
+  /** Luck — per-game over/underperformance vs efficiency (positive = overperformed) */
+  luck: number;
+
   // --- Evan Miya-specific metrics ---
   /** Opponent Adjustment — how well team plays up/down to competition (positive = plays UP) */
   evanmiyaOpponentAdjust: number;

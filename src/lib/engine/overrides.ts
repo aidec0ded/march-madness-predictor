@@ -147,6 +147,12 @@ export function mergeLevers(
   if (lo.siteProximityWeight !== undefined) {
     merged.siteProximityWeight = lo.siteProximityWeight;
   }
+  if (lo.sosWeight !== undefined) {
+    merged.sosWeight = lo.sosWeight;
+  }
+  if (lo.luckRegressionWeight !== undefined) {
+    merged.luckRegressionWeight = lo.luckRegressionWeight;
+  }
 
   return merged;
 }

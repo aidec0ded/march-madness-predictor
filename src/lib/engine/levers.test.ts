@@ -12,6 +12,8 @@ import {
   calculateBenchDepthAdjustment,
   calculatePaceAdjustAdjustment,
   calculateSiteProximityAdjustment,
+  calculateSosAdjustment,
+  calculateLuckRegressionAdjustment,
   calculateTempoVarianceMultiplier,
   calculateThreePtVarianceMultiplier,
 } from "@/lib/engine/levers";
@@ -578,6 +580,106 @@ describe("calculateThreePtVarianceMultiplier", () => {
     const result = calculateThreePtVarianceMultiplier(teamA, teamB, 1.0);
     // avg = 65, 1.0 + (65-35)*0.02 = 1.0 + 0.6 = 1.6 → clamped to 1.5
     expect(result).toBeCloseTo(1.5, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SoS Adjustment
+// ---------------------------------------------------------------------------
+
+describe("calculateSosAdjustment", () => {
+  it("returns 0 for equal SoS", () => {
+    const teamA = createMockTeamSeason({ id: "a", sosNetRating: 5.0 });
+    const teamB = createMockTeamSeason({ id: "b", sosNetRating: 5.0 });
+    const result = calculateSosAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("returns positive when team A has harder schedule", () => {
+    const teamA = createMockTeamSeason({ id: "a", sosNetRating: 14.0 });
+    const teamB = createMockTeamSeason({ id: "b", sosNetRating: -2.0 });
+    const result = calculateSosAdjustment(teamA, teamB, 1.0);
+    // (14 - (-2)) * 0.10 * 1.0 = 16 * 0.10 = 1.6
+    expect(result).toBeCloseTo(1.6, 5);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createMockTeamSeason({ id: "a", sosNetRating: 15.0 });
+    const teamB = createMockTeamSeason({ id: "b", sosNetRating: -5.0 });
+    const result = calculateSosAdjustment(teamA, teamB, 0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("scales by weight", () => {
+    const teamA = createMockTeamSeason({ id: "a", sosNetRating: 10.0 });
+    const teamB = createMockTeamSeason({ id: "b", sosNetRating: 0 });
+    const result1 = calculateSosAdjustment(teamA, teamB, 1.0);
+    const result2 = calculateSosAdjustment(teamA, teamB, 2.0);
+    expect(result2).toBeCloseTo(result1 * 2, 5);
+  });
+
+  it("returns negative when team B has harder schedule", () => {
+    const teamA = createMockTeamSeason({ id: "a", sosNetRating: -5.0 });
+    const teamB = createMockTeamSeason({ id: "b", sosNetRating: 10.0 });
+    const result = calculateSosAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeLessThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Luck Regression
+// ---------------------------------------------------------------------------
+
+describe("calculateLuckRegressionAdjustment", () => {
+  it("returns 0 for equal luck", () => {
+    const teamA = createMockTeamSeason({ id: "a", luck: 0.05 });
+    const teamB = createMockTeamSeason({ id: "b", luck: 0.05 });
+    const result = calculateLuckRegressionAdjustment(teamA, teamB, 1.0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("penalizes team A when A is luckier (negative adjustment)", () => {
+    const teamA = createMockTeamSeason({ id: "a", luck: 0.10 });
+    const teamB = createMockTeamSeason({ id: "b", luck: -0.05 });
+    const result = calculateLuckRegressionAdjustment(teamA, teamB, 1.0);
+    // (luckB - luckA) * 8.0 * 1.0 = (-0.05 - 0.10) * 8.0 = -0.15 * 8.0 = -1.2
+    expect(result).toBeCloseTo(-1.2, 5);
+    expect(result).toBeLessThan(0);
+  });
+
+  it("rewards team A when B is luckier (positive adjustment)", () => {
+    const teamA = createMockTeamSeason({ id: "a", luck: -0.05 });
+    const teamB = createMockTeamSeason({ id: "b", luck: 0.10 });
+    const result = calculateLuckRegressionAdjustment(teamA, teamB, 1.0);
+    // (0.10 - (-0.05)) * 8.0 = 0.15 * 8.0 = 1.2
+    expect(result).toBeCloseTo(1.2, 5);
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it("returns 0 when weight is 0", () => {
+    const teamA = createMockTeamSeason({ id: "a", luck: 0.15 });
+    const teamB = createMockTeamSeason({ id: "b", luck: -0.08 });
+    const result = calculateLuckRegressionAdjustment(teamA, teamB, 0);
+    expect(result).toBeCloseTo(0, 5);
+  });
+
+  it("scales by weight", () => {
+    const teamA = createMockTeamSeason({ id: "a", luck: 0.08 });
+    const teamB = createMockTeamSeason({ id: "b", luck: 0.0 });
+    const result1 = calculateLuckRegressionAdjustment(teamA, teamB, 1.0);
+    const result2 = calculateLuckRegressionAdjustment(teamA, teamB, 2.0);
+    expect(result2).toBeCloseTo(result1 * 2, 5);
+  });
+
+  it("matches expected magnitude for realistic values", () => {
+    // Florida: luck = -0.051, Liberty: luck = 0.157
+    const florida = createMockTeamSeason({ id: "florida", luck: -0.051 });
+    const liberty = createMockTeamSeason({ id: "liberty", luck: 0.157 });
+    const result = calculateLuckRegressionAdjustment(florida, liberty, 1.0);
+    // (0.157 - (-0.051)) * 8.0 = 0.208 * 8.0 = 1.664
+    // Florida (unlucky) benefits → positive for Florida (team A)
+    expect(result).toBeCloseTo(1.664, 2);
+    expect(result).toBeGreaterThan(0);
   });
 });
 

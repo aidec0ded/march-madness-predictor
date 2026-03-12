@@ -112,6 +112,22 @@ export interface GlobalLevers {
    */
   siteProximityWeight: number;
 
+  /**
+   * Strength of schedule weight.
+   * Extra credit for teams whose efficiency was earned against tougher opponents.
+   * Adjusted ratings already partially account for SoS, so this is supplementary.
+   * 0 = ignore, 1 = default.
+   */
+  sosWeight: number;
+
+  /**
+   * Luck regression weight.
+   * Penalizes teams that overperformed their efficiency (won close games at
+   * unsustainable rates). Tournament play tends to regress these outcomes.
+   * 0 = ignore, 1 = default.
+   */
+  luckRegressionWeight: number;
+
   // --- Variance-adjusting levers ---
 
   /**
@@ -271,6 +287,12 @@ export interface ProbabilityBreakdown {
   /** Mean adjustment from site proximity (campus-to-venue distance) */
   siteProximityAdjustment: number;
 
+  /** Mean adjustment from strength of schedule comparison */
+  sosAdjustment: number;
+
+  /** Mean adjustment from luck regression-to-mean */
+  luckRegressionAdjustment: number;
+
   /** Total mean adjustment from all levers */
   totalMeanAdjustment: number;
 
@@ -366,6 +388,8 @@ export const DEFAULT_GLOBAL_LEVERS: GlobalLevers = {
   benchDepthWeight: 0, // Matchup-level only
   paceAdjustWeight: 0, // Matchup-level only
   siteProximityWeight: 1.0, // Auto-computed from tournament sites
+  sosWeight: 1.0,
+  luckRegressionWeight: 1.0,
   tempoVarianceWeight: 1.0,
   threePtVarianceWeight: 1.0,
 };

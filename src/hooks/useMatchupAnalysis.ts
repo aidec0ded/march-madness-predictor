@@ -169,6 +169,24 @@ export function buildStatCategories(
     },
     // Other
     {
+      label: "SoS (Net)",
+      valueA: teamA.sosNetRating,
+      valueB: teamB.sosNetRating,
+      higherIsBetter: true,
+      format: "decimal",
+      group: "other",
+      ...ranks("SoS (Net)"),
+    },
+    {
+      label: "Luck",
+      valueA: teamA.luck,
+      valueB: teamB.luck,
+      higherIsBetter: false,
+      format: "decimal",
+      group: "other",
+      ...ranks("Luck"),
+    },
+    {
       label: "Adj Tempo",
       valueA: teamA.adjTempo,
       valueB: teamB.adjTempo,
@@ -304,6 +322,16 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
       {
         label: "Site Proximity",
         value: result.breakdown.siteProximityAdjustment,
+        format: "adjustment",
+      },
+      {
+        label: "Strength of Schedule",
+        value: result.breakdown.sosAdjustment,
+        format: "adjustment",
+      },
+      {
+        label: "Luck Regression",
+        value: result.breakdown.luckRegressionAdjustment,
         format: "adjustment",
       },
       {

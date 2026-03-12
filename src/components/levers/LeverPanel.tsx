@@ -170,6 +170,22 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
           />
         </Section>
 
+        {/* Schedule & Luck — default collapsed */}
+        <Section title="Schedule &amp; Luck">
+          <LeverSlider
+            label="Strength of Schedule"
+            description="Extra credit for teams whose efficiency was earned against tougher opponents. Adjusted ratings already partially account for SoS."
+            value={globalLevers.sosWeight}
+            onChange={(sosWeight) => updateLevers({ sosWeight })}
+          />
+          <LeverSlider
+            label="Luck Regression"
+            description="Penalty for teams that overperformed their efficiency (won close games at unsustainable rates). Tournament play tends to regress these outcomes."
+            value={globalLevers.luckRegressionWeight}
+            onChange={(luckRegressionWeight) => updateLevers({ luckRegressionWeight })}
+          />
+        </Section>
+
         {/* Variance — default collapsed */}
         <Section title="Variance">
           <VarianceControls
