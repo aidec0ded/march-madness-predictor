@@ -369,6 +369,75 @@ describe("TeamCard", () => {
       const button = screen.getByRole("button");
       expect(button.title).toBe("Championship: 12.3%");
     });
+
+    it("shows path probability tooltip when pathProbability is provided", () => {
+      render(
+        <TeamCard
+          team={team1Seed}
+          seed={1}
+          probability={0.85}
+          pathProbability={0.72}
+          isWinner={false}
+          isClickable={true}
+          onClick={() => {}}
+        />
+      );
+      const button = screen.getByRole("button");
+      expect(button.title).toBe("Sim path: 72.0% to advance");
+    });
+
+    it("shows combined path + championship tooltip when both provided", () => {
+      render(
+        <TeamCard
+          team={team1Seed}
+          seed={1}
+          probability={0.85}
+          pathProbability={0.72}
+          championshipProbability={0.15}
+          isWinner={false}
+          isClickable={true}
+          onClick={() => {}}
+        />
+      );
+      const button = screen.getByRole("button");
+      expect(button.title).toBe(
+        "Sim path: 72.0% to advance | Championship: 15.0%"
+      );
+    });
+
+    it("path probability takes priority over championship-only tooltip", () => {
+      render(
+        <TeamCard
+          team={team1Seed}
+          seed={1}
+          probability={0.85}
+          pathProbability={0.5}
+          championshipProbability={0.1}
+          isWinner={false}
+          isClickable={true}
+          onClick={() => {}}
+        />
+      );
+      const button = screen.getByRole("button");
+      // Should start with "Sim path:" not just "Championship:"
+      expect(button.title).toContain("Sim path:");
+      expect(button.title).toContain("Championship:");
+    });
+
+    it("has no tooltip when neither path nor championship probability is provided", () => {
+      render(
+        <TeamCard
+          team={team1Seed}
+          seed={1}
+          probability={0.85}
+          isWinner={false}
+          isClickable={true}
+          onClick={() => {}}
+        />
+      );
+      const button = screen.getByRole("button");
+      expect(button.title).toBe("");
+    });
   });
 
   describe("seed color coding", () => {

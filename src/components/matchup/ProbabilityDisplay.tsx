@@ -29,6 +29,10 @@ interface ProbabilityDisplayProps {
   teamA: TeamSeason;
   /** Team B data */
   teamB: TeamSeason;
+  /** Path probability for team A — P(advancing past this round) from simulation (optional) */
+  pathProbA?: number | null;
+  /** Path probability for team B — P(advancing past this round) from simulation (optional) */
+  pathProbB?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +72,8 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
   analysis,
   teamA,
   teamB,
+  pathProbA,
+  pathProbB,
 }: ProbabilityDisplayProps) {
   const hasOverrides = analysis.probA !== analysis.baseProbA;
   const spreadStr =
@@ -118,6 +124,28 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
           }}
         />
       </div>
+
+      {/* Simulation path probability (shown when simulation has been run) */}
+      {(pathProbA != null || pathProbB != null) && (
+        <div className="prob-display__path-info">
+          <span className="prob-display__path-label">Simulation path to advance:</span>
+          <div className="prob-display__path-values">
+            {pathProbA != null && (
+              <span className="prob-display__path-value" style={{ color: "var(--accent-primary)" }}>
+                {teamA.team.shortName} {fmtProb(pathProbA)}
+              </span>
+            )}
+            {pathProbA != null && pathProbB != null && (
+              <span className="prob-display__path-sep">|</span>
+            )}
+            {pathProbB != null && (
+              <span className="prob-display__path-value" style={{ color: "var(--accent-danger)" }}>
+                {teamB.team.shortName} {fmtProb(pathProbB)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Breakdown table */}
       <div className="prob-display__breakdown">
@@ -190,6 +218,37 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
           height: 100%;
           border-radius: 4px;
           transition: width 0.3s ease;
+        }
+        .prob-display__path-info {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          background-color: var(--bg-elevated);
+          border: 1px solid var(--border-subtle);
+        }
+        .prob-display__path-label {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: var(--text-muted);
+        }
+        .prob-display__path-values {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .prob-display__path-value {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+        }
+        .prob-display__path-sep {
+          color: var(--text-muted);
+          font-size: 0.75rem;
         }
         .prob-display__breakdown {
           display: flex;

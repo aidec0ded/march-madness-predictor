@@ -14,8 +14,10 @@ interface TeamCardProps {
   team: TeamSeason | null;
   /** Tournament seed */
   seed: number;
-  /** Win probability for this round (null if simulation not run) */
+  /** Per-game head-to-head win probability (null if not yet computable) */
   probability: number | null;
+  /** Path probability — P(advancing past this round) from simulation (optional) */
+  pathProbability?: number | null;
   /** Championship probability (null if simulation not run) */
   championshipProbability?: number | null;
   /** Whether this team is the selected winner of the matchup */
@@ -61,6 +63,7 @@ export const TeamCard = memo(function TeamCard({
   team,
   seed,
   probability,
+  pathProbability,
   championshipProbability,
   isWinner,
   isClickable,
@@ -106,9 +109,11 @@ export const TeamCard = memo(function TeamCard({
           : "2px solid transparent",
       }}
       title={
-        championshipProbability != null
-          ? `Championship: ${(championshipProbability * 100).toFixed(1)}%`
-          : undefined
+        pathProbability != null
+          ? `Sim path: ${(pathProbability * 100).toFixed(1)}% to advance${championshipProbability != null ? ` | Championship: ${(championshipProbability * 100).toFixed(1)}%` : ""}`
+          : championshipProbability != null
+            ? `Championship: ${(championshipProbability * 100).toFixed(1)}%`
+            : undefined
       }
     >
       {/* Top row: seed + name + probability + ownership */}

@@ -17,6 +17,7 @@ import type { TeamSeason, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
 import type { OwnershipModel } from "@/types/game-theory";
+import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,8 @@ interface FinalFourProps {
   onMatchupClick?: (gameId: string) => void;
   /** Ownership model for displaying ownership badges (optional) */
   ownershipModel?: OwnershipModel | null;
+  /** Per-game head-to-head probabilities from resolveMatchup (optional) */
+  gameProbabilities?: GameProbabilities;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,11 +64,23 @@ function resolveTeamFromPick(
 }
 
 /**
- * Gets the win probability for a team in a specific round from simulation results.
+ * Maps a round to the next round, used for extracting path probabilities.
+ * For NCG, use championshipProbability instead.
  */
-function getTeamProbability(
+const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
+  F4: "NCG",
+  NCG: "champion",
+};
+
+/**
+ * Gets the path probability for a team in a matchup from simulation results.
+ *
+ * This is the probability of advancing past this round (reaching the next round),
+ * shown as a tooltip supplement to the per-game win probability.
+ */
+function getPathProbability(
   teamId: string | undefined,
-  round: TournamentRound,
+  round: string,
   simulationResult: SimulationResult | null
 ): number | null {
   if (!teamId || !simulationResult) return null;
@@ -73,7 +88,15 @@ function getTeamProbability(
     (r) => r.teamId === teamId
   );
   if (!teamResult) return null;
-  return teamResult.roundProbabilities[round] ?? null;
+
+  const nextRound = NEXT_ROUND[round];
+  if (!nextRound) return null;
+
+  if (nextRound === "champion") {
+    return teamResult.championshipProbability;
+  }
+
+  return teamResult.roundProbabilities[nextRound] ?? null;
 }
 
 /**
@@ -181,6 +204,7 @@ export function FinalFour({
   onAdvance,
   onMatchupClick,
   ownershipModel,
+  gameProbabilities,
 }: FinalFourProps) {
   // Sort matchups: F4-1 first, then F4-2, then NCG
   const f4Game1 = matchups.find((m) => m.gameId === "F4-1");
@@ -262,12 +286,14 @@ export function FinalFour({
             teamA={f4Game1TeamA}
             teamB={f4Game1TeamB}
             winner={picks["F4-1"] ?? null}
-            probA={getTeamProbability(
+            probA={gameProbabilities?.["F4-1"]?.probA ?? null}
+            probB={gameProbabilities?.["F4-1"]?.probB ?? null}
+            pathProbA={getPathProbability(
               f4Game1TeamA?.teamId,
               "F4",
               simulationResult
             )}
-            probB={getTeamProbability(
+            pathProbB={getPathProbability(
               f4Game1TeamB?.teamId,
               "F4",
               simulationResult
@@ -316,12 +342,14 @@ export function FinalFour({
             teamA={ncgTeamA}
             teamB={ncgTeamB}
             winner={picks["NCG"] ?? null}
-            probA={getTeamProbability(
+            probA={gameProbabilities?.["NCG"]?.probA ?? null}
+            probB={gameProbabilities?.["NCG"]?.probB ?? null}
+            pathProbA={getPathProbability(
               ncgTeamA?.teamId,
               "NCG",
               simulationResult
             )}
-            probB={getTeamProbability(
+            pathProbB={getPathProbability(
               ncgTeamB?.teamId,
               "NCG",
               simulationResult
@@ -373,12 +401,14 @@ export function FinalFour({
             teamA={f4Game2TeamA}
             teamB={f4Game2TeamB}
             winner={picks["F4-2"] ?? null}
-            probA={getTeamProbability(
+            probA={gameProbabilities?.["F4-2"]?.probA ?? null}
+            probB={gameProbabilities?.["F4-2"]?.probB ?? null}
+            pathProbA={getPathProbability(
               f4Game2TeamA?.teamId,
               "F4",
               simulationResult
             )}
-            probB={getTeamProbability(
+            pathProbB={getPathProbability(
               f4Game2TeamB?.teamId,
               "F4",
               simulationResult

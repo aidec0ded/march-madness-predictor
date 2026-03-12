@@ -278,4 +278,47 @@ describe("MatchupSlot", () => {
     expect(screen.getByText("75%")).toBeInTheDocument();
     expect(screen.getByText("12%")).toBeInTheDocument();
   });
+
+  it("passes path probabilities through to TeamCards as tooltips", () => {
+    render(
+      <MatchupSlot
+        gameId="R64-East-1"
+        round="R64"
+        teamA={teamA}
+        teamB={teamB}
+        winner={null}
+        probA={0.85}
+        probB={0.15}
+        pathProbA={0.72}
+        pathProbB={0.08}
+        hasOverrides={false}
+        onAdvance={() => {}}
+      />
+    );
+    const buttons = screen.getAllByRole("button");
+    // Team A button should have path probability tooltip
+    expect(buttons[0].title).toContain("Sim path: 72.0% to advance");
+    // Team B button should have path probability tooltip
+    expect(buttons[1].title).toContain("Sim path: 8.0% to advance");
+  });
+
+  it("works without path probabilities (optional props)", () => {
+    render(
+      <MatchupSlot
+        gameId="R64-East-1"
+        round="R64"
+        teamA={teamA}
+        teamB={teamB}
+        winner={null}
+        probA={0.85}
+        probB={0.15}
+        hasOverrides={false}
+        onAdvance={() => {}}
+      />
+    );
+    const buttons = screen.getAllByRole("button");
+    // No path prob, no championship prob → empty tooltip
+    expect(buttons[0].title).toBe("");
+    expect(buttons[1].title).toBe("");
+  });
 });

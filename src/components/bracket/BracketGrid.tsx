@@ -25,6 +25,7 @@
 import React, { useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
+import { useGameProbabilities } from "@/hooks/useGameProbabilities";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
@@ -105,6 +106,7 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   const { state, dispatch } = useBracket();
   const { ownershipModel } = useContestStrategy();
+  const gameProbabilities = useGameProbabilities();
 
   // Build the 63-matchup tree (stable reference since it's pure)
   const allMatchups = useMemo(() => buildBracketMatchups(), []);
@@ -189,6 +191,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
               ownershipModel={ownershipModel}
+              gameProbabilities={gameProbabilities}
             />
           ))}
         </div>
@@ -203,6 +206,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
           onAdvance={handleAdvance}
           onMatchupClick={handleMatchupClick}
           ownershipModel={ownershipModel}
+          gameProbabilities={gameProbabilities}
         />
 
         {/* Right side: West (top) + Midwest (bottom) */}
@@ -226,6 +230,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
               ownershipModel={ownershipModel}
+              gameProbabilities={gameProbabilities}
             />
           ))}
         </div>

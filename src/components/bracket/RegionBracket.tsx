@@ -18,6 +18,7 @@ import type { Region, TeamSeason, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
 import type { OwnershipModel } from "@/types/game-theory";
+import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition } from "@/lib/bracket-layout";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
@@ -47,6 +48,8 @@ interface RegionBracketProps {
   onMatchupClick?: (gameId: string) => void;
   /** Ownership model for displaying ownership badges (optional) */
   ownershipModel?: OwnershipModel | null;
+  /** Per-game head-to-head probabilities from resolveMatchup (optional) */
+  gameProbabilities?: GameProbabilities;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,11 +57,29 @@ interface RegionBracketProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Gets the win probability for a team in a specific round from simulation results.
+ * Maps a round to the next round, used for extracting path probabilities.
+ *
+ * Path probability for a matchup = P(advancing past this round) =
+ * simulation's roundProbabilities[nextRound]. For NCG, use championshipProbability.
  */
-function getTeamProbability(
+const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
+  R64: "R32",
+  R32: "S16",
+  S16: "E8",
+  E8: "F4",
+  F4: "NCG",
+  NCG: "champion",
+};
+
+/**
+ * Gets the path probability for a team in a matchup from simulation results.
+ *
+ * This is the probability of advancing past this round (reaching the next round),
+ * shown as a tooltip supplement to the per-game win probability.
+ */
+function getPathProbability(
   teamId: string | undefined,
-  round: TournamentRound,
+  round: string,
   simulationResult: SimulationResult | null
 ): number | null {
   if (!teamId || !simulationResult) return null;
@@ -66,7 +87,15 @@ function getTeamProbability(
     (r) => r.teamId === teamId
   );
   if (!teamResult) return null;
-  return teamResult.roundProbabilities[round] ?? null;
+
+  const nextRound = NEXT_ROUND[round];
+  if (!nextRound) return null;
+
+  if (nextRound === "champion") {
+    return teamResult.championshipProbability;
+  }
+
+  return teamResult.roundProbabilities[nextRound] ?? null;
 }
 
 /**
@@ -137,6 +166,7 @@ export function RegionBracket({
   onAdvance,
   onMatchupClick,
   ownershipModel,
+  gameProbabilities,
 }: RegionBracketProps) {
   const connectors = generateConnectors(matchups, picks, direction);
 
@@ -219,13 +249,18 @@ export function RegionBracket({
           const winner = picks[matchup.gameId] ?? null;
           const hasOverrides = matchup.gameId in matchupOverrides;
 
-          // Get probabilities for this specific round
-          const probA = getTeamProbability(
+          // Per-game head-to-head probabilities (from resolveMatchup)
+          const gameProb = gameProbabilities?.[matchup.gameId];
+          const probA = gameProb?.probA ?? null;
+          const probB = gameProb?.probB ?? null;
+
+          // Path probabilities from simulation (for tooltips)
+          const pathProbA = getPathProbability(
             teamA?.teamId,
             matchup.round,
             simulationResult
           );
-          const probB = getTeamProbability(
+          const pathProbB = getPathProbability(
             teamB?.teamId,
             matchup.round,
             simulationResult
@@ -261,6 +296,8 @@ export function RegionBracket({
                 winner={winner}
                 probA={probA}
                 probB={probB}
+                pathProbA={pathProbA}
+                pathProbB={pathProbB}
                 hasOverrides={hasOverrides}
                 onAdvance={(teamId) => onAdvance(matchup.gameId, teamId)}
                 onMatchupClick={onMatchupClick}

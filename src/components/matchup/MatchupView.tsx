@@ -16,9 +16,10 @@
  * Closes on Escape key or clicking the back button.
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useMatchupAnalysis } from "@/hooks/useMatchupAnalysis";
+import type { TournamentRound } from "@/types/team";
 import { TeamProfileCard } from "@/components/matchup/TeamProfileCard";
 import { StatComparison } from "@/components/matchup/StatComparison";
 import { ProbabilityDisplay } from "@/components/matchup/ProbabilityDisplay";
@@ -53,6 +54,18 @@ const ROUND_LABELS: Record<string, string> = {
   NCG: "National Championship",
 };
 
+/**
+ * Maps a round to the next round, used for extracting path probabilities.
+ */
+const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
+  R64: "R32",
+  R32: "S16",
+  S16: "E8",
+  E8: "F4",
+  F4: "NCG",
+  NCG: "champion",
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -65,6 +78,31 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
 
   // Get current overrides for this game
   const overrides = state.matchupOverrides[gameId];
+
+  // Extract path probabilities from simulation result for both teams
+  const { pathProbA, pathProbB } = useMemo(() => {
+    if (!state.simulationResult || !analysis) {
+      return { pathProbA: null, pathProbB: null };
+    }
+    const round = analysis.round;
+    const nextRound = NEXT_ROUND[round];
+    if (!nextRound) return { pathProbA: null, pathProbB: null };
+
+    const getPath = (teamId: string | undefined): number | null => {
+      if (!teamId) return null;
+      const tr = state.simulationResult!.teamResults.find(
+        (r) => r.teamId === teamId
+      );
+      if (!tr) return null;
+      if (nextRound === "champion") return tr.championshipProbability;
+      return tr.roundProbabilities[nextRound] ?? null;
+    };
+
+    return {
+      pathProbA: getPath(teamA?.teamId),
+      pathProbB: getPath(teamB?.teamId),
+    };
+  }, [state.simulationResult, analysis, teamA?.teamId, teamB?.teamId]);
 
   // Close on Escape
   const handleKeyDown = useCallback(
@@ -164,6 +202,8 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                 analysis={analysis}
                 teamA={teamA}
                 teamB={teamB}
+                pathProbA={pathProbA}
+                pathProbB={pathProbB}
               />
 
               {/* Team Profile Cards side-by-side */}

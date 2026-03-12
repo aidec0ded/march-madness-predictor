@@ -19,10 +19,14 @@ interface MatchupSlotProps {
   teamB: TeamSeason | null;
   /** ID of the winning team (null if no pick made) */
   winner: string | null;
-  /** Win probability for team A (null if simulation not run) */
+  /** Win probability for team A (null if not yet computable) */
   probA: number | null;
-  /** Win probability for team B (null if simulation not run) */
+  /** Win probability for team B (null if not yet computable) */
   probB: number | null;
+  /** Path probability for team A — P(advancing past this round) from simulation (optional) */
+  pathProbA?: number | null;
+  /** Path probability for team B — P(advancing past this round) from simulation (optional) */
+  pathProbB?: number | null;
   /** Whether per-matchup overrides are applied */
   hasOverrides: boolean;
   /** Handler for advancing a team (picking a winner) */
@@ -57,6 +61,8 @@ export function MatchupSlot({
   winner,
   probA,
   probB,
+  pathProbA,
+  pathProbB,
   hasOverrides,
   onAdvance,
   onMatchupClick,
@@ -82,6 +88,7 @@ export function MatchupSlot({
         team={teamA}
         seed={seedA}
         probability={probA}
+        pathProbability={pathProbA}
         isWinner={winner === teamA?.teamId}
         isClickable={teamA != null}
         onClick={() => {
@@ -104,6 +111,7 @@ export function MatchupSlot({
         team={teamB}
         seed={seedB}
         probability={probB}
+        pathProbability={pathProbB}
         isWinner={winner === teamB?.teamId}
         isClickable={teamB != null}
         onClick={() => {
