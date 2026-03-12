@@ -16,7 +16,8 @@ describe("OwnershipBadge", () => {
   it("shows precise value in title tooltip", () => {
     const { container } = render(<OwnershipBadge ownershipPct={45.7} />);
     const span = container.firstElementChild as HTMLElement;
-    expect(span.title).toBe("Estimated 45.7% public ownership");
+    expect(span.title).toContain("Estimated 45.7% public ownership");
+    expect(span.title).toContain("seed position");
   });
 
   it("uses warning color for high ownership (>= 60%)", () => {

@@ -97,6 +97,7 @@ export function MatchupOverridePanel({
       <OverrideSection
         title="Injury / Availability"
         description="Downward efficiency adjustment for roster unavailability. More negative = bigger impact."
+        calibrationHint="Role player out: -0.5 to -1.0 · 6th man out: -1.0 to -2.0 · Starter out: -2.0 to -3.5 · Star player out: -3.5 to -5.0"
       >
         <Slider
           label={`${teamA.team.shortName} Injury`}
@@ -120,6 +121,7 @@ export function MatchupOverridePanel({
       <OverrideSection
         title="Recent Form / Momentum"
         description="Adjustment for teams trending up or down relative to season-long ratings. Positive = trending up."
+        calibrationHint="Hot streak / strong conf. tourney run: +1.0 to +3.0 · Late-season skid / early exit: -1.0 to -3.0 · Dramatic collapse or surge: ±3.0 to ±5.0"
       >
         <Slider
           label={`${teamA.team.shortName} Form`}
@@ -143,6 +145,7 @@ export function MatchupOverridePanel({
       <OverrideSection
         title="Rest / Schedule Density"
         description="Adjustment for days of rest. Positive = well-rested, negative = fatigued from deep conference tournament run."
+        calibrationHint="Extra rest (bye / light schedule): +0.5 to +1.5 · Conf. tourney finals → 1st round: -0.5 to -1.5 · 3+ games in 4 days: -1.5 to -3.0"
       >
         <Slider
           label={`${teamA.team.shortName} Rest`}
@@ -166,6 +169,7 @@ export function MatchupOverridePanel({
       <OverrideSection
         title="Bench Depth"
         description="Activate to factor in bench depth advantage. Deeper benches handle foul trouble and second-half fatigue. Useful when a key player is in foul trouble."
+        calibrationHint="0 = off (default) · 0.5–1.0 = moderate weight · 1.5–2.0 = heavy weight (use when foul trouble is a major factor)"
       >
         <Slider
           label="Bench Depth Weight"
@@ -188,6 +192,7 @@ export function MatchupOverridePanel({
       <OverrideSection
         title="Pace Adjustment"
         description="Activate to factor in how each team adapts to pace mismatches. Based on Evan Miya's pace adjustment metric."
+        calibrationHint="0 = off (default) · 0.5–1.0 = moderate weight · 1.5–2.0 = heavy weight (use for extreme pace mismatches)"
       >
         <Slider
           label="Pace Adjust Weight"
@@ -253,10 +258,12 @@ export function MatchupOverridePanel({
 function OverrideSection({
   title,
   description,
+  calibrationHint,
   children,
 }: {
   title: string;
   description: string;
+  calibrationHint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -264,6 +271,9 @@ function OverrideSection({
       <div className="override-section__header">
         <span className="override-section__title">{title}</span>
         <p className="override-section__desc">{description}</p>
+        {calibrationHint && (
+          <p className="override-section__hint">{calibrationHint}</p>
+        )}
       </div>
       <div className="override-section__controls">{children}</div>
       <style jsx>{`
@@ -289,6 +299,14 @@ function OverrideSection({
           color: var(--text-muted);
           margin: 0;
           line-height: 1.4;
+        }
+        .override-section__hint {
+          font-size: 0.625rem;
+          color: var(--text-muted);
+          margin: 2px 0 0;
+          line-height: 1.5;
+          font-style: italic;
+          opacity: 0.85;
         }
         .override-section__controls {
           display: flex;

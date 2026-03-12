@@ -66,7 +66,7 @@ export const OwnershipBadge = memo(function OwnershipBadge({
     <span
       className="inline-flex items-center gap-0.5 text-[9px] font-mono tabular-nums leading-none shrink-0"
       style={{ color }}
-      title={`Estimated ${ownershipPct.toFixed(1)}% public ownership`}
+      title={`Estimated ${ownershipPct.toFixed(1)}% public ownership. Based on: seed position, round depth, conference profile, and rating strength vs. seed expectation.`}
     >
       {displayPct}%
       <span

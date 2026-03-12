@@ -9,6 +9,7 @@ import { YearSelector } from "@/components/backtest/YearSelector";
 import { LeverTuningPanel } from "@/components/backtest/LeverTuningPanel";
 import { BaselineComparisonCard } from "@/components/backtest/BaselineComparisonCard";
 import { BacktestResultsTable } from "@/components/backtest/BacktestResultsTable";
+import { BacktestInterpretationGuide } from "@/components/backtest/BacktestInterpretationGuide";
 
 const BrierScoreChart = dynamic(
   () =>
@@ -94,6 +95,13 @@ export function BacktestShell() {
           <span className="backtest-shell__error-text">{error}</span>
         </div>
       )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Interpretation Guide                                               */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="backtest-shell__section">
+        <BacktestInterpretationGuide />
+      </section>
 
       {/* ----------------------------------------------------------------- */}
       {/* Year Selector                                                      */}

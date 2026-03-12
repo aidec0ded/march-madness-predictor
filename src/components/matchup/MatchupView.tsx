@@ -25,6 +25,7 @@ import { StatComparison } from "@/components/matchup/StatComparison";
 import { ProbabilityDisplay } from "@/components/matchup/ProbabilityDisplay";
 import { DistributionChart } from "@/components/matchup/DistributionChart";
 import { MatchupOverridePanel } from "@/components/matchup/MatchupOverridePanel";
+import { OwnershipExplainer } from "@/components/matchup/OwnershipExplainer";
 import { NarrativePanel } from "@/components/matchup/NarrativePanel";
 import { parseGameId } from "@/lib/bracket-layout";
 
@@ -236,6 +237,9 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                 teamB={teamB}
                 overrides={overrides}
               />
+
+              {/* Ownership Methodology Explainer */}
+              <OwnershipExplainer />
             </>
           )}
         </div>
