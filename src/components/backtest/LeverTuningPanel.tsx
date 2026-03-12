@@ -3,7 +3,12 @@
 import React, { useCallback } from "react";
 import type { EngineConfig } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
+import type { CompositeWeights, FourFactorsLeverWeights } from "@/types/engine";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
+import { CompositeWeightsControl } from "@/components/levers/CompositeWeightsControl";
+import { FourFactorsControls } from "@/components/levers/FourFactorsControls";
 import { LeverSlider } from "@/components/levers/LeverSlider";
+import { VarianceControls } from "@/components/levers/VarianceControls";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,10 +26,20 @@ export interface LeverTuningPanelProps {
 /**
  * Lever slider panel for backtest configuration.
  *
- * Provides controls for the five key lever weights used in backtest evaluation:
- * experience, continuity, coach experience, tempo variance, and 3PT variance.
- * Includes a "Reset to Defaults" button. Isolated from bracket context so it
- * can be used independently in the backtest dashboard.
+ * Exposes only the levers that have supporting data in the historical
+ * dataset (2008-2024). Levers backed by KenPom-only or Evan Miya-only
+ * data (experience, continuity, opponentAdj, SoS, luck, siteProximity)
+ * are excluded because those fields are NULL for historical seasons.
+ *
+ * Available levers:
+ * - Composite Weights (Torvik data available for all seasons)
+ * - Four Factors (Torvik data available for all seasons)
+ * - Coach Experience (Kaggle historical data available)
+ * - Tempo & 3PT Variance (Torvik data available for all seasons)
+ *
+ * Uses the same sub-components as the main bracket LeverPanel for
+ * UI consistency. Isolated from bracket context so lever tuning during
+ * backtesting does not affect the user's live bracket probabilities.
  */
 export function LeverTuningPanel({ config, onChange }: LeverTuningPanelProps) {
   const updateLever = useCallback(
@@ -34,6 +49,32 @@ export function LeverTuningPanel({ config, onChange }: LeverTuningPanelProps) {
         levers: {
           ...config.levers,
           [key]: value,
+        },
+      });
+    },
+    [config, onChange],
+  );
+
+  const updateCompositeWeights = useCallback(
+    (compositeWeights: CompositeWeights) => {
+      onChange({
+        ...config,
+        levers: {
+          ...config.levers,
+          compositeWeights,
+        },
+      });
+    },
+    [config, onChange],
+  );
+
+  const updateFourFactors = useCallback(
+    (fourFactors: FourFactorsLeverWeights) => {
+      onChange({
+        ...config,
+        levers: {
+          ...config.levers,
+          fourFactors,
         },
       });
     },
@@ -51,75 +92,44 @@ export function LeverTuningPanel({ config, onChange }: LeverTuningPanelProps) {
       </div>
 
       <div className="lever-tuning__body">
-        <LeverSlider
-          label="Roster Experience"
-          description="Weight for minutes-weighted D-1 experience. Higher values favor experienced rosters in simulation."
-          value={config.levers.experienceWeight}
-          onChange={(v) => updateLever("experienceWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
+        {/* Composite Weights — default open */}
+        <CollapsibleSection title="Composite Weights" defaultOpen>
+          <CompositeWeightsControl
+            weights={config.levers.compositeWeights}
+            onChange={updateCompositeWeights}
+          />
+        </CollapsibleSection>
 
-        <div className="lever-tuning__divider" />
+        {/* Four Factors — default collapsed */}
+        <CollapsibleSection title="Four Factors">
+          <FourFactorsControls
+            weights={config.levers.fourFactors}
+            onChange={updateFourFactors}
+          />
+        </CollapsibleSection>
 
-        <LeverSlider
-          label="Minutes Continuity"
-          description="Rotation continuity from the prior season. Teams with high returning-minutes benefit at higher weights."
-          value={config.levers.continuityWeight}
-          onChange={(v) => updateLever("continuityWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
+        {/* Coaching — default collapsed */}
+        <CollapsibleSection title="Coaching">
+          <LeverSlider
+            label="Coach Tournament Experience"
+            description="Coach's prior NCAA tournament track record. Rewards coaches with deep historical runs."
+            value={config.levers.coachExperienceWeight}
+            onChange={(v) => updateLever("coachExperienceWeight", v)}
+            min={0}
+            max={2}
+            step={0.05}
+          />
+        </CollapsibleSection>
 
-        <div className="lever-tuning__divider" />
-
-        <LeverSlider
-          label="Coach Experience"
-          description="Coach's prior NCAA tournament track record. Rewards coaches with deep historical runs."
-          value={config.levers.coachExperienceWeight}
-          onChange={(v) => updateLever("coachExperienceWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
-
-        <div className="lever-tuning__divider" />
-
-        <LeverSlider
-          label="Opponent Adjustment"
-          description="Weight for Evan Miya's opponent adjustment metric. Measures how well teams play up/down to competition level."
-          value={config.levers.opponentAdjustWeight}
-          onChange={(v) => updateLever("opponentAdjustWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
-
-        <div className="lever-tuning__divider" />
-
-        <LeverSlider
-          label="Tempo Variance"
-          description="How much pace differences compress or expand outcome distributions. Slower pace increases upset probability."
-          value={config.levers.tempoVarianceWeight}
-          onChange={(v) => updateLever("tempoVarianceWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
-
-        <div className="lever-tuning__divider" />
-
-        <LeverSlider
-          label="3PT Variance"
-          description="How much three-point shooting reliance affects distribution width. High 3PT rate widens outcome volatility."
-          value={config.levers.threePtVarianceWeight}
-          onChange={(v) => updateLever("threePtVarianceWeight", v)}
-          min={0}
-          max={2}
-          step={0.05}
-        />
+        {/* Variance — default collapsed */}
+        <CollapsibleSection title="Variance">
+          <VarianceControls
+            tempoWeight={config.levers.tempoVarianceWeight}
+            threePtWeight={config.levers.threePtVarianceWeight}
+            onTempoChange={(v) => updateLever("tempoVarianceWeight", v)}
+            onThreePtChange={(v) => updateLever("threePtVarianceWeight", v)}
+          />
+        </CollapsibleSection>
       </div>
 
       <div className="lever-tuning__footer">
@@ -158,15 +168,9 @@ export function LeverTuningPanel({ config, onChange }: LeverTuningPanelProps) {
         }
 
         .lever-tuning__body {
-          padding: 12px 20px 4px;
+          padding: 4px 20px 4px;
           display: flex;
           flex-direction: column;
-        }
-
-        .lever-tuning__divider {
-          height: 1px;
-          background: var(--border-secondary);
-          margin: 4px 0;
         }
 
         .lever-tuning__footer {

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { Drawer } from "@/components/ui/Drawer";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useBracket } from "@/hooks/useBracket";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import type { GlobalLevers } from "@/types/engine";
@@ -13,76 +14,6 @@ import { VarianceControls } from "./VarianceControls";
 export interface LeverPanelProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-/**
- * Collapsible section with a chevron toggle indicator.
- */
-function Section({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [isExpanded, setIsExpanded] = useState(defaultOpen);
-
-  return (
-    <div className="lever-section">
-      <button
-        type="button"
-        className="lever-section__toggle"
-        onClick={() => setIsExpanded(!isExpanded)}
-        aria-expanded={isExpanded}
-      >
-        <span className="lever-section__title">{title}</span>
-        <span
-          className={`lever-section__chevron ${isExpanded ? "lever-section__chevron--open" : ""}`}
-        >
-          ▸
-        </span>
-      </button>
-      {isExpanded && <div className="lever-section__content">{children}</div>}
-      <style jsx>{`
-        .lever-section {
-          border-bottom: 1px solid var(--border-subtle);
-        }
-        .lever-section__toggle {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
-          padding: 12px 0;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--text-primary);
-        }
-        .lever-section__toggle:hover {
-          color: var(--accent-primary);
-        }
-        .lever-section__title {
-          font-size: 0.875rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .lever-section__chevron {
-          font-size: 0.875rem;
-          transition: transform 0.2s ease;
-          color: var(--text-muted);
-        }
-        .lever-section__chevron--open {
-          transform: rotate(90deg);
-        }
-        .lever-section__content {
-          padding: 0 0 16px 0;
-        }
-      `}</style>
-    </div>
-  );
 }
 
 /**
@@ -111,23 +42,23 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
     <Drawer isOpen={isOpen} onClose={onClose} title="Simulation Levers" width="420px">
       <div className="lever-panel">
         {/* Composite Weights — default open */}
-        <Section title="Composite Weights" defaultOpen>
+        <CollapsibleSection title="Composite Weights" defaultOpen>
           <CompositeWeightsControl
             weights={globalLevers.compositeWeights}
             onChange={(compositeWeights) => updateLevers({ compositeWeights })}
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Four Factors — default collapsed */}
-        <Section title="Four Factors">
+        <CollapsibleSection title="Four Factors">
           <FourFactorsControls
             weights={globalLevers.fourFactors}
             onChange={(fourFactors) => updateLevers({ fourFactors })}
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Experience & Coaching — default collapsed */}
-        <Section title="Experience &amp; Coaching">
+        <CollapsibleSection title="Experience &amp; Coaching">
           <LeverSlider
             label="Roster Experience"
             description="Weight for KenPom minutes-weighted D-1 experience. Higher values favor experienced rosters."
@@ -156,10 +87,10 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
               updateLevers({ opponentAdjustWeight })
             }
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Location & Travel — default collapsed */}
-        <Section title="Location &amp; Travel">
+        <CollapsibleSection title="Location &amp; Travel">
           <LeverSlider
             label="Site Proximity"
             description="Weight for campus-to-venue distance advantage. Teams playing closer to home get a boost. Auto-computed from tournament site data."
@@ -168,10 +99,10 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
               updateLevers({ siteProximityWeight })
             }
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Schedule & Luck — default collapsed */}
-        <Section title="Schedule &amp; Luck">
+        <CollapsibleSection title="Schedule &amp; Luck">
           <LeverSlider
             label="Strength of Schedule"
             description="Extra credit for teams whose efficiency was earned against tougher opponents. Adjusted ratings already partially account for SoS."
@@ -184,10 +115,10 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
             value={globalLevers.luckRegressionWeight}
             onChange={(luckRegressionWeight) => updateLevers({ luckRegressionWeight })}
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Variance — default collapsed */}
-        <Section title="Variance">
+        <CollapsibleSection title="Variance">
           <VarianceControls
             tempoWeight={globalLevers.tempoVarianceWeight}
             threePtWeight={globalLevers.threePtVarianceWeight}
@@ -198,7 +129,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
               updateLevers({ threePtVarianceWeight })
             }
           />
-        </Section>
+        </CollapsibleSection>
 
         {/* Reset button */}
         <div className="lever-panel__footer">
