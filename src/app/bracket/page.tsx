@@ -17,6 +17,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createServerClient, createAdminClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
+import type { TournamentSite, TournamentRound, Region } from "@/types/team";
 
 export const metadata: Metadata = {
   title: "Bracket Builder",
@@ -29,7 +30,11 @@ export const metadata: Metadata = {
   },
 };
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
-import type { TournamentEntryRow, UserBracketRow } from "@/lib/supabase/types";
+import type {
+  TournamentEntryRow,
+  TournamentSiteRow,
+  UserBracketRow,
+} from "@/lib/supabase/types";
 import { BracketShell } from "@/components/bracket/BracketShell";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import type { SavedBracketData } from "@/types/bracket-ui";
@@ -50,6 +55,28 @@ export default async function BracketPage() {
     .from("tournament_entries")
     .select("*")
     .eq("season", 2026);
+
+  // Fetch tournament sites (optional — graceful degradation if none exist)
+  const { data: sitesRows, error: sitesError } = await adminClient
+    .from("tournament_sites")
+    .select("*")
+    .eq("season", 2026);
+
+  // Transform site rows to TournamentSite[]
+  let tournamentSites: TournamentSite[] | undefined;
+  if (sitesRows && sitesRows.length > 0) {
+    tournamentSites = (sitesRows as TournamentSiteRow[]).map((row) => ({
+      id: row.id,
+      name: row.name,
+      city: row.city,
+      state: row.state,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      rounds: row.rounds as TournamentRound[],
+      regions: row.regions ? (row.regions as Region[]) : undefined,
+      season: row.season,
+    }));
+  }
 
   if (teamsError || entriesError || !teamSeasonRows || !entries) {
     return (
@@ -123,6 +150,10 @@ export default async function BracketPage() {
   }
 
   return (
-    <BracketShell initialTeams={tournamentTeams} savedBracket={savedBracket} />
+    <BracketShell
+      initialTeams={tournamentTeams}
+      savedBracket={savedBracket}
+      tournamentSites={tournamentSites}
+    />
   );
 }

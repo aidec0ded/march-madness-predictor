@@ -604,25 +604,35 @@ describe("calculateSiteProximityAdjustment", () => {
   it("returns positive when team A is closer to the venue", () => {
     // Strong team is in Lawrence, KS (38.97, -95.24)
     // Weak team is in Norfolk, VA (36.85, -76.29)
-    // Place venue near Lawrence → A is true_home, B is significant_travel
+    // Place venue near Lawrence → A is ~0mi, B is ~1200mi
     const teamA = createStrongTeam({ id: "a" });
     const teamB = createWeakTeam({ id: "b" });
     const siteCoords = { latitude: 38.97, longitude: -95.24 };
     const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
-    // true_home (+3.0) - significant_travel (-1.0) = +4.0
-    expect(result).toBeGreaterThan(0);
-    expect(result).toBeCloseTo(4.0, 0);
+    // A gets large proximity bonus (near 0 miles), B gets penalty (>1000mi)
+    expect(result).toBeGreaterThan(2.0);
   });
 
-  it("returns 0 when both teams are in the same proximity bucket", () => {
+  it("returns 0 when both teams are at the same location", () => {
     const teamA = createMockTeamSeason({ id: "a" });
     const teamB = createMockTeamSeason({ id: "b" });
     // Both default mock teams are in Springfield, IL (39.78, -89.65)
-    // Place venue far away so both are in the same bucket
+    // Venue doesn't matter — both teams have same distance
     const siteCoords = { latitude: 25.0, longitude: -80.0 }; // Miami area
     const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
-    // Both teams are ~1200mi away → same bucket → difference is 0
+    // Both teams are equidistant → difference is 0
     expect(result).toBe(0);
+  });
+
+  it("returns non-zero for teams at different distances even in the same general area", () => {
+    // This tests the continuous model — previously bucketed teams at similar distances
+    // would show 0, but now any distance difference produces a non-zero value
+    const teamA = createStrongTeam({ id: "a" }); // Lawrence, KS
+    const teamB = createWeakTeam({ id: "b" }); // Norfolk, VA
+    // Place venue equidistant-ish from both but slightly different distances
+    const siteCoords = { latitude: 37.5, longitude: -85.0 }; // Kentucky area
+    const result = calculateSiteProximityAdjustment(teamA, teamB, 1.0, siteCoords);
+    expect(result).not.toBe(0);
   });
 
   it("scales adjustment by weight", () => {

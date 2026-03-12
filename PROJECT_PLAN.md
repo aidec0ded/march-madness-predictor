@@ -69,9 +69,9 @@
   - Three-Point Rate effect on distribution width (baseline 35%, 0.02 scaling, clamped [0.8, 1.5])
 - [x] Build per-matchup override system (inherits globals, deep-merges overrides)
   - Injury/Availability adjustment (efficiency point deduction)
-  - Site Proximity adjustment (5 buckets, -1.0 to +3.0 eff pts)
   - Recent Form/Momentum override (-5.0 to +5.0 eff pts)
   - Rest/Schedule Density adjustment (-3.0 to +3.0 eff pts)
+- [x] Build site proximity global lever — auto-computed from campus-to-venue distance using continuous exponential decay model (`3.0 × e^(-0.003 × distance)` + travel penalty >1000mi), controlled by `siteProximityWeight` global lever
 - [x] Build matchup resolver (`resolveMatchup` — 10-step pipeline, full `ProbabilityBreakdown`)
 - [x] Write comprehensive unit tests (96 engine tests, 152 total)
 - [ ] ~~Validate against known matchup outcomes for sanity checking~~ → moved to Backlog
@@ -300,8 +300,8 @@
 
 - [ ] **Populate real 2026 bracket teams** — Replace test data with likely tournament field using Bracket Matrix as guide; define methodology for inputting the actual bracket post-Selection Sunday
 - [ ] **Historical tournament data for backtesting** — Integrate Kaggle March Machine Learning Mania dataset (https://www.kaggle.com/competitions/march-machine-learning-mania-2023/data) for additional historical coverage; identify gaps and fill for tournaments not included
-- [ ] **Coach data ingestion** — Define methodology for injecting coach tournament records (current season + historical) into the database
-- [ ] **Tournament venue / location data** — Add game site locations for each round (already known info); auto-calculate site proximity from campus-to-venue distance instead of relying on manual user adjustment
+- [x] **Coach data ingestion** — Kaggle tournament results pipeline (`scripts/seed-coaches.ts`), `--all-seasons` flag for historical data, coach table with win/loss/F4/championship records
+- [x] **Tournament venue / location data** — Admin API (`POST/GET/DELETE /api/admin/tournament-sites`), `tournament_sites` Supabase table, `buildSiteMap()` for round/region→venue mapping, continuous exponential decay distance model for site proximity global lever, auto-computed from campus-to-venue haversine distance
 - [ ] **NET Ranking / Strength of Schedule lever** — Add NET ranking or SoS-based lever (requires manual data capture + DB ingestion pipeline)
 - [ ] **Luck regression lever** — KenPom Luck factor as a regression-to-mean signal (requires manual data capture + DB ingestion pipeline)
 - [ ] **2-Foul Participation editability** — Either make 2-Foul Participation editable on the matchup screen, provide a manual DB injection path, or remove it from the UI if it can't be edited

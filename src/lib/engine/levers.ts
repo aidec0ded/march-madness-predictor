@@ -21,8 +21,7 @@
 
 import type { TeamSeason } from "@/types/team";
 import type { FourFactorsLeverWeights, GameSiteCoordinates } from "@/types/engine";
-import { SITE_PROXIMITY_ADJUSTMENTS } from "@/types/engine";
-import { getSiteProximityBucket } from "@/lib/geo";
+import { haversineDistance } from "@/lib/geo";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -87,6 +86,27 @@ const THREE_PT_VARIANCE_MIN = 0.8;
 
 /** Maximum 3PT variance multiplier (ceiling) */
 const THREE_PT_VARIANCE_MAX = 1.5;
+
+/**
+ * Maximum efficiency points for site proximity (true home court, ~0 miles).
+ * Decays exponentially with distance.
+ */
+const SITE_PROXIMITY_MAX = 3.0;
+
+/**
+ * Distance decay rate for the exponential proximity model.
+ * At 200 miles: ~1.6 eff pts. At 500 miles: ~0.5 eff pts. At 1000 miles: ~0.1 eff pts.
+ */
+const SITE_PROXIMITY_DECAY = 0.003;
+
+/**
+ * Small penalty for extreme travel (>1000 miles), in efficiency points.
+ * Represents fatigue/disruption from cross-country travel.
+ */
+const SITE_PROXIMITY_TRAVEL_PENALTY = -0.5;
+
+/** Distance threshold (miles) beyond which the travel penalty applies */
+const SITE_PROXIMITY_TRAVEL_THRESHOLD = 1000;
 
 // ---------------------------------------------------------------------------
 // Mean-adjusting levers
@@ -403,16 +423,16 @@ export function calculateThreePtVarianceMultiplier(
 /**
  * Calculates the site proximity efficiency point adjustment for a matchup.
  *
- * For each team, computes the haversine distance from campus to the game venue,
- * converts it to a proximity bucket (true_home through significant_travel),
- * looks up the efficiency point adjustment for that bucket, and returns
- * the difference (A's advantage minus B's advantage), scaled by weight.
+ * Uses a continuous distance model instead of discrete buckets so that any
+ * difference in campus-to-venue distance produces a non-zero adjustment.
+ *
+ * Each team's distance is converted to an efficiency point score via:
+ *   score = MAX * e^(-decay * distance) + travel_penalty (if distance > threshold)
+ *
+ * The matchup adjustment is (scoreA - scoreB) * weight, so the closer team
+ * gets a positive efficiency point advantage.
  *
  * If siteCoordinates is undefined (no tournament site data loaded), returns 0.
- *
- * Note: This function takes a 4th parameter (`siteCoordinates`) which departs
- * from the `(teamA, teamB, weight)` pattern of other levers because site data
- * is external to TeamSeason objects and varies per game.
  *
  * @param teamA - First team's season data (campus coordinates from teamA.team.campus)
  * @param teamB - Second team's season data
@@ -430,21 +450,43 @@ export function calculateSiteProximityAdjustment(
     return 0;
   }
 
-  const bucketA = getSiteProximityBucket(
+  const distA = haversineDistance(
     teamA.team.campus.latitude,
     teamA.team.campus.longitude,
     siteCoordinates.latitude,
     siteCoordinates.longitude
   );
-  const bucketB = getSiteProximityBucket(
+  const distB = haversineDistance(
     teamB.team.campus.latitude,
     teamB.team.campus.longitude,
     siteCoordinates.latitude,
     siteCoordinates.longitude
   );
 
-  const adjustmentA = SITE_PROXIMITY_ADJUSTMENTS[bucketA];
-  const adjustmentB = SITE_PROXIMITY_ADJUSTMENTS[bucketB];
+  const scoreA = distanceToScore(distA);
+  const scoreB = distanceToScore(distB);
 
-  return (adjustmentA - adjustmentB) * weight;
+  return (scoreA - scoreB) * weight;
+}
+
+/**
+ * Converts a campus-to-venue distance into a continuous efficiency point score.
+ *
+ * Uses exponential decay: nearby teams get a large bonus, distant teams approach 0.
+ * Teams traveling > 1000 miles also get a small additional penalty for fatigue.
+ *
+ * Examples at default constants:
+ *   0 mi → +3.00,  50 mi → +2.58,  200 mi → +1.65,  500 mi → +0.67
+ *   800 mi → +0.27, 1000 mi → -0.45, 1500 mi → -0.49
+ */
+function distanceToScore(distanceMiles: number): number {
+  const proximityBonus =
+    SITE_PROXIMITY_MAX * Math.exp(-SITE_PROXIMITY_DECAY * distanceMiles);
+
+  const travelPenalty =
+    distanceMiles > SITE_PROXIMITY_TRAVEL_THRESHOLD
+      ? SITE_PROXIMITY_TRAVEL_PENALTY
+      : 0;
+
+  return proximityBonus + travelPenalty;
 }

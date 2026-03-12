@@ -174,22 +174,19 @@ describe("resolveMatchup", () => {
     const teamB = createWeakTeam({ id: "b" });
 
     // Place the game venue very close to team A's campus (Lawrence, KS)
-    // Team A will be "true_home" (<50 mi) → +3.0 eff pts
-    // Team B (Norfolk, VA) will be "significant_travel" (>1000 mi) → -1.0 eff pts
+    // Team A is ~0mi away (large proximity bonus), Team B is ~1200mi away (penalty)
     const siteCoords = { latitude: 38.97, longitude: -95.24, name: "Near Lawrence" };
 
     const noSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
     const withSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG, undefined, siteCoords);
 
-    // true_home (+3.0) - significant_travel (-1.0) = +4.0 net for team A
-    // So team A should be even more favored with site proximity
+    // Team A should be even more favored with site proximity
     expect(withSiteResult.winProbabilityA).toBeGreaterThan(
       noSiteResult.winProbabilityA
     );
-    expect(withSiteResult.breakdown.siteProximityAdjustment).toBeCloseTo(
-      4.0,
-      0
-    );
+    // Continuous model: A gets ~3.0 (near 0mi), B gets ~-0.5 (>1000mi with penalty)
+    // Net adjustment should be significantly positive (> 2.0 eff pts)
+    expect(withSiteResult.breakdown.siteProximityAdjustment).toBeGreaterThan(2.0);
   });
 
   // ---------------------------------------------------------------------------

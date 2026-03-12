@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useReducer, useMemo, type ReactNode } from "react";
-import type { TeamSeason } from "@/types/team";
+import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { GlobalLevers } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import { buildSiteMap } from "@/lib/engine/site-mapping";
 import type {
   BracketState,
   BracketAction,
@@ -291,6 +292,8 @@ interface BracketProviderProps {
   initialTeams: TeamSeason[];
   /** Optional saved bracket to restore */
   savedBracket?: SavedBracketData;
+  /** Optional tournament site data for site proximity calculations */
+  tournamentSites?: TournamentSite[];
 }
 
 /**
@@ -309,6 +312,7 @@ export function BracketProvider({
   children,
   initialTeams,
   savedBracket,
+  tournamentSites,
 }: BracketProviderProps) {
   const teamsMap = useMemo(() => {
     const map = new Map<string, TeamSeason>();
@@ -317,6 +321,14 @@ export function BracketProvider({
     }
     return map;
   }, [initialTeams]);
+
+  // Build site map from tournament sites (computed once)
+  const siteMap = useMemo(() => {
+    if (!tournamentSites || tournamentSites.length === 0) {
+      return null;
+    }
+    return buildSiteMap(ALL_MATCHUPS, tournamentSites);
+  }, [tournamentSites]);
 
   const initialState: BracketState = useMemo(
     () => ({
@@ -330,9 +342,9 @@ export function BracketProvider({
       bracketName: savedBracket?.name ?? "My Bracket",
       isDirty: false,
       poolSizeBucket: "medium",
-      tournamentSiteMap: null,
+      tournamentSiteMap: siteMap,
     }),
-    [teamsMap, savedBracket]
+    [teamsMap, savedBracket, siteMap]
   );
 
   const [state, dispatch] = useReducer(bracketReducer, initialState);

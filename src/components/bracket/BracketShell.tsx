@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { TeamSeason } from "@/types/team";
+import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
@@ -47,6 +47,8 @@ interface BracketShellProps {
   initialTeams: TeamSeason[];
   /** Optional saved bracket to restore */
   savedBracket?: SavedBracketData;
+  /** Optional tournament site data for site proximity calculations */
+  tournamentSites?: TournamentSite[];
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +70,7 @@ interface BracketShellProps {
  * - LeverPanel (right-side drawer)
  * - MatchupView (full-screen overlay, conditional on selectedMatchupId)
  */
-export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) {
+export function BracketShell({ initialTeams, savedBracket, tournamentSites }: BracketShellProps) {
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
@@ -107,7 +109,7 @@ export function BracketShell({ initialTeams, savedBracket }: BracketShellProps) 
   }, []);
 
   return (
-    <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket}>
+    <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites}>
       <div
         style={{
           display: "flex",
