@@ -306,16 +306,16 @@
 - [ ] **Luck regression lever** — KenPom Luck factor as a regression-to-mean signal (requires manual data capture + DB ingestion pipeline)
 - [ ] **2-Foul Participation editability** — Either make 2-Foul Participation editable on the matchup screen, provide a manual DB injection path, or remove it from the UI if it can't be edited
 
-### Batch 5 — Model Validation & Backtest Parity
+### Batch 5 — Model Validation & Backtest Parity ✅
 
-- [ ] **Validate model against known outcomes** — Sanity-check engine predictions against historical matchup results
-- [ ] **Align backtest levers with global bracket levers** — Backtest lever configuration should match the full set of global lever options from the bracket, so users can test their bracket lever configuration against historical data
+- [x] **Validate model against known outcomes** — Sanity-check engine predictions against historical matchup results
+- [x] **Align backtest levers with global bracket levers** — Backtest lever configuration should match the full set of global lever options from the bracket, so users can test their bracket lever configuration against historical data
 
 ### Batch 6 — UX Clarity & Guidance _(sequential)_
 
 - [ ] **Per-matchup override guidance** — Add contextual help explaining how to calibrate each override slider (e.g., "if a team's 3rd-best player is injured, try 0.5–1.0; if a starter is out, try 2.0–3.0")
-- [ ] **Clarify probability numbers on team cards** — The numbers next to team names are confusing: explain what they represent (round survival probability from simulation vs. single-game win probability); consider UX improvements so they're intuitive without explanation
-- [ ] **Picked-team probability mismatch** — When a team is advanced, the number next to their name doesn't match the probability from the matchup screen; clarify the relationship between per-game probability and path probability, and decide on display approach
+- [x] **Clarify probability numbers on team cards** — Bracket cards now show per-game head-to-head win probabilities (via `resolveMatchup()`), available immediately when both teams are known. Simulation path probabilities shown as tooltips. New `useGameProbabilities` hook computes probabilities for all 63 games.
+- [x] **Picked-team probability mismatch** — Fixed: bracket view and matchup view now show the same per-game win probability from `resolveMatchup()`. Path probability (P of advancing through this round from simulation) is shown separately in tooltips and in the matchup view's ProbabilityDisplay.
 - [ ] **Simulation workflow clarity** — Clarify the intended user flow: can a user run simulation at start and after every pick? Running simulation updates per-game probabilities (visible from matchup screen) but doesn't auto-fill the bracket — make this clear in the UI
 - [ ] **Ownership model transparency** — Document or expose what factors drive ownership estimates (seed, conference, media profile, historical over-pick patterns) so users understand the numbers
 - [ ] **Backtest results interpretation guide** — Add in-app explanation of how to interpret backtest results: what Brier Score means, what the calibration chart shows, what "improvement over baseline" represents, and what good/bad values look like
