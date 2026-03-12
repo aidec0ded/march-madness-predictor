@@ -35,6 +35,7 @@ import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { runSimulation } from "@/lib/engine/simulator";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import { buildSiteMap } from "@/lib/engine/site-mapping";
+import { filterToMainBracket } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
 import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -327,17 +328,21 @@ export async function POST(request: Request) {
     );
 
     // Filter to only teams that have tournament entries
-    const tournamentTeams = allTeamSeasons.filter(
+    const allTournamentTeams = allTeamSeasons.filter(
       (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
         ts.tournamentEntry !== undefined
     );
+
+    // Deduplicate play-in pairs (68 → 64): keep one team per region+seed slot
+    const tournamentTeams = filterToMainBracket(allTournamentTeams);
 
     // Validate exactly 64 tournament teams
     if (tournamentTeams.length !== 64) {
       return NextResponse.json(
         {
           success: false,
-          error: `Expected 64 tournament teams for season ${season}, but found ${tournamentTeams.length}. ` +
+          error: `Expected 64 tournament teams for season ${season}, but found ${tournamentTeams.length} ` +
+            `(after deduplicating play-in pairs from ${allTournamentTeams.length} entries). ` +
             `The bracket data may be incomplete.`,
         },
         { status: 400 }

@@ -11,6 +11,71 @@
 import type { TeamSeason } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { parseGameId } from "@/lib/bracket-layout";
+import { logger } from "@/lib/logger";
+
+// ---------------------------------------------------------------------------
+// Play-in deduplication
+// ---------------------------------------------------------------------------
+
+/**
+ * Filters a list of tournament teams to exactly 64 main bracket entries.
+ *
+ * The NCAA tournament has 68 teams: 64 in the main bracket plus 4 First Four
+ * play-in games (2 between 16-seeds, 2 between 11-seeds). Seeds 11 and 16
+ * may have 2 entries sharing the same region+seed in the database.
+ *
+ * This function deduplicates by `{region}-{seed}`, keeping the higher-rated
+ * team when a play-in pair exists (using KenPom adjEM, falling back to
+ * Torvik, then Evan Miya).
+ *
+ * @param teams - All tournament teams (may include 68 with play-in duplicates)
+ * @returns Exactly one team per bracket slot (up to 64)
+ */
+export function filterToMainBracket(teams: TeamSeason[]): TeamSeason[] {
+  // Group by region-seed
+  const slotMap = new Map<string, TeamSeason[]>();
+  for (const team of teams) {
+    if (!team.tournamentEntry) continue;
+    const key = `${team.tournamentEntry.region}-${team.tournamentEntry.seed}`;
+    const existing = slotMap.get(key);
+    if (existing) {
+      existing.push(team);
+    } else {
+      slotMap.set(key, [team]);
+    }
+  }
+
+  const result: TeamSeason[] = [];
+  for (const [slot, slotTeams] of slotMap) {
+    if (slotTeams.length === 1) {
+      result.push(slotTeams[0]);
+    } else {
+      // Play-in pair: pick the higher-rated team
+      slotTeams.sort((a, b) => getTeamRating(b) - getTeamRating(a));
+      result.push(slotTeams[0]);
+      logger.info(
+        `Play-in slot ${slot}: keeping ${slotTeams[0].team.shortName} ` +
+        `(rating ${getTeamRating(slotTeams[0]).toFixed(1)}) over ` +
+        `${slotTeams.slice(1).map(t => t.team.shortName).join(", ")}`
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Gets a team's composite efficiency rating for comparison.
+ * Prefers KenPom adjEM, falls back to Torvik, then Evan Miya, then 0.
+ */
+function getTeamRating(team: TeamSeason): number {
+  return (
+    team.ratings.kenpom?.adjEM ??
+    team.ratings.torvik?.adjEM ??
+    team.ratings.evanmiya?.adjEM ??
+    0
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Slot resolution
