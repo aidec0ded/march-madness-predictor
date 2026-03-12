@@ -316,7 +316,7 @@
 - [ ] **Per-matchup override guidance** — Add contextual help explaining how to calibrate each override slider (e.g., "if a team's 3rd-best player is injured, try 0.5–1.0; if a starter is out, try 2.0–3.0")
 - [x] **Clarify probability numbers on team cards** — Bracket cards now show per-game head-to-head win probabilities (via `resolveMatchup()`), available immediately when both teams are known. Simulation path probabilities shown as tooltips. New `useGameProbabilities` hook computes probabilities for all 63 games.
 - [x] **Picked-team probability mismatch** — Fixed: bracket view and matchup view now show the same per-game win probability from `resolveMatchup()`. Path probability (P of advancing through this round from simulation) is shown separately in tooltips and in the matchup view's ProbabilityDisplay.
-- [ ] **Simulation workflow clarity** — Clarify the intended user flow: can a user run simulation at start and after every pick? Running simulation updates per-game probabilities (visible from matchup screen) but doesn't auto-fill the bracket — make this clear in the UI
+- [x] **Simulation workflow clarity** — Implemented 5 improvements: (1) Stale simulation indicator — tracks input hash to detect when picks/levers/overrides change after simulation, shows "Re-run Simulation" with amber dot; (2) Tooltip on SimulationButton explaining what simulation does vs. per-game probabilities; (3) "Run simulation" prompt in ProbabilityDisplay when path probabilities are unavailable; (4) Auto-open results overlay after first simulation; (5) Explanatory header in SimulationResultsOverlay describing methodology. Stale banner in results overlay warns when results are outdated.
 - [ ] **Ownership model transparency** — Document or expose what factors drive ownership estimates (seed, conference, media profile, historical over-pick patterns) so users understand the numbers
 - [ ] **Backtest results interpretation guide** — Add in-app explanation of how to interpret backtest results: what Brier Score means, what the calibration chart shows, what "improvement over baseline" represents, and what good/bad values look like
 
@@ -331,6 +331,10 @@
 
 - [ ] **Custom domain setup** — Configure custom domain on deployment provider (Render)
 - [ ] **Fix Vitest / Vite ESM compatibility** — Vitest 4.0.x CJS entrypoint cannot `require()` ESM-only Vite 7.x; likely fix is adding `"type": "module"` to `package.json` or pinning Vite to v6
+
+### Batch 9 — Documentation & Guides
+
+- [ ] **Comprehensive User Guide update** — Flesh out `docs/USER_GUIDE.md` with: simulation workflow documentation (when to run, what it adds beyond per-game probabilities, interpreting results), lever explanations with calibration guidance, game theory strategy guide by pool size, matchup view walkthrough, and interpretation guidance for all probability numbers
 
 ### Claude Code Skills _(completed)_
 

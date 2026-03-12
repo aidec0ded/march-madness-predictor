@@ -2,7 +2,7 @@
 
 import { createContext, useReducer, useMemo, type ReactNode } from "react";
 import type { TeamSeason, TournamentSite } from "@/types/team";
-import type { GlobalLevers } from "@/types/engine";
+import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import { buildSiteMap } from "@/lib/engine/site-mapping";
 import type {
@@ -119,6 +119,49 @@ function cascadeInvalidation(
 }
 
 // ---------------------------------------------------------------------------
+// Simulation input hash (for staleness detection)
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes a deterministic hash of the simulation-relevant inputs.
+ * Used to detect whether simulation results are stale after user changes.
+ *
+ * Uses djb2 hash over a JSON serialization of picks + levers + overrides.
+ */
+export function computeInputHash(
+  picks: Record<string, string>,
+  globalLevers: GlobalLevers,
+  matchupOverrides: Record<string, MatchupOverrides>
+): string {
+  const payload = JSON.stringify({ picks, globalLevers, matchupOverrides });
+  let hash = 5381;
+  for (let i = 0; i < payload.length; i++) {
+    hash = ((hash << 5) + hash + payload.charCodeAt(i)) | 0;
+  }
+  return hash.toString(36);
+}
+
+/**
+ * Wraps a new state object with simulation staleness detection.
+ * If a simulation has been run (simulationInputHash is set), recomputes
+ * the current hash and compares to detect staleness.
+ */
+function withStalenessCheck(newState: BracketState): BracketState {
+  if (newState.simulationInputHash === null) {
+    return { ...newState, isSimulationStale: false };
+  }
+  const currentHash = computeInputHash(
+    newState.picks,
+    newState.globalLevers,
+    newState.matchupOverrides
+  );
+  return {
+    ...newState,
+    isSimulationStale: currentHash !== newState.simulationInputHash,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Reducer
 // ---------------------------------------------------------------------------
 
@@ -147,11 +190,11 @@ function bracketReducer(
 
       newPicks[action.gameId] = action.teamId;
 
-      return {
+      return withStalenessCheck({
         ...state,
         picks: newPicks,
         isDirty: true,
-      };
+      });
     }
 
     case "RESET_PICK": {
@@ -170,50 +213,57 @@ function bracketReducer(
 
       delete newPicks[action.gameId];
 
-      return {
+      return withStalenessCheck({
         ...state,
         picks: newPicks,
         isDirty: true,
-      };
+      });
     }
 
     case "SET_GLOBAL_LEVERS": {
-      return {
+      return withStalenessCheck({
         ...state,
         globalLevers: {
           ...state.globalLevers,
           ...action.levers,
         },
         isDirty: true,
-      };
+      });
     }
 
     case "SET_MATCHUP_OVERRIDE": {
-      return {
+      return withStalenessCheck({
         ...state,
         matchupOverrides: {
           ...state.matchupOverrides,
           [action.gameId]: action.overrides,
         },
         isDirty: true,
-      };
+      });
     }
 
     case "REMOVE_MATCHUP_OVERRIDE": {
       const newOverrides = { ...state.matchupOverrides };
       delete newOverrides[action.gameId];
-      return {
+      return withStalenessCheck({
         ...state,
         matchupOverrides: newOverrides,
         isDirty: true,
-      };
+      });
     }
 
     case "SET_SIMULATION_RESULT": {
+      const inputHash = computeInputHash(
+        state.picks,
+        state.globalLevers,
+        state.matchupOverrides
+      );
       return {
         ...state,
         simulationResult: action.result,
         isSimulating: false,
+        simulationInputHash: inputHash,
+        isSimulationStale: false,
       };
     }
 
@@ -226,6 +276,11 @@ function bracketReducer(
 
     case "LOAD_BRACKET": {
       const { bracket } = action;
+      // If the loaded bracket had a simulation snapshot, compute its hash
+      // to enable staleness detection if user modifies the loaded state
+      const loadedHash = bracket.simulationSnapshot
+        ? computeInputHash(bracket.picks, bracket.globalLevers, bracket.matchupOverrides)
+        : null;
       return {
         ...state,
         bracketId: bracket.bracketId,
@@ -234,6 +289,8 @@ function bracketReducer(
         globalLevers: bracket.globalLevers,
         matchupOverrides: bracket.matchupOverrides,
         simulationResult: bracket.simulationSnapshot,
+        simulationInputHash: loadedHash,
+        isSimulationStale: false,
         isDirty: false,
       };
     }
@@ -246,6 +303,8 @@ function bracketReducer(
         matchupOverrides: {},
         simulationResult: null,
         isSimulating: false,
+        simulationInputHash: null,
+        isSimulationStale: false,
         bracketId: null,
         bracketName: "My Bracket",
         isDirty: false,
@@ -338,6 +397,14 @@ export function BracketProvider({
       matchupOverrides: savedBracket?.matchupOverrides ?? {},
       simulationResult: savedBracket?.simulationSnapshot ?? null,
       isSimulating: false,
+      simulationInputHash: savedBracket?.simulationSnapshot
+        ? computeInputHash(
+            savedBracket.picks,
+            savedBracket.globalLevers,
+            savedBracket.matchupOverrides
+          )
+        : null,
+      isSimulationStale: false,
       bracketId: savedBracket?.bracketId ?? null,
       bracketName: savedBracket?.name ?? "My Bracket",
       isDirty: false,

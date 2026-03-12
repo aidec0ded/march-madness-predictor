@@ -14,19 +14,33 @@ type ButtonState = "idle" | "loading" | "success" | "error";
 // Component
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface SimulationButtonProps {
+  /** Called after a simulation completes successfully. */
+  onSimulationComplete?: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 /**
  * Simulation trigger button with visual feedback for loading, success, and error states.
  *
  * States:
  * - idle:    "Run Simulation" with play icon, blue background
+ * - idle (stale): "Re-run Simulation" with play icon + amber dot
  * - loading: "Simulating..." with spinner, disabled, reduced opacity
  * - success: "Done" with checkmark, green background (reverts after 2s)
  * - error:   Error message, red background (reverts after 3s)
  *
  * Reads simulation state from useBracketSimulation hook.
  */
-export function SimulationButton() {
-  const { simulate, isSimulating } = useBracketSimulation();
+export function SimulationButton({ onSimulationComplete }: SimulationButtonProps) {
+  const { simulate, isSimulating, isSimulationStale } = useBracketSimulation();
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,6 +63,7 @@ export function SimulationButton() {
     try {
       await simulate();
       setButtonState("success");
+      onSimulationComplete?.();
       timeoutRef.current = setTimeout(() => {
         setButtonState("idle");
       }, 2000);
@@ -62,7 +77,7 @@ export function SimulationButton() {
         setErrorMessage("");
       }, 3000);
     }
-  }, [buttonState, isSimulating, simulate]);
+  }, [buttonState, isSimulating, simulate, onSimulationComplete]);
 
   // Derive display properties from state
   const isDisabled = buttonState === "loading" || isSimulating;
@@ -85,9 +100,13 @@ export function SimulationButton() {
       break;
     default:
       backgroundColor = "var(--accent-primary)";
-      label = "Run Simulation";
+      label = isSimulationStale ? "Re-run Simulation" : "Run Simulation";
       break;
   }
+
+  const tooltip = isSimulationStale
+    ? "Your picks or levers changed since the last simulation. Re-run to update path probabilities and championship odds."
+    : "Run 10,000 bracket simulations to see each team's path probabilities and championship odds. Per-game win rates update instantly — simulation adds full-bracket path analysis.";
 
   return (
     <button
@@ -95,6 +114,7 @@ export function SimulationButton() {
       onClick={handleClick}
       disabled={isDisabled}
       aria-busy={buttonState === "loading"}
+      title={tooltip}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -157,6 +177,18 @@ export function SimulationButton() {
         </svg>
       )}
       <span>{label}</span>
+      {buttonState === "idle" && isSimulationStale && (
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            backgroundColor: "var(--accent-warning)",
+            flexShrink: 0,
+          }}
+          aria-label="Simulation results are outdated"
+        />
+      )}
     </button>
   );
 }

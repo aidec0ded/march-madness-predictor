@@ -12,6 +12,7 @@ const mockHook = {
   simulate: mockSimulate,
   isSimulating: false,
   simulationResult: null,
+  isSimulationStale: false,
 };
 
 vi.mock("@/hooks/useBracketSimulation", () => ({
@@ -27,6 +28,7 @@ describe("SimulationButton", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockSimulate.mockReset();
     mockHook.isSimulating = false;
+    mockHook.isSimulationStale = false;
   });
 
   afterEach(() => {
@@ -145,5 +147,73 @@ describe("SimulationButton", () => {
     mockHook.isSimulating = true;
     render(<SimulationButton />);
     expect(screen.getByRole("button")).toBeDisabled();
+  });
+
+  describe("staleness indicator", () => {
+    it("shows 'Re-run Simulation' when stale", () => {
+      mockHook.isSimulationStale = true;
+      render(<SimulationButton />);
+      expect(screen.getByText("Re-run Simulation")).toBeInTheDocument();
+    });
+
+    it("shows warning dot when stale and idle", () => {
+      mockHook.isSimulationStale = true;
+      render(<SimulationButton />);
+      const dot = screen.getByLabelText("Simulation results are outdated");
+      expect(dot).toBeInTheDocument();
+    });
+
+    it("does not show warning dot when not stale", () => {
+      mockHook.isSimulationStale = false;
+      render(<SimulationButton />);
+      expect(
+        screen.queryByLabelText("Simulation results are outdated")
+      ).not.toBeInTheDocument();
+    });
+
+    it("has stale tooltip when stale", () => {
+      mockHook.isSimulationStale = true;
+      render(<SimulationButton />);
+      const button = screen.getByRole("button");
+      expect(button).toHaveAttribute(
+        "title",
+        expect.stringContaining("picks or levers changed")
+      );
+    });
+
+    it("has default tooltip when not stale", () => {
+      mockHook.isSimulationStale = false;
+      render(<SimulationButton />);
+      const button = screen.getByRole("button");
+      expect(button).toHaveAttribute(
+        "title",
+        expect.stringContaining("10,000 bracket simulations")
+      );
+    });
+  });
+
+  describe("onSimulationComplete callback", () => {
+    it("calls onSimulationComplete after successful simulation", async () => {
+      mockSimulate.mockResolvedValue({});
+      const onComplete = vi.fn();
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<SimulationButton onSimulationComplete={onComplete} />);
+      await user.click(screen.getByRole("button"));
+      await waitFor(() => {
+        expect(onComplete).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("does not call onSimulationComplete on failure", async () => {
+      mockSimulate.mockRejectedValue(new Error("fail"));
+      const onComplete = vi.fn();
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<SimulationButton onSimulationComplete={onComplete} />);
+      await user.click(screen.getByRole("button"));
+      await waitFor(() => {
+        expect(screen.getByText("fail")).toBeInTheDocument();
+      });
+      expect(onComplete).not.toHaveBeenCalled();
+    });
   });
 });

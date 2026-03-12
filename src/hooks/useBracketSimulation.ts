@@ -57,5 +57,6 @@ export function useBracketSimulation() {
     simulate,
     isSimulating: state.isSimulating,
     simulationResult: state.simulationResult,
+    isSimulationStale: state.isSimulationStale,
   };
 }

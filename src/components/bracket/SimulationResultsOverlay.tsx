@@ -69,23 +69,38 @@ export function SimulationResultsOverlay({
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "start",
           justifyContent: "space-between",
           marginBottom: "16px",
         }}
       >
-        <h3
-          style={{
-            margin: 0,
-            fontSize: "0.875rem",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            color: "var(--text-primary)",
-          }}
-        >
-          Simulation Results
-        </h3>
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "0.875rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              color: "var(--text-primary)",
+            }}
+          >
+            Simulation Results
+          </h3>
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: "0.75rem",
+              color: "var(--text-muted)",
+              lineHeight: 1.4,
+              fontWeight: 400,
+            }}
+          >
+            Based on {simulationResult.numSimulations.toLocaleString()} full-bracket
+            simulations using your current lever settings. Path probabilities account
+            for all possible matchup combinations.
+          </p>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -98,11 +113,30 @@ export function SimulationResultsOverlay({
             fontSize: "1.25rem",
             lineHeight: 1,
             padding: "4px",
+            flexShrink: 0,
           }}
         >
           &times;
         </button>
       </div>
+
+      {/* Stale results banner */}
+      {state.isSimulationStale && (
+        <div
+          style={{
+            padding: "8px 12px",
+            borderRadius: "6px",
+            backgroundColor: "rgba(255, 193, 7, 0.1)",
+            border: "1px solid var(--accent-warning)",
+            color: "var(--accent-warning)",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            marginBottom: "12px",
+          }}
+        >
+          Results may be outdated — re-run simulation to reflect your latest changes.
+        </div>
+      )}
 
       {/* Content grid */}
       <div

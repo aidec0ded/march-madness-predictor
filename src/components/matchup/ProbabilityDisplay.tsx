@@ -125,8 +125,8 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
         />
       </div>
 
-      {/* Simulation path probability (shown when simulation has been run) */}
-      {(pathProbA != null || pathProbB != null) && (
+      {/* Simulation path probability (or placeholder prompt) */}
+      {(pathProbA != null || pathProbB != null) ? (
         <div className="prob-display__path-info">
           <span className="prob-display__path-label">Simulation path to advance:</span>
           <div className="prob-display__path-values">
@@ -144,6 +144,11 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
               </span>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="prob-display__path-prompt">
+          Run simulation to see path probabilities — how likely each team is
+          to reach this round considering the full bracket.
         </div>
       )}
 
@@ -249,6 +254,17 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
         .prob-display__path-sep {
           color: var(--text-muted);
           font-size: 0.75rem;
+        }
+        .prob-display__path-prompt {
+          text-align: center;
+          padding: 8px 12px;
+          border-radius: 6px;
+          background-color: var(--bg-elevated);
+          border: 1px dashed var(--border-subtle);
+          color: var(--text-muted);
+          font-size: 0.75rem;
+          font-style: italic;
+          line-height: 1.4;
         }
         .prob-display__breakdown {
           display: flex;

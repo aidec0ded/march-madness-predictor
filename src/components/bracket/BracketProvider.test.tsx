@@ -390,4 +390,113 @@ describe("BracketProvider", () => {
       expect(capturedValue!.state.bracketName).toBe("Saved One");
     });
   });
+
+  describe("simulation staleness", () => {
+    const mockResult = {
+      teamResults: [],
+      numSimulations: 10000,
+      mostLikelyChampion: { teamId: "team-a", probability: 0.15 },
+      topChampions: [],
+      executionTimeMs: 500,
+      upsetRates: {} as Record<string, number>,
+    } as any;
+
+    it("initializes isSimulationStale as false", () => {
+      renderWithProvider();
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+    });
+
+    it("initializes simulationInputHash as null", () => {
+      renderWithProvider();
+      expect(capturedValue!.state.simulationInputHash).toBeNull();
+    });
+
+    it("sets isSimulationStale to false after SET_SIMULATION_RESULT", () => {
+      renderWithProvider();
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+      expect(capturedValue!.state.simulationInputHash).not.toBeNull();
+    });
+
+    it("becomes stale after ADVANCE_TEAM following a simulation", () => {
+      renderWithProvider();
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(true);
+    });
+
+    it("becomes stale after SET_GLOBAL_LEVERS following a simulation", () => {
+      renderWithProvider();
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+
+      dispatch({
+        type: "SET_GLOBAL_LEVERS",
+        levers: { experienceWeight: 5.0 },
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(true);
+    });
+
+    it("becomes stale after SET_MATCHUP_OVERRIDE following a simulation", () => {
+      renderWithProvider();
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+
+      dispatch({
+        type: "SET_MATCHUP_OVERRIDE",
+        gameId: "R64-East-1",
+        overrides: { injuryAdjustmentA: -2.0 },
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(true);
+    });
+
+    it("reverts to not stale when change is undone (hash match)", () => {
+      renderWithProvider();
+      // Run simulation with no picks
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+
+      // Make a pick → stale
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(true);
+
+      // Undo the pick → back to matching state → not stale
+      dispatch({ type: "RESET_PICK", gameId: "R64-East-1" });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+    });
+
+    it("does not mark stale when no simulation has been run", () => {
+      renderWithProvider();
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+      expect(capturedValue!.state.simulationInputHash).toBeNull();
+    });
+
+    it("resets staleness on CLEAR_BRACKET", () => {
+      renderWithProvider();
+      dispatch({ type: "SET_SIMULATION_RESULT", result: mockResult });
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      expect(capturedValue!.state.isSimulationStale).toBe(true);
+
+      dispatch({ type: "CLEAR_BRACKET" });
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+      expect(capturedValue!.state.simulationInputHash).toBeNull();
+    });
+  });
 });

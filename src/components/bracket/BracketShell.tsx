@@ -75,6 +75,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
   const [selectedMatchupId, setSelectedMatchupId] = useState<string | null>(null);
+  const [hasAutoOpenedResults, setHasAutoOpenedResults] = useState(false);
 
   const toggleLevers = useCallback(() => {
     setIsLeverPanelOpen((prev) => !prev);
@@ -107,6 +108,13 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
   const closeMatchup = useCallback(() => {
     setSelectedMatchupId(null);
   }, []);
+
+  const handleSimulationComplete = useCallback(() => {
+    if (!hasAutoOpenedResults) {
+      setIsResultsOpen(true);
+      setHasAutoOpenedResults(true);
+    }
+  }, [hasAutoOpenedResults]);
 
   return (
     <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites}>
@@ -153,7 +161,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
               gap: "10px",
             }}
           >
-            <SimulationButton />
+            <SimulationButton onSimulationComplete={handleSimulationComplete} />
 
             <button
               type="button"

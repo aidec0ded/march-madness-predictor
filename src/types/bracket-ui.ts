@@ -41,6 +41,12 @@ export interface BracketState {
   /** Whether a simulation is currently running */
   isSimulating: boolean;
 
+  /** Hash of simulation inputs (picks + levers + overrides) at time of last run. Null if never simulated. */
+  simulationInputHash: string | null;
+
+  /** Whether simulation results are stale (inputs changed since last simulation). */
+  isSimulationStale: boolean;
+
   /** Saved bracket ID (null if not yet saved) */
   bracketId: string | null;
 

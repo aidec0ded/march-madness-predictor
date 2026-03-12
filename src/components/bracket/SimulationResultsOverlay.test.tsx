@@ -92,6 +92,7 @@ const mockSimResult: SimulationResult = {
 let mockState: {
   simulationResult: SimulationResult | null;
   teams: Map<string, TeamSeason>;
+  isSimulationStale: boolean;
 };
 
 vi.mock("@/hooks/useBracket", () => ({
@@ -109,6 +110,7 @@ describe("SimulationResultsOverlay", () => {
     mockState = {
       simulationResult: mockSimResult,
       teams: teamsMap,
+      isSimulationStale: false,
     };
   });
 
@@ -258,6 +260,56 @@ describe("SimulationResultsOverlay", () => {
         <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
       );
       expect(screen.getByText("2.5s")).toBeInTheDocument();
+    });
+  });
+
+  describe("explanatory header", () => {
+    it("shows the explanatory subtitle with simulation count", () => {
+      render(
+        <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
+      );
+      const subtitle = screen.getByText(/full-bracket/i);
+      expect(subtitle).toBeInTheDocument();
+      expect(subtitle.textContent).toContain("10,000");
+    });
+
+    it("mentions lever settings in the subtitle", () => {
+      render(
+        <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
+      );
+      expect(screen.getByText(/lever settings/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("stale results banner", () => {
+    it("shows stale banner when isSimulationStale is true", () => {
+      mockState.isSimulationStale = true;
+      render(
+        <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
+      );
+      expect(
+        screen.getByText(/results may be outdated/i)
+      ).toBeInTheDocument();
+    });
+
+    it("does not show stale banner when isSimulationStale is false", () => {
+      mockState.isSimulationStale = false;
+      render(
+        <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
+      );
+      expect(
+        screen.queryByText(/results may be outdated/i)
+      ).not.toBeInTheDocument();
+    });
+
+    it("stale banner mentions re-running simulation", () => {
+      mockState.isSimulationStale = true;
+      render(
+        <SimulationResultsOverlay isOpen={true} onClose={() => {}} />
+      );
+      expect(
+        screen.getByText(/re-run simulation/i)
+      ).toBeInTheDocument();
     });
   });
 
