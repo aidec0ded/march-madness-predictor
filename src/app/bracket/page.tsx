@@ -38,7 +38,9 @@ import type {
 } from "@/lib/supabase/types";
 import { BracketShell } from "@/components/bracket/BracketShell";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import type { MatchupOverrides } from "@/types/engine";
 import type { SavedBracketData } from "@/types/bracket-ui";
+import { deserializeGlobalLevers } from "@/lib/engine/lever-serialization";
 import type { SimulationResult } from "@/types/simulation";
 
 export default async function BracketPage() {
@@ -139,12 +141,22 @@ export default async function BracketPage() {
 
     if (brackets && brackets.length > 0) {
       const b = brackets[0] as UserBracketRow;
+      // Restore saved lever state, falling back to defaults for old brackets
+      // that were saved before the global_levers column existed
+      const hasLevers = b.global_levers && Object.keys(b.global_levers).length > 0;
+      const globalLevers = hasLevers
+        ? deserializeGlobalLevers(b.global_levers as Record<string, unknown>)
+        : { ...DEFAULT_GLOBAL_LEVERS };
+      const matchupOverrides = (b.matchup_overrides && Object.keys(b.matchup_overrides).length > 0)
+        ? (b.matchup_overrides as Record<string, MatchupOverrides>)
+        : {};
+
       savedBracket = {
         bracketId: b.id,
         name: b.name,
         picks: (b.picks || {}) as Record<string, string>,
-        globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
-        matchupOverrides: {},
+        globalLevers,
+        matchupOverrides,
         simulationSnapshot:
           (b.simulation_snapshot as unknown as SimulationResult) ?? null,
       };

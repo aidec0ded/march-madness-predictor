@@ -475,6 +475,8 @@ export interface Database {
           name: string;
           season: number;
           picks: Record<string, unknown>;
+          global_levers: Record<string, unknown>;
+          matchup_overrides: Record<string, unknown>;
           simulation_snapshot: Record<string, unknown> | null;
           is_active: boolean;
           created_at: string;
@@ -486,6 +488,8 @@ export interface Database {
           name?: string;
           season?: number;
           picks?: Record<string, unknown>;
+          global_levers?: Record<string, unknown>;
+          matchup_overrides?: Record<string, unknown>;
           simulation_snapshot?: Record<string, unknown> | null;
           is_active?: boolean;
           created_at?: string;
@@ -497,6 +501,8 @@ export interface Database {
           name?: string;
           season?: number;
           picks?: Record<string, unknown>;
+          global_levers?: Record<string, unknown>;
+          matchup_overrides?: Record<string, unknown>;
           simulation_snapshot?: Record<string, unknown> | null;
           is_active?: boolean;
           created_at?: string;

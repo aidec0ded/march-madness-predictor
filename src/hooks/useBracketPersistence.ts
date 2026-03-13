@@ -5,6 +5,9 @@ import { useBracket } from "./useBracket";
 import { useAuth } from "./useAuth";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import type { SimulationResult } from "@/types/simulation";
+import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
+import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import { deserializeGlobalLevers } from "@/lib/engine/lever-serialization";
 
 /**
  * Hook for saving and loading brackets via the /api/brackets endpoints.
@@ -25,6 +28,8 @@ export function useBracketPersistence() {
       name: state.bracketName,
       season: 2026,
       picks: state.picks,
+      global_levers: state.globalLevers,
+      matchup_overrides: state.matchupOverrides,
       simulation_snapshot: state.simulationResult,
     };
 
@@ -53,6 +58,8 @@ export function useBracketPersistence() {
     state.bracketId,
     state.bracketName,
     state.picks,
+    state.globalLevers,
+    state.matchupOverrides,
     state.simulationResult,
     dispatch,
   ]);
@@ -63,20 +70,26 @@ export function useBracketPersistence() {
       if (!res.ok) throw new Error("Failed to load bracket");
       const data = await res.json();
       const bracket = data.bracket;
+      // Restore saved lever state, falling back to defaults for old brackets
+      const savedLevers = bracket.global_levers
+        ? deserializeGlobalLevers(bracket.global_levers as Record<string, unknown>)
+        : { ...DEFAULT_GLOBAL_LEVERS };
+      const savedOverrides = (bracket.matchup_overrides || {}) as Record<string, MatchupOverrides>;
+
       dispatch({
         type: "LOAD_BRACKET",
         bracket: {
           bracketId: bracket.id,
           name: bracket.name,
           picks: (bracket.picks || {}) as Record<string, string>,
-          globalLevers: state.globalLevers, // Keep current levers
-          matchupOverrides: {},
+          globalLevers: savedLevers,
+          matchupOverrides: savedOverrides,
           simulationSnapshot:
             (bracket.simulation_snapshot as SimulationResult | null) ?? null,
         } as SavedBracketData,
       });
     },
-    [state.globalLevers, dispatch]
+    [dispatch]
   );
 
   return {

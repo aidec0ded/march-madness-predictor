@@ -62,6 +62,10 @@ export async function PUT(
   if (body.name !== undefined) updates.name = body.name as string;
   if (body.picks !== undefined)
     updates.picks = body.picks as Record<string, unknown>;
+  if (body.global_levers !== undefined)
+    updates.global_levers = body.global_levers as Record<string, unknown>;
+  if (body.matchup_overrides !== undefined)
+    updates.matchup_overrides = body.matchup_overrides as Record<string, unknown>;
   if (body.simulation_snapshot !== undefined)
     updates.simulation_snapshot =
       body.simulation_snapshot as Record<string, unknown> | null;

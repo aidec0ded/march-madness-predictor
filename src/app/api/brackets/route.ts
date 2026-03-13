@@ -53,6 +53,9 @@ export async function POST(request: Request) {
     name: (body.name as string) || "My Bracket",
     season: (body.season as number) || 2026,
     picks: (body.picks as Record<string, unknown>) || {},
+    global_levers: (body.global_levers as Record<string, unknown>) || {},
+    matchup_overrides: (body.matchup_overrides as Record<string, unknown>) || {},
+    simulation_snapshot: (body.simulation_snapshot as Record<string, unknown>) || null,
   };
 
   const { data, error } = await supabase
