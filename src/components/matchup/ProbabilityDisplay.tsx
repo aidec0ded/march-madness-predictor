@@ -56,10 +56,10 @@ function fmtBreakdown(item: ProbabilityBreakdownDisplay): string {
   }
 }
 
-/** Returns the color for an adjustment value */
+/** Returns the color for an adjustment value (positive = Team A blue, negative = Team B red) */
 function getAdjustmentColor(value: number, format: string): string {
   if (format === "probability" || format === "multiplier") return "var(--text-primary)";
-  if (value > 0.01) return "var(--accent-success)";
+  if (value > 0.01) return "var(--accent-primary)";
   if (value < -0.01) return "var(--accent-danger)";
   return "var(--text-muted)";
 }

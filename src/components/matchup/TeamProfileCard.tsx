@@ -102,7 +102,7 @@ export const TeamProfileCard = memo(function TeamProfileCard({
             <StatRow label="eFG%" value={fmtPct(team.fourFactorsOffense.efgPct)} />
             <StatRow label="TO%" value={fmtPct(team.fourFactorsOffense.toPct)} />
             <StatRow label="ORB%" value={fmtPct(team.fourFactorsOffense.orbPct)} />
-            <StatRow label="FT Rate" value={fmtDec(team.fourFactorsOffense.ftRate, 3)} />
+            <StatRow label="FT Rate" value={fmtDec(team.fourFactorsOffense.ftRate, 1)} />
           </div>
           <div>
             <SectionSubtitle text="Defense" />
@@ -111,7 +111,7 @@ export const TeamProfileCard = memo(function TeamProfileCard({
                 <StatRow label="eFG%" value={fmtPct(team.fourFactorsDefense.efgPct)} />
                 <StatRow label="TO%" value={fmtPct(team.fourFactorsDefense.toPct)} />
                 <StatRow label="ORB%" value={fmtPct(team.fourFactorsDefense.orbPct)} />
-                <StatRow label="FT Rate" value={fmtDec(team.fourFactorsDefense.ftRate, 3)} />
+                <StatRow label="FT Rate" value={fmtDec(team.fourFactorsDefense.ftRate, 1)} />
               </>
             ) : (
               <StatRow label="Data" value="—" />

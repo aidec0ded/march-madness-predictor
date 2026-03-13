@@ -340,8 +340,8 @@
 
 - [x] **Picks-aware simulation** — Added `picks?: Record<string, string>` to `SimulationConfig`, threaded through `simulateBracket()` (lock-in before probability computation), `runSimulation()`, both API routes (`/api/simulate` and `/api/simulate/stream`), and `useBracketSimulation` hook. Invalid picks (teamId doesn't match either matchup participant) are silently ignored. 6 new tests covering lock-in, propagation, invalid picks, full-bracket determinism, and backwards compatibility.
 - [x] **Team name normalization** — Added `normalizeForMerge()` to `merger.ts` with 20+ abbreviation rules (State↔St., Saint↔St., UConn↔Connecticut, directional abbreviations, punctuation stripping). The `resolveCanonicalKey()` fallback now uses this normalization instead of raw lowercasing. 38 new tests covering State/St. suffix, Saint/St. prefix, common abbreviations (BYU, TCU, VCU, UCF, etc.), and non-collision verification (Ohio ≠ Ohio State).
-- [ ] **Probability breakdown color mismatch** — Team A uses blue text but advantage indicators use green; Team B uses red for both. Fix: match advantage text color to team color (blue for Team A, red for Team B) for visual consistency.
-- [ ] **FT Rate display precision** — Four Factors section shows 5 significant figures (e.g., "34.000"). Fix: display 3 significant figures (e.g., "34.0").
+- [x] **Probability breakdown color mismatch** — Changed `getAdjustmentColor()` in `ProbabilityDisplay.tsx` from `var(--accent-success)` (green) to `var(--accent-primary)` (blue) for positive adjustments, matching Team A's color.
+- [x] **FT Rate display precision** — Changed FT Rate formatting in `TeamProfileCard.tsx` from `fmtDec(value, 3)` (3 decimal places → "34.000") to `fmtDec(value, 1)` (1 decimal place → "34.0") for both offense and defense.
 
 ### Batch 11 — Important Features
 
