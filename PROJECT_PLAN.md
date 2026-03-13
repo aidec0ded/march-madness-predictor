@@ -302,9 +302,9 @@
 - [x] **Historical tournament data for backtesting** — Kaggle March Machine Learning Mania dataset integrated, historical tournament results scraped and seeded
 - [x] **Coach data ingestion** — Kaggle tournament results pipeline (`scripts/seed-coaches.ts`), `--all-seasons` flag for historical data, coach table with win/loss/F4/championship records
 - [x] **Tournament venue / location data** — Admin API (`POST/GET/DELETE /api/admin/tournament-sites`), `tournament_sites` Supabase table, `buildSiteMap()` for round/region→venue mapping, continuous exponential decay distance model for site proximity global lever, auto-computed from campus-to-venue haversine distance
-- [ ] **NET Ranking / Strength of Schedule lever** — Add NET ranking or SoS-based lever (requires manual data capture + DB ingestion pipeline)
-- [ ] **Luck regression lever** — KenPom Luck factor as a regression-to-mean signal (requires manual data capture + DB ingestion pipeline)
-- [ ] **2-Foul Participation editability** — Either make 2-Foul Participation editable on the matchup screen, provide a manual DB injection path, or remove it from the UI if it can't be edited
+- [x] **NET Ranking / Strength of Schedule lever** — `sosWeight` global lever (default 1.0) with `sosNetRating` data field, `calculateSosAdjustment()` in engine, "Strength of Schedule" slider in LeverPanel Schedule & Luck section
+- [x] **Luck regression lever** — `luckRegressionWeight` global lever (default 1.0) with `luck` data field (KenPom), `calculateLuckRegressionAdjustment()` in engine (8.0 eff pts scaling), "Luck Regression" slider in LeverPanel Schedule & Luck section
+- [ ] **2-Foul Participation editability** — Type fields exist in `MatchupOverrides` (`twoFoulParticipationA/B`) but no UI slider in `MatchupOverridePanel` yet. Currently display-only in `TeamProfileCard` and used for narrative context only.
 
 ### Batch 5 — Model Validation & Backtest Parity ✅
 
