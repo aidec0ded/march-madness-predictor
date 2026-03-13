@@ -324,6 +324,19 @@ function bracketReducer(
       };
     }
 
+    case "CLEAR_PICKS": {
+      return {
+        ...state,
+        picks: {},
+        simulationResult: null,
+        isSimulating: false,
+        simulationProgress: null,
+        simulationInputHash: null,
+        isSimulationStale: false,
+        isDirty: state.bracketId ? true : false,
+      };
+    }
+
     case "MARK_SAVED": {
       return {
         ...state,

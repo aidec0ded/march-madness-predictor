@@ -311,6 +311,66 @@ describe("BracketProvider", () => {
     });
   });
 
+  describe("CLEAR_PICKS action", () => {
+    it("resets picks while preserving levers and overrides", () => {
+      renderWithProvider();
+      // Make picks and lever changes
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      dispatch({
+        type: "SET_GLOBAL_LEVERS",
+        levers: { experienceWeight: 3.0 },
+      });
+      dispatch({
+        type: "SET_POOL_SIZE",
+        poolSizeBucket: "large",
+      });
+
+      // Clear picks only
+      dispatch({ type: "CLEAR_PICKS" });
+
+      // Picks should be empty
+      expect(Object.keys(capturedValue!.state.picks)).toHaveLength(0);
+      // Levers should be preserved
+      expect(capturedValue!.state.globalLevers.experienceWeight).toBe(3.0);
+      // Pool size should be preserved
+      expect(capturedValue!.state.poolSizeBucket).toBe("large");
+      // Simulation should be cleared
+      expect(capturedValue!.state.simulationResult).toBeNull();
+      expect(capturedValue!.state.simulationInputHash).toBeNull();
+      expect(capturedValue!.state.isSimulationStale).toBe(false);
+    });
+
+    it("marks state as dirty when bracket was previously saved", () => {
+      renderWithProvider();
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+      dispatch({ type: "MARK_SAVED", bracketId: "saved-123" });
+      expect(capturedValue!.state.isDirty).toBe(false);
+
+      dispatch({ type: "CLEAR_PICKS" });
+      expect(capturedValue!.state.isDirty).toBe(true);
+    });
+
+    it("does not mark dirty when no bracket was saved", () => {
+      renderWithProvider();
+      dispatch({
+        type: "ADVANCE_TEAM",
+        gameId: "R64-East-1",
+        teamId: "team-a",
+      });
+
+      dispatch({ type: "CLEAR_PICKS" });
+      expect(capturedValue!.state.isDirty).toBe(false);
+    });
+  });
+
   describe("SET_POOL_SIZE action", () => {
     it("updates the pool size bucket", () => {
       renderWithProvider();

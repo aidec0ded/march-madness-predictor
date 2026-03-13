@@ -102,6 +102,7 @@ export type BracketAction =
   | { type: "SET_SIMULATION_PROGRESS"; progress: SimulationProgress }
   | { type: "LOAD_BRACKET"; bracket: SavedBracketData }
   | { type: "CLEAR_BRACKET" }
+  | { type: "CLEAR_PICKS" }
   | { type: "MARK_SAVED"; bracketId: string }
   | { type: "SET_POOL_SIZE"; poolSizeBucket: PoolSizeBucket }
   | { type: "SET_TOURNAMENT_SITE_MAP"; siteMap: SiteMap };

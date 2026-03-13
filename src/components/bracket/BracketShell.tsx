@@ -14,6 +14,7 @@ import { GuidancePanel } from "@/components/bracket/GuidancePanel";
 import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SaveButton } from "./BracketShellSaveButton";
+import { ClearPicksButton } from "./ClearPicksButton";
 
 const MatchupView = dynamic(
   () =>
@@ -241,6 +242,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
               Levers
             </button>
 
+            <ClearPicksButton />
             <SaveButton />
           </div>
         </header>
