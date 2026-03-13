@@ -124,8 +124,13 @@ function setupSuccessfulMocks(
   const teamEqTeamId = vi.fn().mockReturnValue(teamQueryResult);
 
   mockTeamSeasonEq.mockImplementation((_col: string, _val: unknown) => {
-    // The second .eq() for team_id filter
-    return { data: teamsError ? null : teamRows, error: teamsError, eq: teamEqTeamId };
+    // The second .eq() for team_id filter; .returns() is a type-only hint that passes through
+    return {
+      data: teamsError ? null : teamRows,
+      error: teamsError,
+      eq: teamEqTeamId,
+      returns: () => ({ data: teamsError ? null : teamRows, error: teamsError, eq: teamEqTeamId }),
+    };
   });
   mockTeamSeasonSelect.mockReturnValue({
     eq: mockTeamSeasonEq,

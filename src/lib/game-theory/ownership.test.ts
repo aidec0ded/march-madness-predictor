@@ -13,7 +13,7 @@ import {
   SEED_BASELINES,
   ROUND_DECAY,
 } from "./ownership";
-import type { TeamSeason, Seed, TournamentRound } from "@/types/team";
+import type { TeamSeason, Seed, TournamentRound, Conference } from "@/types/team";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -24,7 +24,7 @@ import type { TeamSeason, Seed, TournamentRound } from "@/types/team";
  */
 function makeTeam(overrides: {
   seed: Seed;
-  conference?: string;
+  conference?: Conference;
   adjEM?: number;
   teamId?: string;
 }): TeamSeason {

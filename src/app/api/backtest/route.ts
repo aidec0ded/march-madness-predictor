@@ -210,7 +210,8 @@ export async function POST(request: Request) {
       const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
         .from("team_seasons")
         .select("*, teams!inner(*), coaches(*)")
-        .eq("season", season);
+        .eq("season", season)
+        .returns<TeamSeasonJoinedRow[]>();
 
       if (teamSeasonsError) {
         logger.error(
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
       if (teamSeasonRows && teamSeasonRows.length > 0) {
         // Transform rows — no tournament entries needed for backtest
         const teamSeasons = transformTeamSeasonRows(
-          teamSeasonRows as unknown as TeamSeasonJoinedRow[]
+          teamSeasonRows
         );
         teamsBySeason.set(season, teamSeasons);
       } else {

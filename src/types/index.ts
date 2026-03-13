@@ -50,7 +50,6 @@ export type {
   FourFactorsLeverWeights,
   GlobalLevers,
   MatchupOverrides,
-  MatchupInput,
   ProbabilityBreakdown,
   MatchupResult,
   EngineConfig,
@@ -61,7 +60,6 @@ export {
   DEFAULT_FOUR_FACTORS_WEIGHTS,
   DEFAULT_GLOBAL_LEVERS,
   DEFAULT_ENGINE_CONFIG,
-  SITE_PROXIMITY_ADJUSTMENTS,
   SITE_PROXIMITY_THRESHOLDS,
 } from "./engine";
 

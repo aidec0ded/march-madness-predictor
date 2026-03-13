@@ -16,7 +16,7 @@ import type {
   FourFactors,
   ShootingSplits,
 } from "@/types";
-import type { KenPomMergedRow, ValidationError } from "@/types";
+import type { KenPomMergedRow, ValidationError, Conference } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -177,7 +177,7 @@ export function normalizeKenPom(
         id: "",
         name: row.teamName,
         shortName: row.teamName,
-        conference: "",
+        conference: "" as Conference,
         campus: { city: "", state: "", latitude: 0, longitude: 0 },
       };
     }

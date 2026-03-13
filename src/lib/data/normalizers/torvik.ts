@@ -24,7 +24,7 @@ import type {
   FourFactors,
   ShootingSplits,
 } from "@/types";
-import type { TorvikRawRow, TorvikCsvRow, ValidationError } from "@/types";
+import type { TorvikRawRow, TorvikCsvRow, ValidationError, Conference } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -214,7 +214,7 @@ export function normalizeTorvik(
         id: "",
         name: teamName,
         shortName: teamName,
-        conference: row.conf ? String(row.conf).trim() : "",
+        conference: (row.conf ? String(row.conf).trim() : "") as Conference,
         campus: { city: "", state: "", latitude: 0, longitude: 0 },
       };
     }
@@ -405,7 +405,7 @@ export function normalizeTorvikCsv(
         shortName: teamName,
         // Teams Table CSV lacks a conference column. Set empty to avoid
         // overwriting KenPom-provided conference data during commit.
-        conference: "",
+        conference: "" as Conference,
         campus: { city: "", state: "", latitude: 0, longitude: 0 },
       };
     }

@@ -12,7 +12,7 @@
  * - **Kill Shots** — 10-0 scoring runs (per game, allowed, margin)
  */
 
-import type { TeamSeason, EfficiencyRatings } from "@/types";
+import type { TeamSeason, EfficiencyRatings, Conference } from "@/types";
 import type { EvanMiyaCsvRow, ValidationError } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -127,7 +127,7 @@ export function normalizeEvanMiya(
         id: "",
         name: row.team.trim(),
         shortName: row.team.trim(),
-        conference: "",
+        conference: "" as Conference,
         campus: { city: "", state: "", latitude: 0, longitude: 0 },
       };
     }

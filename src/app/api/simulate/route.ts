@@ -31,7 +31,6 @@ import type { SimulationConfig, SimulationCount } from "@/types/simulation";
 import { createPublicClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
-import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { runSimulation } from "@/lib/engine/simulator";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import { buildSiteMap } from "@/lib/engine/site-mapping";
@@ -262,7 +261,8 @@ export async function POST(request: Request) {
       .from("team_seasons")
       .select("*, teams!inner(*), coaches(*)")
       .eq("season", season)
-      .order("team_id");
+      .order("team_id")
+      .returns<TeamSeasonJoinedRow[]>();
 
     if (teamSeasonsError) {
       logger.error("Error fetching team seasons", teamSeasonsError);
@@ -320,8 +320,8 @@ export async function POST(request: Request) {
 
     // --- Transform DB rows to application types ---
     const allTeamSeasons = transformTeamSeasonRows(
-      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
-      tournamentEntries as unknown as TournamentEntryRow[]
+      teamSeasonRows,
+      tournamentEntries
     );
 
     // Filter to only teams that have tournament entries and detect play-in pairs

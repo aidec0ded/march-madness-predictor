@@ -1,12 +1,12 @@
 /**
- * Types for the probability engine: lever configurations, matchup inputs/outputs,
+ * Types for the probability engine: lever configurations, matchup outputs,
  * and overall engine settings.
  *
  * The engine takes two TeamSeason records + lever config and produces
  * a win probability with full diagnostic output.
  */
 
-import type { SiteProximityBucket, DataSource, TournamentRound } from "./team";
+import type { DataSource } from "./team";
 
 // ---------------------------------------------------------------------------
 // Composite Rating Config
@@ -217,23 +217,8 @@ export interface MatchupOverrides {
 }
 
 // ---------------------------------------------------------------------------
-// Matchup Input / Output
+// Matchup Output
 // ---------------------------------------------------------------------------
-
-/** Input to the matchup probability calculator */
-export interface MatchupInput {
-  /** Team A's season data */
-  teamAId: string;
-
-  /** Team B's season data */
-  teamBId: string;
-
-  /** Tournament round (affects some lever behaviors) */
-  round?: TournamentRound;
-
-  /** Per-matchup overrides (optional) */
-  overrides?: MatchupOverrides;
-}
 
 /**
  * Detailed breakdown of how the probability was computed.
@@ -418,15 +403,6 @@ export interface GameSiteCoordinates {
 // ---------------------------------------------------------------------------
 // Site Proximity Constants
 // ---------------------------------------------------------------------------
-
-/** Efficiency point adjustments for site proximity buckets */
-export const SITE_PROXIMITY_ADJUSTMENTS: Record<SiteProximityBucket, number> = {
-  true_home: 3.0,
-  regional_advantage: 1.5,
-  neutral: 0.0,
-  moderate_travel: -0.5,
-  significant_travel: -1.0,
-};
 
 /** Distance thresholds (miles) for site proximity bucketing */
 export const SITE_PROXIMITY_THRESHOLDS = {

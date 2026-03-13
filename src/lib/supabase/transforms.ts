@@ -12,6 +12,7 @@
 import type {
   TeamSeason,
   Team,
+  Conference,
   CoachRecord,
   EfficiencyRatings,
   FourFactors,
@@ -64,7 +65,7 @@ function transformTeam(row: TeamRow): Team {
     id: row.id,
     name: row.name,
     shortName: row.short_name,
-    conference: row.conference,
+    conference: row.conference as Conference,
     campus: {
       city: row.campus_city,
       state: row.campus_state,

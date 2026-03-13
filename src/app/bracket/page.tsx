@@ -32,7 +32,6 @@ export const metadata: Metadata = {
 };
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type {
-  TournamentEntryRow,
   TournamentSiteRow,
   UserBracketRow,
 } from "@/lib/supabase/types";
@@ -52,7 +51,8 @@ export default async function BracketPage() {
   const { data: teamSeasonRows, error: teamsError } = await adminClient
     .from("team_seasons")
     .select("*, teams!inner(*), coaches(*)")
-    .eq("season", CURRENT_SEASON);
+    .eq("season", CURRENT_SEASON)
+    .returns<TeamSeasonJoinedRow[]>();
 
   // Fetch tournament entries
   const { data: entries, error: entriesError } = await adminClient
@@ -117,8 +117,8 @@ export default async function BracketPage() {
 
   // Transform and process tournament field (supports 64 or 68 teams)
   const allTeams = transformTeamSeasonRows(
-    teamSeasonRows as unknown as TeamSeasonJoinedRow[],
-    entries as unknown as TournamentEntryRow[]
+    teamSeasonRows ?? [],
+    entries ?? []
   );
   const allTournamentTeams = allTeams.filter((t) => t.tournamentEntry);
   const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);

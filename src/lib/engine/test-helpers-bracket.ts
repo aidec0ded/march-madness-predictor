@@ -6,7 +6,7 @@
  * from the createMockTeamSeason factory with appropriate overrides.
  */
 
-import type { TeamSeason, Region, Seed } from "@/types/team";
+import type { TeamSeason, Region, Seed, Conference } from "@/types/team";
 import { createMockTeamSeason } from "@/lib/engine/test-helpers";
 import { SEED_TO_BRACKET_POSITION } from "@/lib/engine/bracket";
 
@@ -50,7 +50,7 @@ const SEED_ADJEMS: Record<number, number> = {
 // ---------------------------------------------------------------------------
 
 /** Conference assignments by seed (realistic distribution) */
-const SEED_CONFERENCES: Record<number, string[]> = {
+const SEED_CONFERENCES: Record<number, Conference[]> = {
   1: ["Big 12", "SEC", "Big Ten", "ACC"],
   2: ["Big 12", "SEC", "Big Ten", "Big East"],
   3: ["SEC", "Big Ten", "ACC", "Big 12"],

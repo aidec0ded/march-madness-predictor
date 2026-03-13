@@ -43,7 +43,7 @@ function makeTeamSeason(
       id: `t-${name.toLowerCase().replace(/\s/g, "-")}`,
       name,
       shortName,
-      conference: "Test",
+      conference: "Big 12",
       campus: { city: "Test", state: "TS", latitude: 0, longitude: 0 },
     },
     ratings: {

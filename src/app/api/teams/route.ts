@@ -24,7 +24,6 @@ import {
   transformTeamSeasonRows,
   type TeamSeasonJoinedRow,
 } from "@/lib/supabase/transforms";
-import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { CURRENT_SEASON } from "@/lib/constants";
 
 const rateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60_000 });
@@ -95,7 +94,8 @@ export async function GET(request: Request) {
     let teamQuery = supabase
       .from("team_seasons")
       .select("*, teams!inner(*), coaches(*)")
-      .eq("season", season);
+      .eq("season", season)
+      .returns<TeamSeasonJoinedRow[]>();
 
     if (teamId) {
       teamQuery = teamQuery.eq("team_id", teamId);
@@ -129,8 +129,8 @@ export async function GET(request: Request) {
 
     // --- Transform DB rows to application types ---
     const allTeams = transformTeamSeasonRows(
-      (teamSeasonRows ?? []) as unknown as TeamSeasonJoinedRow[],
-      (entries ?? []) as unknown as TournamentEntryRow[]
+      teamSeasonRows ?? [],
+      entries ?? []
     );
 
     // Optionally filter to tournament teams only

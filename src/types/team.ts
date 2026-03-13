@@ -44,8 +44,7 @@ export type Conference =
   | "NEC"
   | "SWAC"
   | "AE"
-  | "ASUN"
-  | string; // Allow new/renamed conferences
+  | "ASUN";
 
 /** Tournament seed (1-16) */
 export type Seed =

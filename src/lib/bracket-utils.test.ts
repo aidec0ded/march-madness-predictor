@@ -113,7 +113,7 @@ describe("filterToMainBracket", () => {
           createMockTeamSeason({
             id: `team-${idx}`,
             teamId: `team-${idx}`,
-            team: { id: `team-${idx}`, name: `Team ${idx}`, shortName: `T${idx}`, conference: "Conf" },
+            team: { id: `team-${idx}`, name: `Team ${idx}`, shortName: `T${idx}`, conference: "Big 12" },
             ratings: {
               kenpom: { source: "kenpom", adjOE: 110, adjDE: 100, adjEM: 10.0 - idx * 0.1 },
             },
