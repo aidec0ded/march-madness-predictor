@@ -30,6 +30,7 @@ import {
   getCampusLocation,
   type CampusLocation,
 } from "../src/lib/data/campus-locations";
+import { normalizeForMerge } from "../src/lib/data/merger";
 import type { TeamSeason } from "../src/types/team";
 import type { Database } from "../src/lib/supabase/types";
 
@@ -171,6 +172,7 @@ class TorvikSeeder {
   private supabase: SupabaseClient<Database>;
   private season: number;
   private teamIdMap: Map<string, string> = new Map(); // team_name -> team_id
+  private canonicalNameMap: Map<string, string> = new Map(); // source_name -> canonical_name
   private stats = {
     teamsUpserted: 0,
     teamSeasonsUpserted: 0,
@@ -304,14 +306,43 @@ class TorvikSeeder {
   private async upsertTeams(records: Partial<TeamSeason>[]): Promise<void> {
     console.log("[3/6] Upserting teams...");
 
+    // Resolve canonical team names to prevent duplicates across sources
+    const sourceNames = records
+      .filter((r) => r.team?.name)
+      .map((r) => r.team!.name);
+
+    const { data: existingTeams } = await this.supabase
+      .from("teams")
+      .select("name");
+
+    if (existingTeams) {
+      const normalizedToExisting = new Map<string, string>();
+      for (const team of existingTeams) {
+        const key = normalizeForMerge(team.name);
+        if (!normalizedToExisting.has(key)) {
+          normalizedToExisting.set(key, team.name);
+        }
+      }
+      for (const name of sourceNames) {
+        const key = normalizeForMerge(name);
+        const existing = normalizedToExisting.get(key);
+        this.canonicalNameMap.set(name, existing || name);
+      }
+    } else {
+      for (const name of sourceNames) {
+        this.canonicalNameMap.set(name, name);
+      }
+    }
+
     const teamRecords: TeamRecord[] = records
       .filter((r) => r.team?.name)
       .map((r) => {
         const team = r.team!;
+        const canonicalName = this.canonicalNameMap.get(team.name) || team.name;
         const campus = getCampusLocation(team.name);
         return {
-          name: team.name,
-          short_name: generateShortName(team.name),
+          name: canonicalName,
+          short_name: generateShortName(canonicalName),
           conference: team.conference || "Unknown",
           campus_city: campus.city,
           campus_state: campus.state,
@@ -411,9 +442,10 @@ class TorvikSeeder {
       const teamName = record.team?.name;
       if (!teamName) continue;
 
-      const teamId = this.teamIdMap.get(teamName);
+      const canonicalName = this.canonicalNameMap.get(teamName) || teamName;
+      const teamId = this.teamIdMap.get(canonicalName);
       if (!teamId) {
-        console.warn(`  WARNING: No team ID found for "${teamName}", skipping season record.`);
+        console.warn(`  WARNING: No team ID found for "${teamName}" (canonical: "${canonicalName}"), skipping season record.`);
         this.stats.errors++;
         continue;
       }
@@ -535,15 +567,16 @@ class TorvikSeeder {
       if (seen.has(teamName)) continue;
       seen.add(teamName);
 
-      const teamId = this.teamIdMap.get(teamName);
+      const canonicalName = this.canonicalNameMap.get(teamName) || teamName;
+      const teamId = this.teamIdMap.get(canonicalName);
       if (!teamId) continue;
 
-      // Use Torvik name as default for all sources.
+      // Use source name for torvik_name, canonical for others.
       // KenPom and Evan Miya names should be updated when those sources
       // are imported.
       mappings.push({
         team_id: teamId,
-        kenpom_name: teamName,
+        kenpom_name: canonicalName,
         torvik_name: teamName,
         evanmiya_name: teamName,
       });

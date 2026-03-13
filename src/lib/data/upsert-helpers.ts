@@ -11,6 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { logger } from "@/lib/logger";
+import { normalizeForMerge } from "@/lib/data/merger";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -140,6 +141,74 @@ export interface ImportJobRecord {
   status: string;
   teams_imported: number;
   validation?: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// Canonical name resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves source-specific team names to canonical names that already exist
+ * in the database. This prevents duplicate team records when different
+ * sources use different naming conventions (e.g., "Utah State" in KenPom
+ * vs "Utah St." in Torvik).
+ *
+ * For each source name, checks if `normalizeForMerge(sourceName)` matches
+ * `normalizeForMerge(existingName)` for any team already in the DB. If a
+ * match is found, the existing team's name is used as the canonical name.
+ * If no match, the source name is used as-is.
+ *
+ * @param supabase - Supabase admin client.
+ * @param sourceNames - Array of team names from the data source.
+ * @returns A map from source name to canonical name.
+ */
+export async function resolveCanonicalTeamNames(
+  supabase: SupabaseClient<Database>,
+  sourceNames: string[]
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+
+  // Fetch all existing team names from the database
+  const { data: existingTeams, error } = await supabase
+    .from("teams")
+    .select("name");
+
+  if (error) {
+    logger.warn("Failed to fetch existing team names for canonical resolution", {
+      error: error.message,
+    });
+    // Fall back to identity mapping (no canonicalization)
+    for (const name of sourceNames) {
+      result.set(name, name);
+    }
+    return result;
+  }
+
+  // Build a normalized-key → existing-name map
+  const normalizedToExisting = new Map<string, string>();
+  if (existingTeams) {
+    for (const team of existingTeams) {
+      const key = normalizeForMerge(team.name);
+      // If multiple existing records normalize to the same key (shouldn't
+      // happen normally), the first one wins.
+      if (!normalizedToExisting.has(key)) {
+        normalizedToExisting.set(key, team.name);
+      }
+    }
+  }
+
+  // Resolve each source name
+  for (const name of sourceNames) {
+    const key = normalizeForMerge(name);
+    const existing = normalizedToExisting.get(key);
+    if (existing && existing !== name) {
+      result.set(name, existing);
+    } else {
+      result.set(name, name);
+    }
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------

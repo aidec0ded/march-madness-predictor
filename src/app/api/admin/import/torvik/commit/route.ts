@@ -41,6 +41,7 @@ import {
   upsertTeamSeasons,
   upsertNameMappings,
   recordImportJob,
+  resolveCanonicalTeamNames,
 } from "@/lib/data/upsert-helpers";
 import type { TeamUpsertRecord } from "@/lib/data/upsert-helpers";
 import type { TeamSeason } from "@/types";
@@ -146,14 +147,28 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
 
     // -----------------------------------------------------------------------
-    // Step 1: Upsert teams
+    // Step 1: Resolve canonical team names (prevents duplicate records when
+    // different sources use different naming conventions)
+    // -----------------------------------------------------------------------
+
+    const sourceTeamNames = typedTeams
+      .filter((t) => t.team?.name)
+      .map((t) => t.team!.name);
+    const canonicalNameMap = await resolveCanonicalTeamNames(
+      supabase,
+      sourceTeamNames
+    );
+
+    // -----------------------------------------------------------------------
+    // Step 2: Upsert teams (using canonical names)
     // -----------------------------------------------------------------------
 
     const teamRecords: TeamUpsertRecord[] = typedTeams
       .filter((t) => t.team?.name)
       .map((t) => {
-        const teamName = t.team!.name;
-        const campus = getCampusLocation(teamName);
+        const sourceName = t.team!.name;
+        const teamName = canonicalNameMap.get(sourceName) || sourceName;
+        const campus = getCampusLocation(sourceName);
         return {
           name: teamName,
           short_name: generateShortName(teamName),
@@ -176,7 +191,7 @@ export async function POST(request: Request) {
     });
 
     // -----------------------------------------------------------------------
-    // Step 2: Fetch existing team_seasons for data_sources merge
+    // Step 3: Fetch existing team_seasons for data_sources merge
     // -----------------------------------------------------------------------
 
     const { data: existingSeasons } = await supabase
@@ -195,7 +210,7 @@ export async function POST(request: Request) {
     }
 
     // -----------------------------------------------------------------------
-    // Step 3: Build team_season upsert records (Torvik columns only)
+    // Step 4: Build team_season upsert records (Torvik columns only)
     // -----------------------------------------------------------------------
 
     const skippedTeams: string[] = [];
@@ -204,7 +219,9 @@ export async function POST(request: Request) {
         const teamName = t.team?.name;
         if (!teamName) return null;
 
-        const teamId = teamIdMap.get(teamName);
+        // Use canonical name to look up team ID
+        const canonicalName = canonicalNameMap.get(teamName) || teamName;
+        const teamId = teamIdMap.get(canonicalName);
         if (!teamId) {
           skippedTeams.push(teamName);
           return null;
@@ -330,15 +347,23 @@ export async function POST(request: Request) {
     });
 
     // -----------------------------------------------------------------------
-    // Step 4: Upsert name mappings
+    // Step 5: Upsert name mappings
     // -----------------------------------------------------------------------
 
     const nameMappings = typedTeams
-      .filter((t) => t.team?.name && teamIdMap.get(t.team.name))
-      .map((t) => ({
-        team_id: teamIdMap.get(t.team!.name)!,
-        torvik_name: t.team!.name,
-      }));
+      .filter((t) => {
+        if (!t.team?.name) return false;
+        const canonical = canonicalNameMap.get(t.team.name) || t.team.name;
+        return teamIdMap.get(canonical);
+      })
+      .map((t) => {
+        const sourceName = t.team!.name;
+        const canonical = canonicalNameMap.get(sourceName) || sourceName;
+        return {
+          team_id: teamIdMap.get(canonical)!,
+          torvik_name: sourceName,
+        };
+      });
 
     const { count: mappingsUpserted, errors: mappingErrors } =
       await upsertNameMappings(supabase, nameMappings);
@@ -349,7 +374,7 @@ export async function POST(request: Request) {
     });
 
     // -----------------------------------------------------------------------
-    // Step 5: Record import job
+    // Step 6: Record import job
     // -----------------------------------------------------------------------
 
     await recordImportJob(supabase, {
@@ -360,7 +385,7 @@ export async function POST(request: Request) {
     });
 
     // -----------------------------------------------------------------------
-    // Step 6: Return response
+    // Step 7: Return response
     // -----------------------------------------------------------------------
 
     const allErrors = [

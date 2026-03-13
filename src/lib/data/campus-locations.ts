@@ -579,11 +579,47 @@ export const CAMPUS_LOCATIONS: Record<string, CampusLocation> = {
 
 /**
  * Looks up the campus location for a given team name.
+ *
+ * Handles naming discrepancies between data sources by trying the original
+ * name first, then common variants ("State" ↔ "St.", "Saint" ↔ "St.").
  * Falls back to the default center-of-US location if not found.
  *
- * @param teamName - The team name (Torvik format).
+ * @param teamName - The team name from any data source.
  * @returns The campus location with city, state, lat, lng.
  */
 export function getCampusLocation(teamName: string): CampusLocation {
-  return CAMPUS_LOCATIONS[teamName] ?? DEFAULT_CAMPUS_LOCATION;
+  // Try exact match first
+  if (CAMPUS_LOCATIONS[teamName]) return CAMPUS_LOCATIONS[teamName];
+
+  // Try "State" → "St." variant (e.g., "Utah State" → "Utah St.")
+  if (/\sState$/.test(teamName)) {
+    const stVariant = teamName.replace(/\sState$/, " St.");
+    if (CAMPUS_LOCATIONS[stVariant]) return CAMPUS_LOCATIONS[stVariant];
+  }
+
+  // Try "St." → "State" variant (e.g., "Utah St." → "Utah State")
+  if (/\sSt\.$/.test(teamName)) {
+    const stateVariant = teamName.replace(/\sSt\.$/, " State");
+    if (CAMPUS_LOCATIONS[stateVariant]) return CAMPUS_LOCATIONS[stateVariant];
+  }
+
+  // Try "Saint" → "St." prefix variant (e.g., "Saint Mary's" → "St. Mary's")
+  if (/^Saint\s/.test(teamName)) {
+    const stPrefixVariant = teamName.replace(/^Saint\s/, "St. ");
+    if (CAMPUS_LOCATIONS[stPrefixVariant]) return CAMPUS_LOCATIONS[stPrefixVariant];
+  }
+
+  // Try "St." → "Saint" prefix variant (e.g., "St. Mary's" → "Saint Mary's")
+  if (/^St\.\s/.test(teamName)) {
+    const saintVariant = teamName.replace(/^St\.\s/, "Saint ");
+    if (CAMPUS_LOCATIONS[saintVariant]) return CAMPUS_LOCATIONS[saintVariant];
+  }
+
+  // Try middle "State" → "St." (e.g., "Cal State Bakersfield" → "Cal St. Bakersfield")
+  if (/\sState\s/.test(teamName)) {
+    const midStVariant = teamName.replace(/\sState\s/, " St. ");
+    if (CAMPUS_LOCATIONS[midStVariant]) return CAMPUS_LOCATIONS[midStVariant];
+  }
+
+  return DEFAULT_CAMPUS_LOCATION;
 }
