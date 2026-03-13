@@ -55,22 +55,38 @@ function getTeamName(record: Partial<TeamSeason>): string | undefined {
  *   "UConn"       →  "connecticut"  (either source)
  */
 const NAME_NORMALIZATION_RULES: [RegExp, string][] = [
-  // "Saint" / "St." at START of name → "saint" (for "St. Mary's", "St. John's")
-  // MUST come before the suffix "St." → "state" rules to avoid
-  // "St. Mary's" → "State Mary's".
+  // ── "Saint" / "St." / "St" prefix ──
+  // MUST come before the suffix "St"/"St." → "state" rules to avoid
+  // "St. Mary's" → "State Mary's" or "St Louis" → "State Louis".
   [/^st\.\s+/g, "saint "],
+  [/^st\s+/g, "saint "],
 
-  // "St." at word boundary (suffix) → "state" (e.g., "Ohio St." → "Ohio State")
-  // Only matches "St." preceded by a space — never at start of name.
+  // ── "St." / "St" suffix → "state" ──
+  // (e.g., "Ohio St." → "Ohio State", "Michigan St" → "Michigan State")
+  // Only matches "St"/"St." preceded by a space — never at start of name.
   [/\bst\.$/g, "state"],
   [/(\s)st\.\s/g, "$1state "],
   [/(\s)st\.$/g, "$1state"],
+  [/(\s)st$/g, "$1state"],
+  [/(\s)st\s/g, "$1state "],
 
-  // Common multi-word abbreviations
+  // ── Multi-word abbreviations (with and without periods) ──
+  // NC / N.C. → "north carolina" (for "NC State", "N.C. State")
   [/\bn\.c\.\s*/g, "north carolina "],
   [/\bn\.c\b/g, "north carolina"],
+  [/\bnc\s+/g, "north carolina "],
+  [/\bnc$/g, "north carolina"],
+  // SC / S.C. → "south carolina" (for "SC Upstate", "S.C. State")
   [/\bs\.c\.\s*/g, "south carolina "],
   [/\bs\.c\b/g, "south carolina"],
+  [/\bsc\s+/g, "south carolina "],
+  [/\bsc$/g, "south carolina"],
+  // MS → "mississippi" (for "MS Valley St")
+  [/\bms\s+/g, "mississippi "],
+
+  // ── Mount / Mt. / Mt ──
+  [/\bmt\.\s*/g, "mount "],
+  [/\bmt\s+/g, "mount "],
 
   // "Fla." → "florida"
   [/\bfla\.?\b/g, "florida"],
@@ -78,11 +94,18 @@ const NAME_NORMALIZATION_RULES: [RegExp, string][] = [
   // "Ill." → "illinois"
   [/\bill\.?\b/g, "illinois"],
 
-  // Directional abbreviations
+  // ── Directional abbreviations (with and without periods) ──
+  // With periods (Torvik/KenPom style: "N. Dakota St.", "S.C. State")
   [/\bn\.\s*/g, "north "],
   [/\bs\.\s*/g, "south "],
   [/\be\.\s*/g, "east "],
   [/\bw\.\s*/g, "west "],
+  // Without periods (Kaggle style: "N Dakota St", "S Dakota St")
+  // Only matches single-letter standalone word followed by space.
+  [/\bn\s+(?=[a-z])/g, "north "],
+  [/\bs\s+(?=[a-z])/g, "south "],
+  [/\be\s+(?=[a-z])/g, "east "],
+  [/\bw\s+(?=[a-z])/g, "west "],
 
   // "UConn" → "connecticut"
   [/\buconn\b/g, "connecticut"],

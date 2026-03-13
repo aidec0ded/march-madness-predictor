@@ -29,6 +29,126 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { normalizeForMerge } from "../src/lib/data/merger";
+
+// ---------------------------------------------------------------------------
+// Kaggle-specific name overrides
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps Kaggle team names that use unique abbreviations not shared by
+ * Torvik/KenPom/Evan Miya to their canonical DB names. These are only
+ * needed for names that `normalizeForMerge()` cannot resolve.
+ *
+ * Keys are lowercase Kaggle names; values are the DB canonical names
+ * (which will also be run through `normalizeForMerge()` for lookup).
+ */
+const KAGGLE_NAME_OVERRIDES: Record<string, string> = {
+  "abilene chr": "Abilene Christian",
+  "suny albany": "Albany",
+  "american univ": "American",
+  "ark little rock": "Little Rock",
+  "ark pine bluff": "Arkansas-Pine Bluff",
+  "boston univ": "Boston University",
+  "c michigan": "Central Michigan",
+  "cent arkansas": "Central Arkansas",
+  "central conn": "Central Connecticut",
+  "charleston so": "Charleston Southern",
+  "citadel": "The Citadel",
+  "coastal car": "Coastal Carolina",
+  "col charleston": "Charleston",
+  "cs bakersfield": "Cal State Bakersfield",
+  "cs fullerton": "Cal State Fullerton",
+  "cs northridge": "Cal State Northridge",
+  "cs sacramento": "Sacramento State",
+  "e illinois": "Eastern Illinois",
+  "e kentucky": "Eastern Kentucky",
+  "e michigan": "Eastern Michigan",
+  "e washington": "Eastern Washington",
+  "f dickinson": "Fairleigh Dickinson",
+  "ga southern": "Georgia Southern",
+  "geo washington": "George Washington",
+  "green bay": "Green Bay",
+  "il chicago": "Illinois-Chicago",
+  "iupui": "IUPUI",
+  "kent": "Kent State",
+  "liu brooklyn": "LIU",
+  "loyola il": "Loyola Chicago",
+  "loyola md": "Loyola MD",
+  "loyola marymount": "Loyola Marymount",
+  "md baltimore county": "UMBC",
+  "md eastern shore": "Maryland-Eastern Shore",
+  "miami fl": "Miami FL",
+  "miami oh": "Miami OH",
+  "mil": "Milwaukee",
+  "miss valley st": "Mississippi Valley State",
+  "n colorado": "Northern Colorado",
+  "n illinois": "Northern Illinois",
+  "n kentucky": "Northern Kentucky",
+  "nw state": "Northwestern State",
+  "prairie view": "Prairie View A&M",
+  "s carolina st": "South Carolina State",
+  "s illinois": "Southern Illinois",
+  "se louisiana": "Southeastern Louisiana",
+  "se missouri st": "Southeast Missouri State",
+  "siue": "SIU Edwardsville",
+  "southern miss": "Southern Miss",
+  "st francis ny": "St. Francis NY",
+  "st francis pa": "St. Francis PA",
+  "st josephs pa": "Saint Joseph's",
+  "st marys ca": "Saint Mary's",
+  "st thomas mn": "St. Thomas",
+  "tenn martin": "UT Martin",
+  "texas a&m cc": "Texas A&M-Corpus Christi",
+  "texas st": "Texas State",
+  "tx southern": "Texas Southern",
+  "uc riverside": "UC Riverside",
+  "unc asheville": "UNC Asheville",
+  "unc greensboro": "UNC Greensboro",
+  "unc wilmington": "UNC Wilmington",
+  "ut arlington": "UT Arlington",
+  "w carolina": "Western Carolina",
+  "w illinois": "Western Illinois",
+  "w kentucky": "Western Kentucky",
+  "w michigan": "Western Michigan",
+  "wis green bay": "Green Bay",
+  "wis milwaukee": "Milwaukee",
+  "wku": "Western Kentucky",
+  // Additional Kaggle abbreviations for common tournament teams
+  "col charleston": "Charleston",
+  "fl atlantic": "Florida Atlantic",
+  "florida intl": "Florida International",
+  "g washington": "George Washington",
+  "houston chr": "Houston Christian",
+  "pfw": "Purdue Fort Wayne",
+  "kennesaw": "Kennesaw State",
+  "loy marymount": "Loyola Marymount",
+  "loyola-chicago": "Loyola Chicago",
+  "ma lowell": "UMass Lowell",
+  "md e shore": "Maryland-Eastern Shore",
+  "missouri kc": "UMKC",
+  "monmouth nj": "Monmouth",
+  "ne omaha": "Nebraska Omaha",
+  "northwestern la": "Northwestern State",
+  "sf austin": "Stephen F. Austin",
+  "southern univ": "Southern",
+  "tam c. christi": "Texas A&M-Corpus Christi",
+  "tx southern": "Texas Southern",
+  "st thomas mn": "St. Thomas",
+  "n arizona": "Northern Arizona",
+  "n colorado": "Northern Colorado",
+  "w virginia": "West Virginia",
+  "robert morris": "Robert Morris",
+  "se missouri st": "Southeast Missouri State",
+  "tn martin": "Tennessee-Martin",
+  "tenn martin": "Tennessee-Martin",
+  "utrgv": "UT Rio Grande Valley",
+  "ulm": "Louisiana-Monroe",
+  "ut san antonio": "UTSA",
+  "wi green bay": "Green Bay",
+  "wi milwaukee": "Milwaukee",
+  "queens nc": "Queens",
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -413,16 +533,18 @@ async function seedToSupabase(
     .from("team_name_mappings")
     .select("team_id, kenpom_name, torvik_name, evanmiya_name");
 
-  // Build lookup map (lowercase → team_id)
+  // Build lookup map (normalized name → team_id)
+  // Uses normalizeForMerge() to handle abbreviation differences between
+  // Kaggle team names (e.g., "Michigan St") and DB names (e.g., "Michigan St.").
   const teamLookup = new Map<string, string>();
   for (const t of dbTeams ?? []) {
-    teamLookup.set(t.name.toLowerCase(), t.id);
-    if (t.short_name) teamLookup.set(t.short_name.toLowerCase(), t.id);
+    teamLookup.set(normalizeForMerge(t.name), t.id);
+    if (t.short_name) teamLookup.set(normalizeForMerge(t.short_name), t.id);
   }
   for (const m of nameMappings ?? []) {
-    if (m.kenpom_name) teamLookup.set(m.kenpom_name.toLowerCase(), m.team_id);
-    if (m.torvik_name) teamLookup.set(m.torvik_name.toLowerCase(), m.team_id);
-    if (m.evanmiya_name) teamLookup.set(m.evanmiya_name.toLowerCase(), m.team_id);
+    if (m.kenpom_name) teamLookup.set(normalizeForMerge(m.kenpom_name), m.team_id);
+    if (m.torvik_name) teamLookup.set(normalizeForMerge(m.torvik_name), m.team_id);
+    if (m.evanmiya_name) teamLookup.set(normalizeForMerge(m.evanmiya_name), m.team_id);
   }
 
   // Get team_seasons for matching
@@ -448,8 +570,16 @@ async function seedToSupabase(
   const unmatchedTeams: string[] = [];
 
   for (const snap of seasonSnapshots) {
-    // Try to match Kaggle team name to our DB
-    const dbTeamId = teamLookup.get(snap.teamName.toLowerCase());
+    // Try to match Kaggle team name to our DB via normalized name.
+    // First check the Kaggle-specific override table (stripping apostrophes
+    // and lowercasing to match override keys), then fall back to direct
+    // normalization of the Kaggle name.
+    const kaggleKey = snap.teamName.toLowerCase().replace(/'/g, "");
+    const overrideName = KAGGLE_NAME_OVERRIDES[kaggleKey];
+    const lookupKey = overrideName
+      ? normalizeForMerge(overrideName)
+      : normalizeForMerge(snap.teamName);
+    const dbTeamId = teamLookup.get(lookupKey);
 
     if (!dbTeamId) {
       unmatched++;

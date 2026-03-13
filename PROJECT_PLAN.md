@@ -349,13 +349,13 @@
 - [x] **Venue locations in matchup UI** — Added venue name and city display to the matchup view header (e.g., "KeyBank Center • Buffalo, New York"). Updated `seed-tournament-sites.ts` to parse the Arena column from CSV and store actual venue names. Exposed `venue` field from `useMatchupAnalysis` hook via `GameSiteCoordinates`.
 - [x] **2025 backtest data** — Added 2025 to scraper SEASONS array, updated `TEST_SEASONS` in `backtest.ts`, ran scraper to generate 63 games of 2025 tournament results into `historical-results.ts`.
 
-### Batch 12 — Big Feature
+### Batch 12 — Big Feature ✅
 
-- [ ] **First Four play-in bracket** — Currently 68 teams are deduplicated to 64 before bracket construction. Need to add First Four games to the bracket UI, simulation engine, and probability model. Touches bracket structure (`buildBracketMatchups`), simulation (`simulateBracket`), bracket grid layout, and team slot resolution. Users need to pick First Four winners before the main bracket.
+- [x] **First Four play-in bracket** — Full 68-team bracket support with 4 First Four play-in games (2 at 16-seed, 2 at 11-seed). Added `"FF"` to `TournamentRound`, `PlayInConfig`/`PlayInMatchup` types, dynamic `buildBracketMatchups(playInConfig)` producing 67 games, `buildBracketSlots()` for FF slot IDs, `detectPlayInPairs()` auto-detection, `processTournamentField()` replacement for `filterToMainBracket()`. BracketProvider uses dynamic matchups/downstream map via reducer factory pattern. Both API routes thread play-in config. New `FirstFour` UI component (horizontal strip of 4 MatchupSlot cards) renders above main bracket grid on desktop and as "First 4" tab on mobile. Updated `seed-mock-bracket.ts` (default 68 teams, `--no-play-ins` for 64) and `seed-bracket.ts` (accepts 64 or 68 teams). Fixed `ROUND_ORDER` array-index alignment bug and aggregator expected-wins calculation for play-in teams. 27 files changed, 9 new tests, all 941 tests passing.
 
 ### Batch 13 — Polish & Close-out
 
-- [ ] **Missing coaches data** — Some teams are missing coach tournament experience data. Add manually as identified.
+- [x] **Missing coaches data** — Root cause: `seed-coaches.ts` used raw `toLowerCase()` matching for Kaggle team names, but Kaggle uses period-less abbreviations ("Michigan St", "St Louis", "NC State") that don't match DB names ("Michigan St.", "Saint Louis", "North Carolina St."). Fix: (1) Extended `normalizeForMerge()` in `merger.ts` with rules for bare "St"→"state"/"saint" suffix/prefix, bare directional abbreviations ("N"→"north", "S"→"south"), "NC"→"north carolina", "SC"→"south carolina", "MS"→"mississippi", "Mt"→"mount"; (2) Updated `seed-coaches.ts` to use `normalizeForMerge()` instead of raw lowercasing; (3) Added `KAGGLE_NAME_OVERRIDES` table for Kaggle-specific abbreviations (`normalizeForMerge` can't resolve (e.g., "Abilene Chr"→"Abilene Christian", "FL Atlantic"→"Florida Atlantic", 70+ mappings). Match rate improved from ~60% to 99.5% (365/367 coaches matched and seeded). Added 9 new Kaggle-format tests to `merger.test.ts`. Created `/seed-coaches` skill for reusable Selection Sunday workflow.
 - [ ] **Final README and PRD update** — Update `README.md` and `docs/PRD.md` to reflect all completed features, architecture, and deployment state. Last documentation pass before launch.
 
 ### Claude Code Skills _(completed)_
@@ -365,6 +365,7 @@
 - [x] `/add-team-data` — `.claude/skills/add-team-data/SKILL.md`
 - [x] `/audit-bracket` — `.claude/skills/audit-bracket/SKILL.md`
 - [x] `/component [name]` — `.claude/skills/component/SKILL.md`
+- [x] `/seed-coaches` — `.claude/skills/seed-coaches/SKILL.md`
 
 ---
 

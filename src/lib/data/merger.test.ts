@@ -99,6 +99,62 @@ describe("normalizeForMerge", () => {
     });
   });
 
+  describe("Kaggle-format names (no periods)", () => {
+    it("normalizes 'Michigan St' (no period) to match 'Michigan State'", () => {
+      expect(normalizeForMerge("Michigan St")).toBe(
+        normalizeForMerge("Michigan State")
+      );
+    });
+
+    it("normalizes 'Iowa St' (no period) to match 'Iowa State'", () => {
+      expect(normalizeForMerge("Iowa St")).toBe(
+        normalizeForMerge("Iowa State")
+      );
+    });
+
+    it("normalizes 'St Louis' (no period prefix) to match 'Saint Louis'", () => {
+      expect(normalizeForMerge("St Louis")).toBe(
+        normalizeForMerge("Saint Louis")
+      );
+    });
+
+    it("normalizes 'St Bonaventure' (no period) to match 'Saint Bonaventure'", () => {
+      expect(normalizeForMerge("St Bonaventure")).toBe(
+        normalizeForMerge("Saint Bonaventure")
+      );
+    });
+
+    it("normalizes 'NC State' to match 'North Carolina State'", () => {
+      expect(normalizeForMerge("NC State")).toBe(
+        normalizeForMerge("North Carolina State")
+      );
+    });
+
+    it("normalizes 'N Dakota St' to match 'North Dakota State'", () => {
+      expect(normalizeForMerge("N Dakota St")).toBe(
+        normalizeForMerge("North Dakota State")
+      );
+    });
+
+    it("normalizes 'S Dakota St' to match 'South Dakota State'", () => {
+      expect(normalizeForMerge("S Dakota St")).toBe(
+        normalizeForMerge("South Dakota State")
+      );
+    });
+
+    it("normalizes 'MS Valley St' to match 'Mississippi Valley State'", () => {
+      expect(normalizeForMerge("MS Valley St")).toBe(
+        normalizeForMerge("Mississippi Valley State")
+      );
+    });
+
+    it("normalizes 'Mt St Marys' to match 'Mt. St. Mary's'", () => {
+      expect(normalizeForMerge("Mt St Marys")).toBe(
+        normalizeForMerge("Mt. St. Mary's")
+      );
+    });
+  });
+
   describe("common abbreviation normalization", () => {
     it("normalizes UConn → connecticut", () => {
       expect(normalizeForMerge("UConn")).toBe("connecticut");
