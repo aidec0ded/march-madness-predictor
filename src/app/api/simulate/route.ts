@@ -61,6 +61,8 @@ interface SimulateRequestBody {
   engineConfig?: Partial<EngineConfig>;
   /** Optional per-matchup overrides keyed by gameId */
   matchupOverrides?: Record<string, MatchupOverrides>;
+  /** Optional user bracket picks keyed by gameId → winning teamId */
+  picks?: Record<string, string>;
   /** Optional random seed for reproducible results */
   randomSeed?: number;
 }
@@ -88,7 +90,7 @@ function validateRequestBody(body: unknown):
     return { valid: false, error: "Request body must be a JSON object." };
   }
 
-  const { season, numSimulations, engineConfig, matchupOverrides, randomSeed } =
+  const { season, numSimulations, engineConfig, matchupOverrides, picks, randomSeed } =
     body as Record<string, unknown>;
 
   // --- Validate season (required) ---
@@ -134,6 +136,14 @@ function validateRequestBody(body: unknown):
     };
   }
 
+  // --- Validate picks (optional) ---
+  if (picks !== undefined && typeof picks !== "object") {
+    return {
+      valid: false,
+      error: "Invalid picks. Must be an object (gameId → teamId) if provided.",
+    };
+  }
+
   // --- Validate randomSeed (optional) ---
   if (randomSeed !== undefined) {
     const seedValue = Number(randomSeed);
@@ -154,6 +164,7 @@ function validateRequestBody(body: unknown):
       matchupOverrides: matchupOverrides as
         | Record<string, MatchupOverrides>
         | undefined,
+      picks: picks as Record<string, string> | undefined,
       randomSeed: randomSeed !== undefined ? Number(randomSeed) : undefined,
     },
   };
@@ -227,6 +238,7 @@ export async function POST(request: Request) {
       numSimulations,
       engineConfig,
       matchupOverrides,
+      picks,
       randomSeed,
     } = validation.data;
 
@@ -362,6 +374,7 @@ export async function POST(request: Request) {
         Object.keys(resolvedOverrides).length > 0
           ? resolvedOverrides
           : undefined,
+      picks: picks && Object.keys(picks).length > 0 ? picks : undefined,
       randomSeed: resolvedSeed,
     };
 

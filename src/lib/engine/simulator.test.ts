@@ -524,6 +524,246 @@ describe("runSimulation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Picks-constrained simulation
+// ---------------------------------------------------------------------------
+
+describe("picks-constrained simulation", () => {
+  it("picks lock in game outcomes across all simulations", () => {
+    // Pick team-east-1 (1-seed) to win the R64-East-1 game (1 vs 16)
+    const picks: Record<string, string> = {
+      "R64-East-1": "team-east-1",
+    };
+
+    const config: SimulationConfig = {
+      numSimulations: 100,
+      engineConfig: { ...DEFAULT_ENGINE_CONFIG },
+      picks,
+      randomSeed: 42,
+    };
+
+    const result = runSimulation(teamsMap, config);
+
+    // The picked team should advance through R64 with 100% probability
+    // (since every simulation locks in that outcome)
+    const eastOneSeed = result.teamResults.find(
+      (r) => r.teamId === "team-east-1"
+    );
+    expect(eastOneSeed).toBeDefined();
+    // R32 probability should be 1.0 — the pick guarantees advancing past R64
+    expect(eastOneSeed!.roundProbabilities["R32"]).toBe(1.0);
+  });
+
+  it("unpicked games are still probabilistic", () => {
+    // Only pick the East 1-seed game, leave everything else unconstrained
+    const picks: Record<string, string> = {
+      "R64-East-1": "team-east-1",
+    };
+
+    const config: SimulationConfig = {
+      numSimulations: 200,
+      engineConfig: { ...DEFAULT_ENGINE_CONFIG },
+      picks,
+      randomSeed: 42,
+    };
+
+    const result = runSimulation(teamsMap, config);
+
+    // A different game (West region) should still have probabilistic outcomes.
+    // The West 1-seed should NOT have exactly 1.0 R32 probability (no pick for that game).
+    const westOneSeed = result.teamResults.find(
+      (r) => r.teamId === "team-west-1"
+    );
+    expect(westOneSeed).toBeDefined();
+    // With 200 sims, the 1-seed should win most R64 games but not all (p < 1.0)
+    expect(westOneSeed!.roundProbabilities["R32"]).toBeGreaterThan(0);
+    expect(westOneSeed!.roundProbabilities["R32"]).toBeLessThan(1.0);
+  });
+
+  it("invalid pick (wrong team) is ignored and game is sampled normally", () => {
+    // Pick a team that doesn't belong in this game
+    const picks: Record<string, string> = {
+      "R64-East-1": "team-west-5", // This team is NOT in the East 1v16 game
+    };
+
+    const config: SimulationConfig = {
+      numSimulations: 200,
+      engineConfig: { ...DEFAULT_ENGINE_CONFIG },
+      picks,
+      randomSeed: 42,
+    };
+
+    // Should run without error (invalid pick silently ignored)
+    const result = runSimulation(teamsMap, config);
+    expect(result.numSimulations).toBe(200);
+    expect(result.teamResults).toHaveLength(64);
+
+    // The East 1-seed should still have probabilistic results (not locked in)
+    const eastOneSeed = result.teamResults.find(
+      (r) => r.teamId === "team-east-1"
+    );
+    expect(eastOneSeed).toBeDefined();
+    // Should be high but not necessarily 1.0 since the pick was invalid
+    expect(eastOneSeed!.roundProbabilities["R32"]).toBeGreaterThan(0);
+  });
+
+  it("picks propagate downstream — picked team appears in next round", () => {
+    // Pick the 16-seed upset over the 1-seed in East R64
+    const picks: Record<string, string> = {
+      "R64-East-1": "team-east-16", // 16-seed upsets 1-seed
+    };
+
+    const config: SimulationConfig = {
+      numSimulations: 100,
+      engineConfig: { ...DEFAULT_ENGINE_CONFIG },
+      picks,
+      randomSeed: 42,
+    };
+
+    const result = runSimulation(teamsMap, config);
+
+    // The 16-seed should have 100% R32 probability (they always win R64)
+    const east16Seed = result.teamResults.find(
+      (r) => r.teamId === "team-east-16"
+    );
+    expect(east16Seed).toBeDefined();
+    expect(east16Seed!.roundProbabilities["R32"]).toBe(1.0);
+
+    // The 1-seed should have 0% R32 probability (they always lose R64)
+    const east1Seed = result.teamResults.find(
+      (r) => r.teamId === "team-east-1"
+    );
+    expect(east1Seed).toBeDefined();
+    expect(east1Seed!.roundProbabilities["R32"]).toBe(0);
+  });
+
+  it("full bracket picks yield deterministic champion with 100% probability", () => {
+    // Pick East 1-seed to win every game through the championship.
+    // R64-East-1 (1 vs 16): pick 1-seed
+    // R32-East-1 (winner of R64-East-1 vs R64-East-2): pick 1-seed
+    // S16-East-1 (winner of R32-East-1 vs R32-East-2): pick 1-seed
+    // E8-East (winner of S16-East-1 vs S16-East-2): pick 1-seed
+    // F4-1 (East vs West): pick East 1-seed
+    // NCG: pick East 1-seed
+    //
+    // Also need to pick winners for the other branch so all games resolve:
+    // R64-East-2 (8 vs 9): pick 8-seed so R32-East-1 has both teams resolved
+    const eastChampion = "team-east-1";
+    const picks: Record<string, string> = {
+      "R64-East-1": eastChampion,
+      "R64-East-2": "team-east-8", // need this for R32-East-1
+      "R32-East-1": eastChampion,
+      "R64-East-3": "team-east-5", // need for R32-East-2
+      "R64-East-4": "team-east-4", // need for R32-East-2
+      "R32-East-2": "team-east-5", // need for S16-East-1
+      "S16-East-1": eastChampion,
+      // Need to fill in the bottom half of East for E8
+      "R64-East-5": "team-east-6",
+      "R64-East-6": "team-east-3",
+      "R32-East-3": "team-east-3",
+      "R64-East-7": "team-east-7",
+      "R64-East-8": "team-east-2",
+      "R32-East-4": "team-east-2",
+      "S16-East-2": "team-east-2",
+      "E8-East": eastChampion,
+      // Need West champion for F4-1
+      "R64-West-1": "team-west-1",
+      "R64-West-2": "team-west-8",
+      "R32-West-1": "team-west-1",
+      "R64-West-3": "team-west-5",
+      "R64-West-4": "team-west-4",
+      "R32-West-2": "team-west-4",
+      "S16-West-1": "team-west-1",
+      "R64-West-5": "team-west-6",
+      "R64-West-6": "team-west-3",
+      "R32-West-3": "team-west-3",
+      "R64-West-7": "team-west-7",
+      "R64-West-8": "team-west-2",
+      "R32-West-4": "team-west-2",
+      "S16-West-2": "team-west-2",
+      "E8-West": "team-west-1",
+      "F4-1": eastChampion,
+      // Need South champion for F4-2
+      "R64-South-1": "team-south-1",
+      "R64-South-2": "team-south-8",
+      "R32-South-1": "team-south-1",
+      "R64-South-3": "team-south-5",
+      "R64-South-4": "team-south-4",
+      "R32-South-2": "team-south-4",
+      "S16-South-1": "team-south-1",
+      "R64-South-5": "team-south-6",
+      "R64-South-6": "team-south-3",
+      "R32-South-3": "team-south-3",
+      "R64-South-7": "team-south-7",
+      "R64-South-8": "team-south-2",
+      "R32-South-4": "team-south-2",
+      "S16-South-2": "team-south-2",
+      "E8-South": "team-south-1",
+      // Need Midwest champion for F4-2
+      "R64-Midwest-1": "team-midwest-1",
+      "R64-Midwest-2": "team-midwest-8",
+      "R32-Midwest-1": "team-midwest-1",
+      "R64-Midwest-3": "team-midwest-5",
+      "R64-Midwest-4": "team-midwest-4",
+      "R32-Midwest-2": "team-midwest-4",
+      "S16-Midwest-1": "team-midwest-1",
+      "R64-Midwest-5": "team-midwest-6",
+      "R64-Midwest-6": "team-midwest-3",
+      "R32-Midwest-3": "team-midwest-3",
+      "R64-Midwest-7": "team-midwest-7",
+      "R64-Midwest-8": "team-midwest-2",
+      "R32-Midwest-4": "team-midwest-2",
+      "S16-Midwest-2": "team-midwest-2",
+      "E8-Midwest": "team-midwest-1",
+      "F4-2": "team-south-1",
+      NCG: eastChampion,
+    };
+
+    const config: SimulationConfig = {
+      numSimulations: 50,
+      engineConfig: { ...DEFAULT_ENGINE_CONFIG },
+      picks,
+      randomSeed: 42,
+    };
+
+    const result = runSimulation(teamsMap, config);
+
+    // The champion should be the East 1-seed with 100% probability
+    expect(result.mostLikelyChampion.teamId).toBe(eastChampion);
+    expect(result.mostLikelyChampion.probability).toBe(1.0);
+  });
+
+  it("without picks, simulateBracket behaves identically to before (backwards compatible)", () => {
+    // Verify that omitting picks produces the same results as explicitly passing undefined
+    const rng1 = createSeededRandom(42);
+    const result1 = simulateBracket(
+      teamsMap,
+      matchups,
+      slots,
+      DEFAULT_ENGINE_CONFIG,
+      undefined,
+      rng1,
+      undefined,
+      undefined,
+      undefined // explicit undefined picks
+    );
+
+    const rng2 = createSeededRandom(42);
+    const result2 = simulateBracket(
+      teamsMap,
+      matchups,
+      slots,
+      DEFAULT_ENGINE_CONFIG,
+      undefined,
+      rng2
+      // picks omitted entirely
+    );
+
+    expect(result1.champion).toBe(result2.champion);
+    expect(result1.gameResults).toEqual(result2.gameResults);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Performance
 // ---------------------------------------------------------------------------
 

@@ -76,6 +76,10 @@ export function useBracketSimulation() {
             Object.keys(state.matchupOverrides).length > 0
               ? state.matchupOverrides
               : undefined,
+          picks:
+            Object.keys(state.picks).length > 0
+              ? state.picks
+              : undefined,
         });
 
         const res = await fetch("/api/simulate/stream", {
@@ -169,7 +173,7 @@ export function useBracketSimulation() {
         abortRef.current = null;
       }
     },
-    [state.globalLevers, state.matchupOverrides, dispatch]
+    [state.globalLevers, state.matchupOverrides, state.picks, dispatch]
   );
 
   return {

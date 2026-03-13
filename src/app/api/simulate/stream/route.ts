@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     }
 
     // --- Validate request ---
-    const { season, numSimulations, engineConfig, matchupOverrides, randomSeed } = body;
+    const { season, numSimulations, engineConfig, matchupOverrides, picks, randomSeed } = body;
 
     const seasonNum =
       typeof season === "string" ? parseInt(season as string, 10) : Number(season);
@@ -222,11 +222,15 @@ export async function POST(request: Request) {
       teamsMap.set(team.teamId, team);
     }
 
+    const resolvedPicks = (picks as Record<string, string>) ?? {};
+
     const simulationConfig: SimulationConfig = {
       numSimulations: numSimsValue,
       engineConfig: resolvedConfig,
       matchupOverrides:
         Object.keys(resolvedOverrides).length > 0 ? resolvedOverrides : undefined,
+      picks:
+        Object.keys(resolvedPicks).length > 0 ? resolvedPicks : undefined,
       randomSeed: resolvedSeed,
     };
 

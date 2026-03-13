@@ -57,6 +57,8 @@ export interface SimulationConfig {
   engineConfig: EngineConfig;
   /** Per-matchup overrides keyed by gameId */
   matchupOverrides?: Record<string, MatchupOverrides>;
+  /** User bracket picks keyed by gameId → winning teamId. Locked-in picks skip probability computation. */
+  picks?: Record<string, string>;
   /** Random seed for reproducible results (optional) */
   randomSeed?: number;
 }

@@ -91,7 +91,8 @@ export function simulateBracket(
   overrides?: Record<string, MatchupOverrides>,
   random?: () => number,
   siteMap?: SiteMap,
-  cache?: MatchupCache
+  cache?: MatchupCache,
+  picks?: Record<string, string>
 ): SimulatedBracket {
   const gameResults: Record<string, string> = {};
   const rng = random ?? Math.random;
@@ -101,6 +102,14 @@ export function simulateBracket(
     const teamAId = resolveTeamId(matchup.teamASource, slots, gameResults);
     // Resolve team B
     const teamBId = resolveTeamId(matchup.teamBSource, slots, gameResults);
+
+    // Check if the user has a pick for this game — locked-in picks skip
+    // all probability computation and sampling for a performance win
+    const pickedWinner = picks?.[matchup.gameId];
+    if (pickedWinner && (pickedWinner === teamAId || pickedWinner === teamBId)) {
+      gameResults[matchup.gameId] = pickedWinner;
+      continue;
+    }
 
     // Check cache first
     let winProbA: number | undefined;
@@ -243,7 +252,8 @@ export function runSimulation(
       config.matchupOverrides,
       rng,
       siteMap,
-      cache
+      cache,
+      config.picks
     );
     aggregator.addBracket(bracket);
 

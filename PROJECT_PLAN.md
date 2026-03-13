@@ -336,6 +336,28 @@
 
 - [x] **Comprehensive User Guide update** — Complete rewrite of `docs/USER_GUIDE.md` with flow-first structure: 9-step walkthrough from first visit to finished bracket (browse → matchup deep dive → picks → overrides → simulate → results → guidance → levers → iterate). Detailed "How the Probabilities Work" section covering composite ratings, rating differential, lever adjustments with math (logistic conversion formula, additive vs. variance adjustments), and Monte Carlo path probability engine. Full backtesting guide (Brier Score interpretation, calibration plot reading, train/test split rationale, 2021 anomaly). Expanded FAQ (8 questions) and glossary (12 terms). All content verified against actual UI component implementations.
 
+### Batch 10 — Critical Fixes
+
+- [x] **Picks-aware simulation** — Added `picks?: Record<string, string>` to `SimulationConfig`, threaded through `simulateBracket()` (lock-in before probability computation), `runSimulation()`, both API routes (`/api/simulate` and `/api/simulate/stream`), and `useBracketSimulation` hook. Invalid picks (teamId doesn't match either matchup participant) are silently ignored. 6 new tests covering lock-in, propagation, invalid picks, full-bracket determinism, and backwards compatibility.
+- [ ] **Team name normalization** — ~20+ teams with "State" in their name lose cross-source data during merge due to exact string matching (e.g., KenPom "Ohio State" vs Torvik "Ohio St."). The `team_name_mappings` DB table exists but is never populated. Fix: enhance `resolveCanonicalKey()` in merger.ts with common abbreviation normalization ("State"↔"St.", "N.C."↔"NC", etc.) or populate the mappings table with all known variants.
+- [ ] **Probability breakdown color mismatch** — Team A uses blue text but advantage indicators use green; Team B uses red for both. Fix: match advantage text color to team color (blue for Team A, red for Team B) for visual consistency.
+- [ ] **FT Rate display precision** — Four Factors section shows 5 significant figures (e.g., "34.000"). Fix: display 3 significant figures (e.g., "34.0").
+
+### Batch 11 — Important Features
+
+- [ ] **Clear all picks button** — No way to reset all bracket picks without clearing levers/overrides. Add a "Clear Picks" button to the bracket header that resets picks only, preserving lever settings and overrides.
+- [ ] **Venue locations in matchup UI** — Add actual venue names/cities to the matchup view. User will provide venue data. Display as a field in the matchup header or location section.
+- [ ] **2025 backtest data** — 2025 tournament results are absent from the dataset (not architecturally blocked). Run existing scraper with 2025 added to seasons list, update `TEST_SEASONS` constant in `backtest.ts`.
+
+### Batch 12 — Big Feature
+
+- [ ] **First Four play-in bracket** — Currently 68 teams are deduplicated to 64 before bracket construction. Need to add First Four games to the bracket UI, simulation engine, and probability model. Touches bracket structure (`buildBracketMatchups`), simulation (`simulateBracket`), bracket grid layout, and team slot resolution. Users need to pick First Four winners before the main bracket.
+
+### Batch 13 — Polish & Close-out
+
+- [ ] **Missing coaches data** — Some teams are missing coach tournament experience data. Add manually as identified.
+- [ ] **Final README and PRD update** — Update `README.md` and `docs/PRD.md` to reflect all completed features, architecture, and deployment state. Last documentation pass before launch.
+
 ### Claude Code Skills _(completed)_
 
 - [x] `/simulate-matchup` — `.claude/skills/simulate-matchup/SKILL.md`
