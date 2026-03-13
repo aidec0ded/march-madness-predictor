@@ -49,6 +49,7 @@ export const SEED_BASELINES: Record<number, number> = {
  * round requires surviving the previous round.
  */
 export const ROUND_DECAY: Record<TournamentRound, number> = {
+  FF: 1.0,
   R64: 1.0,
   R32: 0.85,
   S16: 0.7,

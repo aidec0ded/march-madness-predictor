@@ -46,6 +46,7 @@ const mockSimResult: SimulationResult = {
       seed: 1,
       region: "East",
       roundProbabilities: {
+        FF: 1,
         R64: 0.98,
         R32: 0.92,
         S16: 0.78,
@@ -61,6 +62,7 @@ const mockSimResult: SimulationResult = {
       seed: 4,
       region: "West",
       roundProbabilities: {
+        FF: 1,
         R64: 0.82,
         R32: 0.58,
         S16: 0.35,
@@ -80,6 +82,7 @@ const mockSimResult: SimulationResult = {
   ],
   executionTimeMs: 450,
   upsetRates: {
+    FF: 0,
     R64: 0.22,
     R32: 0.31,
     S16: 0.37,

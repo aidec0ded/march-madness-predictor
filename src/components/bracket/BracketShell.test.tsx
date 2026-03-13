@@ -81,10 +81,11 @@ vi.mock("@/lib/bracket-layout", () => ({
   },
 }));
 
-// Mock bracket-utils (used by RegionBracket)
+// Mock bracket-utils (used by RegionBracket and BracketProvider)
 vi.mock("@/lib/bracket-utils", () => ({
   resolveMatchupTeams: () => ({ teamA: null, teamB: null }),
   resolveSlotTeam: () => null,
+  isGameId: (source: string) => /^(FF|R64|R32|S16|E8|F4|NCG)-/.test(source),
 }));
 
 // ---------------------------------------------------------------------------

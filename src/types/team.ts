@@ -74,6 +74,7 @@ export type DataSource = "kenpom" | "torvik" | "evanmiya";
 
 /** Tournament round identifiers */
 export type TournamentRound =
+  | "FF" // First Four (play-in)
   | "R64" // Round of 64
   | "R32" // Round of 32
   | "S16" // Sweet 16

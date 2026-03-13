@@ -221,10 +221,11 @@ export function runSimulation(
   const startTime = performance.now();
   const interval = progressInterval ?? 1000;
 
-  // Build bracket structure from the team data
+  // Build bracket structure from the team data, with optional play-in games
   const teamArray = Array.from(teams.values());
-  const matchups = buildBracketMatchups();
-  const slots = buildBracketSlots(teamArray);
+  const playInConfig = config.playInConfig;
+  const matchups = buildBracketMatchups(playInConfig);
+  const slots = buildBracketSlots(teamArray, playInConfig);
 
   // Create random number generator
   const rng =

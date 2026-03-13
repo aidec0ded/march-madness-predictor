@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
+import type { PlayInConfig } from "@/types/simulation";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
@@ -45,12 +46,14 @@ const MatchupView = dynamic(
 // ---------------------------------------------------------------------------
 
 interface BracketShellProps {
-  /** Initial 64 tournament teams loaded on the server */
+  /** Initial tournament teams (64 without play-ins, or 68 with play-ins) */
   initialTeams: TeamSeason[];
   /** Optional saved bracket to restore */
   savedBracket?: SavedBracketData;
   /** Optional tournament site data for site proximity calculations */
   tournamentSites?: TournamentSite[];
+  /** Optional play-in configuration for First Four games */
+  playInConfig?: PlayInConfig | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +75,7 @@ interface BracketShellProps {
  * - LeverPanel (right-side drawer)
  * - MatchupView (full-screen overlay, conditional on selectedMatchupId)
  */
-export function BracketShell({ initialTeams, savedBracket, tournamentSites }: BracketShellProps) {
+export function BracketShell({ initialTeams, savedBracket, tournamentSites, playInConfig }: BracketShellProps) {
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
@@ -120,7 +123,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
   }, [hasAutoOpenedResults]);
 
   return (
-    <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites}>
+    <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites} playInConfig={playInConfig}>
       <div
         style={{
           display: "flex",

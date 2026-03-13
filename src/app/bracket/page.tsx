@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createServerClient, createAdminClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
-import { filterToMainBracket } from "@/lib/bracket-utils";
+import { processTournamentField } from "@/lib/bracket-utils";
 import type { TournamentSite, TournamentRound, Region } from "@/types/team";
 
 export const metadata: Metadata = {
@@ -112,14 +112,13 @@ export default async function BracketPage() {
     );
   }
 
-  // Transform and filter to tournament teams
+  // Transform and process tournament field (supports 64 or 68 teams)
   const allTeams = transformTeamSeasonRows(
     teamSeasonRows as unknown as TeamSeasonJoinedRow[],
     entries as unknown as TournamentEntryRow[]
   );
-  // Filter to tournament teams, then deduplicate play-in pairs (68 → 64)
   const allTournamentTeams = allTeams.filter((t) => t.tournamentEntry);
-  const tournamentTeams = filterToMainBracket(allTournamentTeams);
+  const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);
 
   // Optionally load user's active bracket (needs cookie-based client for auth)
   const cookieStore = await cookies();
@@ -157,6 +156,7 @@ export default async function BracketPage() {
       initialTeams={tournamentTeams}
       savedBracket={savedBracket}
       tournamentSites={tournamentSites}
+      playInConfig={playInConfig}
     />
   );
 }

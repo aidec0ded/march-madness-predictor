@@ -90,6 +90,7 @@ export function createStreamingAggregator(
   const teamCounters = new Map<string, TeamCounters>();
   for (const slot of slots.values()) {
     const emptyRoundCounts: Record<TournamentRound, number> = {
+      FF: 0,
       R64: 0,
       R32: 0,
       S16: 0,
@@ -108,8 +109,8 @@ export function createStreamingAggregator(
 
   // Initialize upset counters
   const upsetCounters: UpsetCounters = {
-    upsetCount: { R64: 0, R32: 0, S16: 0, E8: 0, F4: 0, NCG: 0 },
-    gameCount: { R64: 0, R32: 0, S16: 0, E8: 0, F4: 0, NCG: 0 },
+    upsetCount: { FF: 0, R64: 0, R32: 0, S16: 0, E8: 0, F4: 0, NCG: 0 },
+    gameCount: { FF: 0, R64: 0, R32: 0, S16: 0, E8: 0, F4: 0, NCG: 0 },
   };
 
   // Build a quick lookup: teamId -> seed (using slots)
@@ -124,9 +125,18 @@ export function createStreamingAggregator(
     addBracket(bracket: SimulatedBracket): void {
       bracketsProcessed++;
 
-      // All 64 teams are in R64 — count that
-      for (const counters of teamCounters.values()) {
-        counters.roundCounts.R64++;
+      // Non-play-in teams are in R64 automatically.
+      // Play-in teams (FF slots) only reach R64 if they win their FF game.
+      for (const [slotId, slot] of slots) {
+        if (slotId.startsWith("FF-")) {
+          // Play-in team: count FF appearance, NOT R64
+          const counters = teamCounters.get(slot.teamId);
+          if (counters) counters.roundCounts.FF++;
+        } else {
+          // Non-play-in team: automatically in R64
+          const counters = teamCounters.get(slot.teamId);
+          if (counters) counters.roundCounts.R64++;
+        }
       }
 
       // For each game, the winner advances to the next round
@@ -290,6 +300,7 @@ function buildResult(
 
   for (const counters of teamCounters.values()) {
     const roundProbabilities: Record<TournamentRound, number> = {
+      FF: 0,
       R64: 0,
       R32: 0,
       S16: 0,
@@ -304,16 +315,19 @@ function buildResult(
 
     const championshipProbability = counters.championCount / numSimulations;
 
-    // Expected wins: sum of (probability of reaching round R+1) for each round
-    // Reaching R32 means you won 1 game (R64), reaching S16 means 2 wins, etc.
-    // So expected wins = P(R32) + P(S16) + P(E8) + P(F4) + P(NCG) + P(champion)
-    // Because each round advancement represents winning one game.
+    // Expected wins: each advancement past the starting round is one win.
+    //
+    // Non-play-in teams start at R64 (index 1 in round order). Their first
+    // win is reaching R32 (index 2). Expected wins = P(R32) + P(S16) + ... + P(champion).
+    //
+    // Play-in teams start at FF (index 0). Their first win is reaching R64
+    // (winning the FF game). Expected wins = P(R64) + P(R32) + ... + P(champion).
+    const isPlayInTeam = counters.roundCounts.FF > 0;
+    const startIndex = isPlayInTeam ? 1 : 2; // R64 (index 1) or R32 (index 2)
     let expectedWins = 0;
-    for (let i = 1; i < rounds.length; i++) {
+    for (let i = startIndex; i < rounds.length; i++) {
       expectedWins += roundProbabilities[rounds[i]];
     }
-    // Championship = 6 total wins; NCG probability already counts reaching NCG (5 wins),
-    // and championship adds the 6th win
     expectedWins += championshipProbability;
 
     teamResults.push({
@@ -346,6 +360,7 @@ function buildResult(
 
   // Per-round upset rates
   const upsetRates: Record<TournamentRound, number> = {
+    FF: 0,
     R64: 0,
     R32: 0,
     S16: 0,

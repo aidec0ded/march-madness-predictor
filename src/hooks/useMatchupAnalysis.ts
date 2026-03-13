@@ -27,14 +27,8 @@ import type {
 } from "@/types/matchup-view";
 import type { GameSiteCoordinates } from "@/types/engine";
 
-// ---------------------------------------------------------------------------
-// Pre-built matchup lookup
-// ---------------------------------------------------------------------------
-
-const ALL_MATCHUPS = buildBracketMatchups();
-const MATCHUP_MAP = new Map<string, BracketMatchup>(
-  ALL_MATCHUPS.map((m) => [m.gameId, m])
-);
+// Note: matchup lookup is built dynamically inside the hook to support
+// First Four play-in games when playInConfig is present in state.
 
 // ---------------------------------------------------------------------------
 // Stat builder
@@ -263,17 +257,25 @@ export interface UseMatchupAnalysisResult {
 export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisResult {
   const { state } = useBracket();
 
+  // Build matchup map dynamically based on play-in config
+  const matchupMap = useMemo(() => {
+    const allMatchups = buildBracketMatchups(state.playInConfig);
+    return new Map<string, BracketMatchup>(
+      allMatchups.map((m) => [m.gameId, m])
+    );
+  }, [state.playInConfig]);
+
   return useMemo(() => {
     if (!gameId) {
       return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null, venue: null };
     }
 
-    const matchup = MATCHUP_MAP.get(gameId) ?? null;
+    const matchup = matchupMap.get(gameId) ?? null;
     if (!matchup) {
       return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null, venue: null };
     }
 
-    const { teamA, teamB } = resolveMatchupTeams(matchup, state.teams, state.picks);
+    const { teamA, teamB } = resolveMatchupTeams(matchup, state.teams, state.picks, state.playInConfig);
 
     if (!teamA || !teamB) {
       const venue = state.tournamentSiteMap?.get(gameId) ?? null;
@@ -395,5 +397,5 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
     };
 
     return { analysis, teamA, teamB, stats, matchup, venue: siteCoords ?? null };
-  }, [gameId, state.teams, state.picks, state.globalLevers, state.matchupOverrides, state.tournamentSiteMap]);
+  }, [gameId, matchupMap, state.teams, state.picks, state.globalLevers, state.matchupOverrides, state.tournamentSiteMap, state.playInConfig]);
 }

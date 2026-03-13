@@ -47,6 +47,7 @@ interface MatchupViewProps {
 // ---------------------------------------------------------------------------
 
 const ROUND_LABELS: Record<string, string> = {
+  FF: "First Four",
   R64: "Round of 64",
   R32: "Round of 32",
   S16: "Sweet 16",
@@ -59,6 +60,7 @@ const ROUND_LABELS: Record<string, string> = {
  * Maps a round to the next round, used for extracting path probabilities.
  */
 const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
+  FF: "R64",
   R64: "R32",
   R32: "S16",
   S16: "E8",

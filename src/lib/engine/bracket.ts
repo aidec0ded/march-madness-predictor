@@ -1,16 +1,29 @@
 /**
- * Bracket structure and matchup tree builder for the 64-team NCAA tournament.
+ * Bracket structure and matchup tree builder for the NCAA tournament.
  *
- * Defines the standard bracket layout: 4 regions of 16 teams, with games
- * progressing from the Round of 64 through the National Championship Game.
- * The bracket tree is represented as an array of BracketMatchup objects,
- * where later-round matchups reference feeder games by gameId.
+ * Supports both the standard 64-team bracket (63 games) and the full
+ * 68-team bracket with First Four play-in games (67 games). The bracket
+ * tree is represented as an array of BracketMatchup objects, where
+ * later-round matchups reference feeder games by gameId.
+ *
+ * When a PlayInConfig is provided, 4 First Four games are prepended
+ * to the matchup array, and the consuming R64 games reference the
+ * FF gameIds instead of slot IDs. This maintains topological ordering
+ * so the simulation loop processes FF games before their consumers.
  *
  * All functions are pure (no side effects).
  */
 
 import type { Region, TeamSeason, TournamentRound } from "@/types/team";
-import type { BracketMatchup, BracketSlot } from "@/types/simulation";
+import type {
+  BracketMatchup,
+  BracketSlot,
+  PlayInConfig,
+  PlayInMatchup,
+} from "@/types/simulation";
+
+// Re-export play-in types from their canonical location in types/simulation
+export type { PlayInConfig, PlayInMatchup };
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -74,52 +87,124 @@ const FINAL_FOUR_PAIRINGS: [Region, Region][] = [
 ];
 
 /**
- * Maps a tournament round to its zero-indexed round number.
- * Used for counting wins and ordering progression.
+ * Maps a tournament round to its index in the getRoundOrder() array.
+ * Used by the aggregator to compute next-round advancement:
+ * rounds[getRoundIndex(round) + 1] gives the next round.
  */
 const ROUND_ORDER: Record<TournamentRound, number> = {
-  R64: 0,
-  R32: 1,
-  S16: 2,
-  E8: 3,
-  F4: 4,
-  NCG: 5,
+  FF: 0,
+  R64: 1,
+  R32: 2,
+  S16: 3,
+  E8: 4,
+  F4: 5,
+  NCG: 6,
 };
+
+// ---------------------------------------------------------------------------
+// Play-In Detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detects First Four play-in pairs from tournament team data.
+ *
+ * Groups teams by (region, seed) and identifies slots with 2 teams.
+ * When play-in pairs exist, returns a PlayInConfig describing them.
+ * If all slots have exactly 1 team (64-team field), returns null.
+ *
+ * @param teams - All tournament teams (64 or 68)
+ * @returns PlayInConfig if play-in pairs exist, null otherwise
+ */
+export function detectPlayInPairs(teams: TeamSeason[]): PlayInConfig | null {
+  // Group by region-seed
+  const slotMap = new Map<string, TeamSeason[]>();
+  for (const team of teams) {
+    if (!team.tournamentEntry) continue;
+    const key = `${team.tournamentEntry.region}-${team.tournamentEntry.seed}`;
+    const existing = slotMap.get(key);
+    if (existing) {
+      existing.push(team);
+    } else {
+      slotMap.set(key, [team]);
+    }
+  }
+
+  const matchups: PlayInMatchup[] = [];
+  for (const [_key, slotTeams] of slotMap) {
+    if (slotTeams.length === 2) {
+      const entry = slotTeams[0].tournamentEntry!;
+      matchups.push({
+        region: entry.region,
+        seed: entry.seed,
+        teamAId: slotTeams[0].teamId,
+        teamBId: slotTeams[1].teamId,
+      });
+    }
+  }
+
+  return matchups.length > 0 ? { matchups } : null;
+}
 
 // ---------------------------------------------------------------------------
 // Bracket matchup builder
 // ---------------------------------------------------------------------------
 
 /**
- * Builds the complete 63-game matchup tree for a standard 64-team NCAA bracket.
+ * Builds the complete matchup tree for the NCAA tournament.
  *
- * The bracket consists of:
- * - R64: 32 games (8 per region) with seed pairings 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15
- * - R32: 16 games (4 per region) pairing adjacent R64 winners
- * - S16: 8 games (2 per region) pairing adjacent R32 winners
- * - E8:  4 games (1 per region) pairing S16 winners
- * - F4:  2 games (East vs West, South vs Midwest)
- * - NCG: 1 game (F4 winners)
+ * Without a PlayInConfig, returns the standard 63-game bracket (R64–NCG).
+ * With a PlayInConfig, prepends First Four games and rewires the consuming
+ * R64 games to reference FF gameIds, returning a 67-game bracket.
  *
- * For R64 games, teamASource/teamBSource are slot IDs (e.g., "East-1", "East-16").
- * For all later rounds, they are gameIds of the feeder games.
+ * Game ID formats:
+ * - FF:  "FF-{Region}-{Seed}" (e.g., "FF-East-16")
+ * - R64: "R64-{Region}-{GameNum}" (e.g., "R64-East-1")
+ * - R32: "R32-{Region}-{GameNum}"
+ * - S16: "S16-{Region}-{GameNum}"
+ * - E8:  "E8-{Region}"
+ * - F4:  "F4-{GameNum}"
+ * - NCG: "NCG"
  *
- * @returns An array of 63 BracketMatchup objects representing the full tournament tree
+ * @param playInConfig - Optional play-in configuration for First Four games
+ * @returns Array of BracketMatchup objects in topological order (FF before R64 before R32 ...)
  */
-export function buildBracketMatchups(): BracketMatchup[] {
+export function buildBracketMatchups(
+  playInConfig?: PlayInConfig | null
+): BracketMatchup[] {
   const matchups: BracketMatchup[] = [];
+
+  // Track which (region, seed) slots are fed by First Four games
+  const playInSlots = new Set<string>();
+  if (playInConfig) {
+    for (const pi of playInConfig.matchups) {
+      const ffGameId = `FF-${pi.region}-${pi.seed}`;
+      matchups.push({
+        gameId: ffGameId,
+        round: "FF",
+        region: pi.region,
+        teamASource: `FF-${pi.region}-${pi.seed}-A`,
+        teamBSource: `FF-${pi.region}-${pi.seed}-B`,
+      });
+      playInSlots.add(`${pi.region}-${pi.seed}`);
+    }
+  }
 
   // --- Round of 64 ---
   for (const region of REGIONS) {
     for (let i = 0; i < BRACKET_SEED_MATCHUPS.length; i++) {
       const [seedA, seedB] = BRACKET_SEED_MATCHUPS[i];
       const gameNum = i + 1;
+
+      // If a seed has a play-in game, reference the FF gameId instead of the slot
+      const slotA = `${region}-${seedA}`;
+      const slotB = `${region}-${seedB}`;
+
       matchups.push({
         gameId: `R64-${region}-${gameNum}`,
         round: "R64",
         region,
-        teamASource: `${region}-${seedA}`,
-        teamBSource: `${region}-${seedB}`,
+        teamASource: playInSlots.has(slotA) ? `FF-${region}-${seedA}` : slotA,
+        teamBSource: playInSlots.has(slotB) ? `FF-${region}-${seedB}` : slotB,
       });
     }
   }
@@ -202,25 +287,37 @@ export function buildBracketMatchups(): BracketMatchup[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Maps 64 TeamSeason records to bracket slots keyed by slot ID.
+ * Maps TeamSeason records to bracket slots keyed by slot ID.
  *
- * Each team must have a tournamentEntry with a seed and region. The slot ID
- * format is "{Region}-{Seed}" (e.g., "East-1", "West-12"). This function
- * validates that exactly 64 teams are provided, each has a tournament entry,
- * and the bracket is complete (exactly 16 teams per region, one per seed).
+ * Without a PlayInConfig, expects exactly 64 teams with one per (region, seed).
+ * With a PlayInConfig, expects 68 teams — play-in teams are mapped to special
+ * FF slot IDs (e.g., "FF-East-16-A", "FF-East-16-B") so both can coexist.
  *
- * @param teamSeasons - Array of exactly 64 TeamSeason records, each with a tournamentEntry
- * @returns A Map keyed by slot ID (e.g., "East-1") to BracketSlot
- * @throws {Error} If any team is missing a tournamentEntry, or the bracket
- *   is not complete (not exactly 64 teams, not 16 per region, duplicate seed/region)
+ * @param teamSeasons - Array of TeamSeason records (64 or 68), each with a tournamentEntry
+ * @param playInConfig - Optional play-in configuration
+ * @returns A Map keyed by slot ID to BracketSlot
+ * @throws {Error} If teams don't match expected count or structure
  */
 export function buildBracketSlots(
-  teamSeasons: TeamSeason[]
+  teamSeasons: TeamSeason[],
+  playInConfig?: PlayInConfig | null
 ): Map<string, BracketSlot> {
-  if (teamSeasons.length !== 64) {
+  const expectedCount = playInConfig ? 68 : 64;
+  if (teamSeasons.length !== expectedCount) {
     throw new Error(
-      `Expected exactly 64 teams, received ${teamSeasons.length}`
+      `Expected exactly ${expectedCount} teams, received ${teamSeasons.length}`
     );
+  }
+
+  // Build a set of play-in slot keys and a map to team assignments
+  const playInSlotSet = new Set<string>();
+  const playInTeamMap = new Map<string, { teamAId: string; teamBId: string }>();
+  if (playInConfig) {
+    for (const pi of playInConfig.matchups) {
+      const key = `${pi.region}-${pi.seed}`;
+      playInSlotSet.add(key);
+      playInTeamMap.set(key, { teamAId: pi.teamAId, teamBId: pi.teamBId });
+    }
   }
 
   const slots = new Map<string, BracketSlot>();
@@ -234,33 +331,63 @@ export function buildBracketSlots(
     }
 
     const { seed, region } = ts.tournamentEntry;
-    const slotId = `${region}-${seed}`;
+    const slotKey = `${region}-${seed}`;
 
-    if (slots.has(slotId)) {
-      throw new Error(
-        `Duplicate slot "${slotId}": team "${ts.team.name}" conflicts with an existing entry`
-      );
+    if (playInSlotSet.has(slotKey)) {
+      // Play-in team: assign to FF-Region-Seed-A or FF-Region-Seed-B
+      const pair = playInTeamMap.get(slotKey)!;
+      const position = pair.teamAId === ts.teamId ? "A" : "B";
+      const ffSlotId = `FF-${region}-${seed}-${position}`;
+
+      if (slots.has(ffSlotId)) {
+        throw new Error(
+          `Duplicate FF slot "${ffSlotId}": team "${ts.team.name}" conflicts with an existing entry`
+        );
+      }
+
+      slots.set(ffSlotId, {
+        teamId: ts.teamId,
+        seed,
+        region,
+      });
+    } else {
+      // Normal slot
+      const slotId = slotKey;
+      if (slots.has(slotId)) {
+        throw new Error(
+          `Duplicate slot "${slotId}": team "${ts.team.name}" conflicts with an existing entry`
+        );
+      }
+
+      slots.set(slotId, {
+        teamId: ts.teamId,
+        seed,
+        region,
+      });
     }
-
-    slots.set(slotId, {
-      teamId: ts.teamId,
-      seed,
-      region,
-    });
 
     regionCounts[region] = (regionCounts[region] ?? 0) + 1;
   }
 
-  // Validate 16 teams per region
-  for (const region of REGIONS) {
-    const count = regionCounts[region] ?? 0;
-    if (count !== 16) {
-      throw new Error(`Region "${region}" has ${count} teams, expected 16`);
+  // Validate teams per region (16 without play-ins, up to 18 with)
+  const expectedPerRegion = playInConfig ? undefined : 16;
+  if (expectedPerRegion) {
+    for (const regionName of REGIONS) {
+      const count = regionCounts[regionName] ?? 0;
+      if (count !== expectedPerRegion) {
+        throw new Error(
+          `Region "${regionName}" has ${count} teams, expected ${expectedPerRegion}`
+        );
+      }
     }
   }
 
   return slots;
 }
+
+// ---------------------------------------------------------------------------
+// Round ordering utilities
+// ---------------------------------------------------------------------------
 
 /**
  * Returns the ordered list of tournament rounds from earliest to latest.
@@ -268,15 +395,15 @@ export function buildBracketSlots(
  * @returns Array of TournamentRound values in chronological order
  */
 export function getRoundOrder(): TournamentRound[] {
-  return ["R64", "R32", "S16", "E8", "F4", "NCG"];
+  return ["FF", "R64", "R32", "S16", "E8", "F4", "NCG"];
 }
 
 /**
- * Returns the zero-indexed round number for a given tournament round.
- * R64 = 0, R32 = 1, S16 = 2, E8 = 3, F4 = 4, NCG = 5.
+ * Returns the array index of a round in getRoundOrder().
+ * FF = 0, R64 = 1, R32 = 2, S16 = 3, E8 = 4, F4 = 5, NCG = 6.
  *
  * @param round - The tournament round
- * @returns The zero-indexed round number
+ * @returns The round index in the getRoundOrder() array
  */
 export function getRoundIndex(round: TournamentRound): number {
   return ROUND_ORDER[round];

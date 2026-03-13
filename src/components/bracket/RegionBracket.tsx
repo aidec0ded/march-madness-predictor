@@ -15,7 +15,7 @@
 
 import React from "react";
 import type { Region, TeamSeason, TournamentRound } from "@/types/team";
-import type { BracketMatchup, SimulationResult } from "@/types/simulation";
+import type { BracketMatchup, SimulationResult, PlayInConfig } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
 import type { OwnershipModel } from "@/types/game-theory";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
@@ -50,6 +50,8 @@ interface RegionBracketProps {
   ownershipModel?: OwnershipModel | null;
   /** Per-game head-to-head probabilities from resolveMatchup (optional) */
   gameProbabilities?: GameProbabilities;
+  /** Play-in configuration for resolving FF-sourced R64 matchups (optional) */
+  playInConfig?: PlayInConfig | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,6 +169,7 @@ export function RegionBracket({
   onMatchupClick,
   ownershipModel,
   gameProbabilities,
+  playInConfig,
 }: RegionBracketProps) {
   const connectors = generateConnectors(matchups, picks, direction);
 
@@ -244,7 +247,8 @@ export function RegionBracket({
           const { teamA, teamB } = resolveMatchupTeams(
             matchup,
             teams,
-            picks
+            picks,
+            playInConfig
           );
           const winner = picks[matchup.gameId] ?? null;
           const hasOverrides = matchup.gameId in matchupOverrides;

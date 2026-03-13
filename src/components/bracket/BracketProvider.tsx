@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useReducer, useMemo, type ReactNode } from "react";
+import { createContext, useReducer, useMemo, useCallback, type ReactNode } from "react";
 import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
@@ -11,7 +11,8 @@ import type {
   SavedBracketData,
 } from "@/types/bracket-ui";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
-import type { BracketMatchup } from "@/types/simulation";
+import type { BracketMatchup, PlayInConfig } from "@/types/simulation";
+import { isGameId } from "@/lib/bracket-utils";
 
 // ---------------------------------------------------------------------------
 // Context
@@ -29,22 +30,10 @@ export const BracketContext = createContext<BracketContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 /**
- * Build a lookup from gameId to the matchup definition.
- * Used for downstream cascade logic.
- */
-function buildMatchupMap(
-  matchups: BracketMatchup[]
-): Map<string, BracketMatchup> {
-  const map = new Map<string, BracketMatchup>();
-  for (const m of matchups) {
-    map.set(m.gameId, m);
-  }
-  return map;
-}
-
-/**
  * Build a lookup from gameId to all downstream gameIds that depend on it.
  * A game X is downstream of game Y if Y appears as teamASource or teamBSource of X.
+ *
+ * Recognizes FF-, R64-, R32-, S16-, E8-, F4- prefixed game IDs.
  */
 function buildDownstreamMap(
   matchups: BracketMatchup[]
@@ -52,15 +41,10 @@ function buildDownstreamMap(
   const downstream = new Map<string, string[]>();
 
   for (const m of matchups) {
-    // If teamASource is a gameId (not a slot ID like "East-1"), it's a feeder
-    if (!m.teamASource.includes("-") || m.teamASource.startsWith("R64-") || m.teamASource.startsWith("R32-") || m.teamASource.startsWith("S16-") || m.teamASource.startsWith("E8-") || m.teamASource.startsWith("F4-")) {
-      // teamASource could be a slot ID (e.g., "East-1") or a gameId (e.g., "R64-East-1")
-      // Only gameIds start with a round prefix
-      if (isGameId(m.teamASource)) {
-        const existing = downstream.get(m.teamASource) ?? [];
-        existing.push(m.gameId);
-        downstream.set(m.teamASource, existing);
-      }
+    if (isGameId(m.teamASource)) {
+      const existing = downstream.get(m.teamASource) ?? [];
+      existing.push(m.gameId);
+      downstream.set(m.teamASource, existing);
     }
     if (isGameId(m.teamBSource)) {
       const existing = downstream.get(m.teamBSource) ?? [];
@@ -70,18 +54,6 @@ function buildDownstreamMap(
   }
 
   return downstream;
-}
-
-/** Check if a source string is a gameId (starts with round prefix) vs a slot ID */
-function isGameId(source: string): boolean {
-  return (
-    source.startsWith("R64-") ||
-    source.startsWith("R32-") ||
-    source.startsWith("S16-") ||
-    source.startsWith("E8-") ||
-    source.startsWith("F4-") ||
-    source === "NCG"
-  );
 }
 
 /**
@@ -162,207 +134,213 @@ function withStalenessCheck(newState: BracketState): BracketState {
 }
 
 // ---------------------------------------------------------------------------
-// Reducer
+// Reducer factory
 // ---------------------------------------------------------------------------
 
-/** Pre-built matchup data (computed once) */
-const ALL_MATCHUPS = buildBracketMatchups();
-const DOWNSTREAM_MAP = buildDownstreamMap(ALL_MATCHUPS);
+/**
+ * Creates a bracket reducer that closes over the downstream map.
+ *
+ * The downstream map depends on play-in config (which determines whether
+ * FF games exist in the matchup tree). By creating the reducer as a
+ * closure, we avoid putting the map in state while still allowing it
+ * to vary based on play-in config.
+ */
+function createBracketReducer(downstreamMap: Map<string, string[]>) {
+  return function bracketReducer(
+    state: BracketState,
+    action: BracketAction
+  ): BracketState {
+    switch (action.type) {
+      case "ADVANCE_TEAM": {
+        const oldWinner = state.picks[action.gameId];
+        let newPicks = { ...state.picks };
 
-function bracketReducer(
-  state: BracketState,
-  action: BracketAction
-): BracketState {
-  switch (action.type) {
-    case "ADVANCE_TEAM": {
-      const oldWinner = state.picks[action.gameId];
-      let newPicks = { ...state.picks };
+        // If the winner changed, cascade-invalidate downstream picks
+        if (oldWinner && oldWinner !== action.teamId) {
+          newPicks = cascadeInvalidation(
+            newPicks,
+            action.gameId,
+            oldWinner,
+            downstreamMap
+          );
+        }
 
-      // If the winner changed, cascade-invalidate downstream picks
-      if (oldWinner && oldWinner !== action.teamId) {
-        newPicks = cascadeInvalidation(
-          newPicks,
-          action.gameId,
-          oldWinner,
-          DOWNSTREAM_MAP
-        );
+        newPicks[action.gameId] = action.teamId;
+
+        return withStalenessCheck({
+          ...state,
+          picks: newPicks,
+          isDirty: true,
+        });
       }
 
-      newPicks[action.gameId] = action.teamId;
+      case "RESET_PICK": {
+        const oldWinner = state.picks[action.gameId];
+        let newPicks = { ...state.picks };
 
-      return withStalenessCheck({
-        ...state,
-        picks: newPicks,
-        isDirty: true,
-      });
-    }
+        // Cascade-invalidate downstream picks that depended on this winner
+        if (oldWinner) {
+          newPicks = cascadeInvalidation(
+            newPicks,
+            action.gameId,
+            oldWinner,
+            downstreamMap
+          );
+        }
 
-    case "RESET_PICK": {
-      const oldWinner = state.picks[action.gameId];
-      let newPicks = { ...state.picks };
+        delete newPicks[action.gameId];
 
-      // Cascade-invalidate downstream picks that depended on this winner
-      if (oldWinner) {
-        newPicks = cascadeInvalidation(
-          newPicks,
-          action.gameId,
-          oldWinner,
-          DOWNSTREAM_MAP
-        );
+        return withStalenessCheck({
+          ...state,
+          picks: newPicks,
+          isDirty: true,
+        });
       }
 
-      delete newPicks[action.gameId];
+      case "SET_GLOBAL_LEVERS": {
+        return withStalenessCheck({
+          ...state,
+          globalLevers: {
+            ...state.globalLevers,
+            ...action.levers,
+          },
+          isDirty: true,
+        });
+      }
 
-      return withStalenessCheck({
-        ...state,
-        picks: newPicks,
-        isDirty: true,
-      });
+      case "SET_MATCHUP_OVERRIDE": {
+        return withStalenessCheck({
+          ...state,
+          matchupOverrides: {
+            ...state.matchupOverrides,
+            [action.gameId]: action.overrides,
+          },
+          isDirty: true,
+        });
+      }
+
+      case "REMOVE_MATCHUP_OVERRIDE": {
+        const newOverrides = { ...state.matchupOverrides };
+        delete newOverrides[action.gameId];
+        return withStalenessCheck({
+          ...state,
+          matchupOverrides: newOverrides,
+          isDirty: true,
+        });
+      }
+
+      case "SET_SIMULATION_RESULT": {
+        const inputHash = computeInputHash(
+          state.picks,
+          state.globalLevers,
+          state.matchupOverrides
+        );
+        return {
+          ...state,
+          simulationResult: action.result,
+          isSimulating: false,
+          simulationProgress: null,
+          simulationInputHash: inputHash,
+          isSimulationStale: false,
+        };
+      }
+
+      case "SET_SIMULATING": {
+        return {
+          ...state,
+          isSimulating: action.isSimulating,
+          // Clear progress when simulation starts or stops
+          simulationProgress: action.isSimulating ? null : state.simulationProgress,
+        };
+      }
+
+      case "SET_SIMULATION_PROGRESS": {
+        return {
+          ...state,
+          simulationProgress: action.progress,
+        };
+      }
+
+      case "LOAD_BRACKET": {
+        const { bracket } = action;
+        // If the loaded bracket had a simulation snapshot, compute its hash
+        // to enable staleness detection if user modifies the loaded state
+        const loadedHash = bracket.simulationSnapshot
+          ? computeInputHash(bracket.picks, bracket.globalLevers, bracket.matchupOverrides)
+          : null;
+        return {
+          ...state,
+          bracketId: bracket.bracketId,
+          bracketName: bracket.name,
+          picks: bracket.picks,
+          globalLevers: bracket.globalLevers,
+          matchupOverrides: bracket.matchupOverrides,
+          simulationResult: bracket.simulationSnapshot,
+          simulationInputHash: loadedHash,
+          isSimulationStale: false,
+          isDirty: false,
+        };
+      }
+
+      case "CLEAR_BRACKET": {
+        return {
+          ...state,
+          picks: {},
+          globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
+          matchupOverrides: {},
+          simulationResult: null,
+          isSimulating: false,
+          simulationProgress: null,
+          simulationInputHash: null,
+          isSimulationStale: false,
+          bracketId: null,
+          bracketName: "My Bracket",
+          isDirty: false,
+          poolSizeBucket: "medium",
+          tournamentSiteMap: null,
+        };
+      }
+
+      case "CLEAR_PICKS": {
+        return {
+          ...state,
+          picks: {},
+          simulationResult: null,
+          isSimulating: false,
+          simulationProgress: null,
+          simulationInputHash: null,
+          isSimulationStale: false,
+          isDirty: state.bracketId ? true : false,
+        };
+      }
+
+      case "MARK_SAVED": {
+        return {
+          ...state,
+          bracketId: action.bracketId,
+          isDirty: false,
+        };
+      }
+
+      case "SET_POOL_SIZE": {
+        return {
+          ...state,
+          poolSizeBucket: action.poolSizeBucket,
+          isDirty: true,
+        };
+      }
+
+      case "SET_TOURNAMENT_SITE_MAP": {
+        return {
+          ...state,
+          tournamentSiteMap: action.siteMap,
+        };
+      }
+
+      default:
+        return state;
     }
-
-    case "SET_GLOBAL_LEVERS": {
-      return withStalenessCheck({
-        ...state,
-        globalLevers: {
-          ...state.globalLevers,
-          ...action.levers,
-        },
-        isDirty: true,
-      });
-    }
-
-    case "SET_MATCHUP_OVERRIDE": {
-      return withStalenessCheck({
-        ...state,
-        matchupOverrides: {
-          ...state.matchupOverrides,
-          [action.gameId]: action.overrides,
-        },
-        isDirty: true,
-      });
-    }
-
-    case "REMOVE_MATCHUP_OVERRIDE": {
-      const newOverrides = { ...state.matchupOverrides };
-      delete newOverrides[action.gameId];
-      return withStalenessCheck({
-        ...state,
-        matchupOverrides: newOverrides,
-        isDirty: true,
-      });
-    }
-
-    case "SET_SIMULATION_RESULT": {
-      const inputHash = computeInputHash(
-        state.picks,
-        state.globalLevers,
-        state.matchupOverrides
-      );
-      return {
-        ...state,
-        simulationResult: action.result,
-        isSimulating: false,
-        simulationProgress: null,
-        simulationInputHash: inputHash,
-        isSimulationStale: false,
-      };
-    }
-
-    case "SET_SIMULATING": {
-      return {
-        ...state,
-        isSimulating: action.isSimulating,
-        // Clear progress when simulation starts or stops
-        simulationProgress: action.isSimulating ? null : state.simulationProgress,
-      };
-    }
-
-    case "SET_SIMULATION_PROGRESS": {
-      return {
-        ...state,
-        simulationProgress: action.progress,
-      };
-    }
-
-    case "LOAD_BRACKET": {
-      const { bracket } = action;
-      // If the loaded bracket had a simulation snapshot, compute its hash
-      // to enable staleness detection if user modifies the loaded state
-      const loadedHash = bracket.simulationSnapshot
-        ? computeInputHash(bracket.picks, bracket.globalLevers, bracket.matchupOverrides)
-        : null;
-      return {
-        ...state,
-        bracketId: bracket.bracketId,
-        bracketName: bracket.name,
-        picks: bracket.picks,
-        globalLevers: bracket.globalLevers,
-        matchupOverrides: bracket.matchupOverrides,
-        simulationResult: bracket.simulationSnapshot,
-        simulationInputHash: loadedHash,
-        isSimulationStale: false,
-        isDirty: false,
-      };
-    }
-
-    case "CLEAR_BRACKET": {
-      return {
-        ...state,
-        picks: {},
-        globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
-        matchupOverrides: {},
-        simulationResult: null,
-        isSimulating: false,
-        simulationProgress: null,
-        simulationInputHash: null,
-        isSimulationStale: false,
-        bracketId: null,
-        bracketName: "My Bracket",
-        isDirty: false,
-        poolSizeBucket: "medium",
-        tournamentSiteMap: null,
-      };
-    }
-
-    case "CLEAR_PICKS": {
-      return {
-        ...state,
-        picks: {},
-        simulationResult: null,
-        isSimulating: false,
-        simulationProgress: null,
-        simulationInputHash: null,
-        isSimulationStale: false,
-        isDirty: state.bracketId ? true : false,
-      };
-    }
-
-    case "MARK_SAVED": {
-      return {
-        ...state,
-        bracketId: action.bracketId,
-        isDirty: false,
-      };
-    }
-
-    case "SET_POOL_SIZE": {
-      return {
-        ...state,
-        poolSizeBucket: action.poolSizeBucket,
-        isDirty: true,
-      };
-    }
-
-    case "SET_TOURNAMENT_SITE_MAP": {
-      return {
-        ...state,
-        tournamentSiteMap: action.siteMap,
-      };
-    }
-
-    default:
-      return state;
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -371,12 +349,14 @@ function bracketReducer(
 
 interface BracketProviderProps {
   children: ReactNode;
-  /** Initial 64 teams for the bracket */
+  /** Initial tournament teams (64 without play-ins, or 68 with play-ins) */
   initialTeams: TeamSeason[];
   /** Optional saved bracket to restore */
   savedBracket?: SavedBracketData;
   /** Optional tournament site data for site proximity calculations */
   tournamentSites?: TournamentSite[];
+  /** Optional play-in configuration for First Four games */
+  playInConfig?: PlayInConfig | null;
 }
 
 /**
@@ -390,12 +370,14 @@ interface BracketProviderProps {
  * - Supports loading saved brackets and resetting to defaults
  * - Tracks dirty state for unsaved changes
  * - SET_POOL_SIZE updates the contest pool size for game theory recommendations
+ * - Dynamic matchup tree: includes First Four games when playInConfig is provided
  */
 export function BracketProvider({
   children,
   initialTeams,
   savedBracket,
   tournamentSites,
+  playInConfig,
 }: BracketProviderProps) {
   const teamsMap = useMemo(() => {
     const map = new Map<string, TeamSeason>();
@@ -405,13 +387,32 @@ export function BracketProvider({
     return map;
   }, [initialTeams]);
 
+  // Build matchup tree dynamically based on play-in config.
+  // With play-ins: 67 games (4 FF + 63 main). Without: 63 games.
+  const allMatchups = useMemo(
+    () => buildBracketMatchups(playInConfig),
+    [playInConfig]
+  );
+
+  // Build downstream cascade map from the dynamic matchup tree
+  const downstreamMap = useMemo(
+    () => buildDownstreamMap(allMatchups),
+    [allMatchups]
+  );
+
   // Build site map from tournament sites (computed once)
   const siteMap = useMemo(() => {
     if (!tournamentSites || tournamentSites.length === 0) {
       return null;
     }
-    return buildSiteMap(ALL_MATCHUPS, tournamentSites);
-  }, [tournamentSites]);
+    return buildSiteMap(allMatchups, tournamentSites);
+  }, [tournamentSites, allMatchups]);
+
+  // Create reducer that closes over the dynamic downstream map
+  const reducer = useCallback(
+    createBracketReducer(downstreamMap),
+    [downstreamMap]
+  );
 
   const initialState: BracketState = useMemo(
     () => ({
@@ -435,11 +436,12 @@ export function BracketProvider({
       isDirty: false,
       poolSizeBucket: "medium",
       tournamentSiteMap: siteMap,
+      playInConfig: playInConfig ?? null,
     }),
-    [teamsMap, savedBracket, siteMap]
+    [teamsMap, savedBracket, siteMap, playInConfig]
   );
 
-  const [state, dispatch] = useReducer(bracketReducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   const value = useMemo<BracketContextValue>(
     () => ({ state, dispatch }),

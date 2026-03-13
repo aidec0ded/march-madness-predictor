@@ -35,7 +35,7 @@ import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { runSimulation } from "@/lib/engine/simulator";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import { buildSiteMap } from "@/lib/engine/site-mapping";
-import { filterToMainBracket } from "@/lib/bracket-utils";
+import { processTournamentField } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
 import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -311,6 +311,33 @@ export async function POST(request: Request) {
       .select("*")
       .eq("season", season);
 
+    // --- Transform DB rows to application types ---
+    const allTeamSeasons = transformTeamSeasonRows(
+      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
+      tournamentEntries as unknown as TournamentEntryRow[]
+    );
+
+    // Filter to only teams that have tournament entries and detect play-in pairs
+    const allTournamentTeams = allTeamSeasons.filter(
+      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
+        ts.tournamentEntry !== undefined
+    );
+
+    const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);
+
+    // Validate team count: 64 (no play-ins) or 68 (with play-ins)
+    const expectedCount = playInConfig ? 68 : 64;
+    if (tournamentTeams.length !== expectedCount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Expected ${expectedCount} tournament teams for season ${season}, but found ${tournamentTeams.length}. ` +
+            `The bracket data may be incomplete.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Transform site rows to TournamentSite[] and build site map
     let siteMap;
     if (sitesRows && sitesRows.length > 0) {
@@ -329,36 +356,8 @@ export async function POST(request: Request) {
           season: row.season,
         })
       );
-      const matchups = buildBracketMatchups();
+      const matchups = buildBracketMatchups(playInConfig);
       siteMap = buildSiteMap(matchups, sites);
-    }
-
-    // --- Transform DB rows to application types ---
-    const allTeamSeasons = transformTeamSeasonRows(
-      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
-      tournamentEntries as unknown as TournamentEntryRow[]
-    );
-
-    // Filter to only teams that have tournament entries
-    const allTournamentTeams = allTeamSeasons.filter(
-      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
-        ts.tournamentEntry !== undefined
-    );
-
-    // Deduplicate play-in pairs (68 → 64): keep one team per region+seed slot
-    const tournamentTeams = filterToMainBracket(allTournamentTeams);
-
-    // Validate exactly 64 tournament teams
-    if (tournamentTeams.length !== 64) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Expected 64 tournament teams for season ${season}, but found ${tournamentTeams.length} ` +
-            `(after deduplicating play-in pairs from ${allTournamentTeams.length} entries). ` +
-            `The bracket data may be incomplete.`,
-        },
-        { status: 400 }
-      );
     }
 
     // --- Build teams map and run simulation ---
@@ -375,6 +374,7 @@ export async function POST(request: Request) {
           ? resolvedOverrides
           : undefined,
       picks: picks && Object.keys(picks).length > 0 ? picks : undefined,
+      playInConfig: playInConfig ?? undefined,
       randomSeed: resolvedSeed,
     };
 

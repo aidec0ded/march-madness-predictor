@@ -8,7 +8,7 @@
 
 import type { TeamSeason, Region, TournamentRound } from "./team";
 import type { GlobalLevers, MatchupOverrides } from "./engine";
-import type { SimulationResult, BracketMatchup } from "./simulation";
+import type { SimulationResult, BracketMatchup, PlayInConfig } from "./simulation";
 import type { PoolSizeBucket } from "./game-theory";
 import type { SiteMap } from "@/lib/engine/site-mapping";
 
@@ -81,6 +81,9 @@ export interface BracketState {
 
   /** Pre-computed game-to-venue coordinate map for site proximity lever (null if not loaded) */
   tournamentSiteMap: SiteMap | null;
+
+  /** Play-in configuration for First Four games (null if no play-ins / 64-team bracket) */
+  playInConfig: PlayInConfig | null;
 }
 
 // ---------------------------------------------------------------------------

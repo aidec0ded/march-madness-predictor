@@ -18,6 +18,7 @@ interface SimulationResultsOverlayProps {
 // ---------------------------------------------------------------------------
 
 const ROUND_LABELS: Record<TournamentRound, string> = {
+  FF: "First Four",
   R64: "Round of 64",
   R32: "Round of 32",
   S16: "Sweet 16",

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * BracketGrid — main layout assembly for the full 64-team bracket.
+ * BracketGrid — main layout assembly for the full bracket (64 or 68 teams).
  *
  * Reads all state from BracketContext via the useBracket hook. Arranges
  * four region brackets and the Final Four center section in a
@@ -13,12 +13,15 @@
  * Right side: West (rtl) on top, Midwest (rtl) on bottom
  * Center:     FinalFour component
  *
+ * When play-in config exists (68-team bracket), a FirstFour horizontal
+ * strip renders above the main grid showing the 4 play-in matchups.
+ *
  * This component:
  * 1. Gets state and dispatch from useBracket()
- * 2. Builds the 63-matchup tree using buildBracketMatchups() (memoized)
- * 3. Splits matchups by region + F4/NCG
+ * 2. Builds the matchup tree using buildBracketMatchups() (memoized, dynamic)
+ * 3. Splits matchups by region + F4/NCG + FF
  * 4. Computes ownership model via useContestStrategy()
- * 5. Passes props down to RegionBracket and FinalFour
+ * 5. Passes props down to FirstFour, RegionBracket, and FinalFour
  * 6. Wraps everything in a horizontally scrollable container
  */
 
@@ -32,6 +35,7 @@ import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
 import { FinalFour } from "@/components/bracket/FinalFour";
+import { FirstFour } from "@/components/bracket/FirstFour";
 import { MobileBracketView } from "./MobileBracketView";
 
 // ---------------------------------------------------------------------------
@@ -75,12 +79,13 @@ interface BracketGridProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Splits the full 63-matchup array into per-region matchups and
- * Final Four/NCG matchups.
+ * Splits the full matchup array into per-region matchups,
+ * Final Four/NCG matchups, and First Four play-in matchups.
  */
 function splitMatchupsByRegion(matchups: BracketMatchup[]): {
   regionMatchups: Record<Region, BracketMatchup[]>;
   finalFourMatchups: BracketMatchup[];
+  firstFourMatchups: BracketMatchup[];
 } {
   const regionMatchups: Record<Region, BracketMatchup[]> = {
     East: [],
@@ -89,16 +94,19 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
     Midwest: [],
   };
   const finalFourMatchups: BracketMatchup[] = [];
+  const firstFourMatchups: BracketMatchup[] = [];
 
   for (const matchup of matchups) {
-    if (matchup.round === "F4" || matchup.round === "NCG") {
+    if (matchup.round === "FF") {
+      firstFourMatchups.push(matchup);
+    } else if (matchup.round === "F4" || matchup.round === "NCG") {
       finalFourMatchups.push(matchup);
     } else if (matchup.region && matchup.region in regionMatchups) {
       regionMatchups[matchup.region].push(matchup);
     }
   }
 
-  return { regionMatchups, finalFourMatchups };
+  return { regionMatchups, finalFourMatchups, firstFourMatchups };
 }
 
 // ---------------------------------------------------------------------------
@@ -111,11 +119,14 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
-  // Build the 63-matchup tree (stable reference since it's pure)
-  const allMatchups = useMemo(() => buildBracketMatchups(), []);
+  // Build matchup tree dynamically based on play-in config
+  const allMatchups = useMemo(
+    () => buildBracketMatchups(state.playInConfig),
+    [state.playInConfig]
+  );
 
-  // Split matchups by region
-  const { regionMatchups, finalFourMatchups } = useMemo(
+  // Split matchups by region (includes FF extraction)
+  const { regionMatchups, finalFourMatchups, firstFourMatchups } = useMemo(
     () => splitMatchupsByRegion(allMatchups),
     [allMatchups]
   );
@@ -169,6 +180,29 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
         padding: "8px 0",
       }}
     >
+      {/* First Four play-in games (only when 68-team bracket) */}
+      {firstFourMatchups.length > 0 && (
+        <div
+          style={{
+            borderBottom: "1px solid var(--border-subtle)",
+            marginBottom: "8px",
+          }}
+        >
+          <FirstFour
+            matchups={firstFourMatchups}
+            teams={state.teams}
+            picks={state.picks}
+            simulationResult={state.simulationResult}
+            matchupOverrides={state.matchupOverrides}
+            onAdvance={handleAdvance}
+            onMatchupClick={handleMatchupClick}
+            ownershipModel={ownershipModel}
+            gameProbabilities={gameProbabilities}
+            playInConfig={state.playInConfig}
+          />
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -200,6 +234,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               onMatchupClick={handleMatchupClick}
               ownershipModel={ownershipModel}
               gameProbabilities={gameProbabilities}
+              playInConfig={state.playInConfig}
             />
           ))}
         </div>
@@ -239,6 +274,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               onMatchupClick={handleMatchupClick}
               ownershipModel={ownershipModel}
               gameProbabilities={gameProbabilities}
+              playInConfig={state.playInConfig}
             />
           ))}
         </div>

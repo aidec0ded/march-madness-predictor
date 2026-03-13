@@ -24,7 +24,7 @@ import { runSimulation } from "@/lib/engine/simulator";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import { buildSiteMap } from "@/lib/engine/site-mapping";
 import type { SiteMap } from "@/lib/engine/site-mapping";
-import { filterToMainBracket } from "@/lib/bracket-utils";
+import { processTournamentField } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
 import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
@@ -176,6 +176,30 @@ export async function POST(request: Request) {
       .select("*")
       .eq("season", seasonNum);
 
+    const allTeamSeasons = transformTeamSeasonRows(
+      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
+      tournamentEntries as unknown as TournamentEntryRow[]
+    );
+
+    const allTournamentTeams = allTeamSeasons.filter(
+      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
+        ts.tournamentEntry !== undefined
+    );
+
+    const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);
+
+    // Validate team count: 64 (no play-ins) or 68 (with play-ins)
+    const expectedCount = playInConfig ? 68 : 64;
+    if (tournamentTeams.length !== expectedCount) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Expected ${expectedCount} tournament teams, found ${tournamentTeams.length}.`,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     let siteMap: SiteMap | undefined;
     if (sitesRows && sitesRows.length > 0) {
       const sites: TournamentSite[] = (sitesRows as TournamentSiteRow[]).map(
@@ -191,30 +215,8 @@ export async function POST(request: Request) {
           season: row.season,
         })
       );
-      const matchups = buildBracketMatchups();
+      const matchups = buildBracketMatchups(playInConfig);
       siteMap = buildSiteMap(matchups, sites);
-    }
-
-    const allTeamSeasons = transformTeamSeasonRows(
-      teamSeasonRows as unknown as TeamSeasonJoinedRow[],
-      tournamentEntries as unknown as TournamentEntryRow[]
-    );
-
-    const allTournamentTeams = allTeamSeasons.filter(
-      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
-        ts.tournamentEntry !== undefined
-    );
-
-    const tournamentTeams = filterToMainBracket(allTournamentTeams);
-
-    if (tournamentTeams.length !== 64) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Expected 64 tournament teams, found ${tournamentTeams.length}.`,
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
     }
 
     const teamsMap = new Map<string, TeamSeason>();
@@ -231,6 +233,7 @@ export async function POST(request: Request) {
         Object.keys(resolvedOverrides).length > 0 ? resolvedOverrides : undefined,
       picks:
         Object.keys(resolvedPicks).length > 0 ? resolvedPicks : undefined,
+      playInConfig: playInConfig ?? undefined,
       randomSeed: resolvedSeed,
     };
 

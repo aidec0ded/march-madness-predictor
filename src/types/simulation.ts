@@ -46,6 +46,35 @@ export interface BracketMatchup {
 }
 
 // ---------------------------------------------------------------------------
+// Play-In (First Four) Types
+// ---------------------------------------------------------------------------
+
+/**
+ * A detected First Four play-in matchup.
+ * Two teams share the same region and seed — they must play a
+ * play-in game before entering the main bracket.
+ */
+export interface PlayInMatchup {
+  /** Bracket region where the winner enters */
+  region: Region;
+  /** Seed number (typically 11 or 16) */
+  seed: number;
+  /** Team A's unique ID */
+  teamAId: string;
+  /** Team B's unique ID */
+  teamBId: string;
+}
+
+/**
+ * Configuration for First Four play-in games.
+ * Contains 0–4 play-in matchups detected from the tournament field.
+ */
+export interface PlayInConfig {
+  /** The play-in matchups (typically 4: two 11-seed pairs, two 16-seed pairs) */
+  matchups: PlayInMatchup[];
+}
+
+// ---------------------------------------------------------------------------
 // Simulation Configuration
 // ---------------------------------------------------------------------------
 
@@ -59,6 +88,8 @@ export interface SimulationConfig {
   matchupOverrides?: Record<string, MatchupOverrides>;
   /** User bracket picks keyed by gameId → winning teamId. Locked-in picks skip probability computation. */
   picks?: Record<string, string>;
+  /** Optional play-in configuration for First Four games */
+  playInConfig?: PlayInConfig;
   /** Random seed for reproducible results (optional) */
   randomSeed?: number;
 }

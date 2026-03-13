@@ -5,16 +5,43 @@
  * RegionBracket.tsx so they can be reused by the useMatchupAnalysis
  * hook and any other consumer that needs to resolve bracket matchup teams.
  *
+ * Also provides `processTournamentField()` for splitting 68-team
+ * tournament fields into main bracket teams + play-in configuration.
+ *
  * All functions are pure (no side effects).
  */
 
 import type { TeamSeason } from "@/types/team";
-import type { BracketMatchup } from "@/types/simulation";
+import type { BracketMatchup, PlayInConfig } from "@/types/simulation";
+import { detectPlayInPairs } from "@/lib/engine/bracket";
 import { parseGameId } from "@/lib/bracket-layout";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
-// Play-in deduplication
+// Play-in field processing
+// ---------------------------------------------------------------------------
+
+/**
+ * Processes a tournament field (64 or 68 teams) into bracket-ready data.
+ *
+ * If the field has play-in pairs (any region-seed slot with 2 teams),
+ * returns all teams and a PlayInConfig describing the play-in matchups.
+ * If the field has exactly one team per slot (64 teams), returns null
+ * playInConfig for backward compatibility.
+ *
+ * @param teams - All tournament teams (64 or 68)
+ * @returns Object with all teams and optional play-in config
+ */
+export function processTournamentField(teams: TeamSeason[]): {
+  teams: TeamSeason[];
+  playInConfig: PlayInConfig | null;
+} {
+  const playInConfig = detectPlayInPairs(teams);
+  return { teams, playInConfig };
+}
+
+// ---------------------------------------------------------------------------
+// Play-in deduplication (backward compatible — used by backtest module)
 // ---------------------------------------------------------------------------
 
 /**
@@ -82,19 +109,50 @@ function getTeamRating(team: TeamSeason): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Resolves a bracket slot ID (e.g., "East-1") to a TeamSeason.
+ * Resolves a bracket slot ID to a TeamSeason.
  *
- * Iterates the teams map looking for a team whose tournamentEntry
- * produces a matching slot ID in the form "{Region}-{Seed}".
+ * Handles two slot ID formats:
+ * - Standard slots: "{Region}-{Seed}" (e.g., "East-1", "West-16")
+ * - FF play-in slots: "FF-{Region}-{Seed}-{A|B}" (e.g., "FF-East-16-A")
  *
- * @param slotId - Slot identifier, e.g. "East-1", "West-16"
+ * For standard slots, iterates the teams map looking for a team whose
+ * tournamentEntry produces a matching slot ID.
+ *
+ * For FF slots, uses the play-in config to find the correct team by
+ * matching region, seed, and position within the play-in pair.
+ *
+ * @param slotId - Slot identifier
  * @param teams - All tournament teams keyed by teamId
+ * @param playInConfig - Optional play-in configuration for resolving FF slots
  * @returns The matching TeamSeason, or null if not found
  */
 export function resolveSlotTeam(
   slotId: string,
-  teams: Map<string, TeamSeason>
+  teams: Map<string, TeamSeason>,
+  playInConfig?: PlayInConfig | null
 ): TeamSeason | null {
+  // FF slot: "FF-East-16-A" → find the play-in team
+  if (slotId.startsWith("FF-") && playInConfig) {
+    const parts = slotId.split("-");
+    // FF-{Region}-{Seed}-{Position} → parts = ["FF", region, seed, position]
+    if (parts.length === 4) {
+      const region = parts[1];
+      const seed = parseInt(parts[2], 10);
+      const position = parts[3]; // "A" or "B"
+
+      // Find the play-in matchup for this region and seed
+      const pi = playInConfig.matchups.find(
+        (m) => m.region === region && m.seed === seed
+      );
+      if (pi) {
+        const teamId = position === "A" ? pi.teamAId : pi.teamBId;
+        return teams.get(teamId) ?? null;
+      }
+    }
+    return null;
+  }
+
+  // Standard slot: "{Region}-{Seed}"
   for (const team of teams.values()) {
     if (!team.tournamentEntry) continue;
     const teamSlot = `${team.tournamentEntry.region}-${team.tournamentEntry.seed}`;
@@ -104,33 +162,73 @@ export function resolveSlotTeam(
 }
 
 // ---------------------------------------------------------------------------
+// Game ID detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if a source string is a game ID (starts with round prefix) vs a slot ID.
+ * Exported for use by BracketProvider and other consumers.
+ */
+export function isGameId(source: string): boolean {
+  return (
+    source.startsWith("FF-") ||
+    source.startsWith("R64-") ||
+    source.startsWith("R32-") ||
+    source.startsWith("S16-") ||
+    source.startsWith("E8-") ||
+    source.startsWith("F4-") ||
+    source === "NCG"
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Matchup team resolution
 // ---------------------------------------------------------------------------
 
 /**
  * Resolves the two teams in a bracket matchup.
  *
- * - R64 games: looks up from slot IDs (e.g., "East-1" -> seed 1 in East)
+ * - FF games: looks up from FF slot IDs (e.g., "FF-East-16-A")
+ * - R64 games: looks up from slot IDs (e.g., "East-1") or from picks
+ *   if the slot is fed by a First Four game (e.g., "FF-East-16")
  * - Later rounds: looks up the winner of the feeder game from the picks map
- * - F4/NCG games: same as later rounds (feeder gameIds like "E8-East", "F4-1")
  *
  * @param matchup - The bracket matchup definition
  * @param teams - All tournament teams keyed by teamId
  * @param picks - User picks: gameId -> winning teamId
+ * @param playInConfig - Optional play-in configuration for resolving FF slots
  * @returns An object with teamA and teamB (either may be null if not yet decided)
  */
 export function resolveMatchupTeams(
   matchup: BracketMatchup,
   teams: Map<string, TeamSeason>,
-  picks: Record<string, string>
+  picks: Record<string, string>,
+  playInConfig?: PlayInConfig | null
 ): { teamA: TeamSeason | null; teamB: TeamSeason | null } {
   const parsed = parseGameId(matchup.gameId);
 
-  if (parsed.round === "R64") {
-    // R64 sources are slot IDs like "East-1", "East-16"
+  if (parsed.round === "FF") {
+    // FF sources are FF slot IDs like "FF-East-16-A"
     return {
-      teamA: resolveSlotTeam(matchup.teamASource, teams),
-      teamB: resolveSlotTeam(matchup.teamBSource, teams),
+      teamA: resolveSlotTeam(matchup.teamASource, teams, playInConfig),
+      teamB: resolveSlotTeam(matchup.teamBSource, teams, playInConfig),
+    };
+  }
+
+  if (parsed.round === "R64") {
+    // R64 sources may be slot IDs ("East-1") or FF gameIds ("FF-East-16")
+    const resolveSource = (source: string): TeamSeason | null => {
+      if (isGameId(source)) {
+        // This slot is fed by a First Four game — resolve from picks
+        const winnerId = picks[source];
+        return winnerId ? teams.get(winnerId) ?? null : null;
+      }
+      return resolveSlotTeam(source, teams, playInConfig);
+    };
+
+    return {
+      teamA: resolveSource(matchup.teamASource),
+      teamB: resolveSource(matchup.teamBSource),
     };
   }
 

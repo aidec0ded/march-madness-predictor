@@ -5,7 +5,7 @@
  *
  * Instead of rendering all four regions simultaneously in a 3-column grid,
  * this component shows one region at a time via a tab bar. The user can
- * switch between East, West, South, Midwest, and Final 4 tabs.
+ * switch between First 4, East, West, South, Midwest, and Final 4 tabs.
  *
  * Reads the same state as BracketGrid (via useBracket, useContestStrategy,
  * useGameProbabilities) and passes identical props to RegionBracket and
@@ -21,6 +21,7 @@ import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
 import { FinalFour } from "@/components/bracket/FinalFour";
+import { FirstFour } from "@/components/bracket/FirstFour";
 
 // ---------------------------------------------------------------------------
 // Layout Configuration
@@ -37,9 +38,9 @@ const REGION_DIRECTION: Record<Region, "ltr" | "rtl"> = {
   Midwest: "rtl",
 };
 
-/** All available tabs in display order */
-type TabId = Region | "Final 4";
-const TABS: TabId[] = ["East", "West", "South", "Midwest", "Final 4"];
+/** All available tabs in display order (First 4 conditionally prepended) */
+type TabId = Region | "Final 4" | "First 4";
+const BASE_TABS: TabId[] = ["East", "West", "South", "Midwest", "Final 4"];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,12 +56,13 @@ interface MobileBracketViewProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Splits the full 63-matchup array into per-region matchups and
- * Final Four/NCG matchups. Same logic as BracketGrid.
+ * Splits the full matchup array into per-region matchups,
+ * Final Four/NCG matchups, and First Four play-in matchups.
  */
 function splitMatchupsByRegion(matchups: BracketMatchup[]): {
   regionMatchups: Record<Region, BracketMatchup[]>;
   finalFourMatchups: BracketMatchup[];
+  firstFourMatchups: BracketMatchup[];
 } {
   const regionMatchups: Record<Region, BracketMatchup[]> = {
     East: [],
@@ -69,16 +71,19 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
     Midwest: [],
   };
   const finalFourMatchups: BracketMatchup[] = [];
+  const firstFourMatchups: BracketMatchup[] = [];
 
   for (const matchup of matchups) {
-    if (matchup.round === "F4" || matchup.round === "NCG") {
+    if (matchup.round === "FF") {
+      firstFourMatchups.push(matchup);
+    } else if (matchup.round === "F4" || matchup.round === "NCG") {
       finalFourMatchups.push(matchup);
     } else if (matchup.region && matchup.region in regionMatchups) {
       regionMatchups[matchup.region].push(matchup);
     }
   }
 
-  return { regionMatchups, finalFourMatchups };
+  return { regionMatchups, finalFourMatchups, firstFourMatchups };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,14 +96,25 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
-  // Build the 63-matchup tree (stable reference since it's pure)
-  const allMatchups = useMemo(() => buildBracketMatchups(), []);
+  // Build matchup tree dynamically based on play-in config
+  const allMatchups = useMemo(
+    () => buildBracketMatchups(state.playInConfig),
+    [state.playInConfig]
+  );
 
-  // Split matchups by region
-  const { regionMatchups, finalFourMatchups } = useMemo(
+  // Split matchups by region (includes FF extraction)
+  const { regionMatchups, finalFourMatchups, firstFourMatchups } = useMemo(
     () => splitMatchupsByRegion(allMatchups),
     [allMatchups]
   );
+
+  // Conditionally include First 4 tab when play-in matchups exist
+  const tabs = useMemo<TabId[]>(() => {
+    if (firstFourMatchups.length > 0) {
+      return ["First 4", ...BASE_TABS];
+    }
+    return BASE_TABS;
+  }, [firstFourMatchups.length]);
 
   // Handler for advancing a team -- dispatches to context
   const handleAdvance = useCallback(
@@ -140,7 +156,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
     <div className="mobile-bracket-view">
       {/* Tab bar */}
       <div className="mobile-bracket-tabs" role="tablist" aria-label="Bracket regions">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
@@ -162,7 +178,20 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
         aria-label={`${activeTab} bracket`}
         className="mobile-bracket-region-container"
       >
-        {activeTab === "Final 4" ? (
+        {activeTab === "First 4" ? (
+          <FirstFour
+            matchups={firstFourMatchups}
+            teams={state.teams}
+            picks={state.picks}
+            simulationResult={state.simulationResult}
+            matchupOverrides={state.matchupOverrides}
+            onAdvance={handleAdvance}
+            onMatchupClick={handleMatchupClick}
+            ownershipModel={ownershipModel}
+            gameProbabilities={gameProbabilities}
+            playInConfig={state.playInConfig}
+          />
+        ) : activeTab === "Final 4" ? (
           <FinalFour
             matchups={finalFourMatchups}
             teams={state.teams}
@@ -187,6 +216,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
             onMatchupClick={handleMatchupClick}
             ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
+            playInConfig={state.playInConfig}
           />
         )}
       </div>

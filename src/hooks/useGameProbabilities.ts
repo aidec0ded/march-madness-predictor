@@ -51,8 +51,11 @@ export type GameProbabilities = Record<string, GameProbability>;
 export function useGameProbabilities(): GameProbabilities {
   const { state } = useBracket();
 
-  // Static 63-game bracket structure (never changes)
-  const allMatchups = useMemo(() => buildBracketMatchups(), []);
+  // Dynamic bracket structure: includes FF games when play-in config exists
+  const allMatchups = useMemo(
+    () => buildBracketMatchups(state.playInConfig),
+    [state.playInConfig]
+  );
 
   return useMemo(() => {
     const probs: GameProbabilities = {};
@@ -67,7 +70,8 @@ export function useGameProbabilities(): GameProbabilities {
       const { teamA, teamB } = resolveMatchupTeams(
         matchup,
         state.teams,
-        state.picks
+        state.picks,
+        state.playInConfig
       );
 
       // Only compute when both teams are known
@@ -99,5 +103,6 @@ export function useGameProbabilities(): GameProbabilities {
     state.globalLevers,
     state.matchupOverrides,
     state.tournamentSiteMap,
+    state.playInConfig,
   ]);
 }

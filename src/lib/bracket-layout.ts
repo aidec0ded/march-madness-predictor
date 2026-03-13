@@ -73,6 +73,15 @@ export function parseGameId(gameId: string): ParsedGameId {
 
   const round = parts[0];
 
+  // FF-East-16 — First Four play-in game (region + seed as gameNum)
+  if (round === "FF") {
+    return {
+      round: "FF",
+      region: parts[1],
+      gameNum: parseInt(parts[2], 10),
+    };
+  }
+
   // F4-1, F4-2 — no region
   if (round === "F4") {
     return {

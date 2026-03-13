@@ -238,6 +238,7 @@ export const SEED_MATCHUP_WIN_RATES: Record<string, number> = {
  * Round labels for display purposes.
  */
 export const ROUND_LABELS: Record<TournamentRound, string> = {
+  FF: "First Four",
   R64: "Round of 64",
   R32: "Round of 32",
   S16: "Sweet 16",
