@@ -54,8 +54,8 @@ const ALL_ROUNDS: TournamentRound[] = ["R64", "R32", "S16", "E8", "F4", "NCG"];
 // simulateBracket
 // ---------------------------------------------------------------------------
 
-describe("simulateBracket", () => {
-  it("produces a SimulatedBracket with exactly 63 game results", () => {
+describe("simulateBracket", async () => {
+  it("produces a SimulatedBracket with exactly 63 game results", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -69,7 +69,7 @@ describe("simulateBracket", () => {
     expect(Object.keys(result.gameResults)).toHaveLength(63);
   });
 
-  it("always produces a champion", () => {
+  it("always produces a champion", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -85,7 +85,7 @@ describe("simulateBracket", () => {
     expect(result.champion.length).toBeGreaterThan(0);
   });
 
-  it("champion is one of the 64 input teams", () => {
+  it("champion is one of the 64 input teams", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -100,7 +100,7 @@ describe("simulateBracket", () => {
     expect(teamIds).toContain(result.champion);
   });
 
-  it("every game result is a valid team ID", () => {
+  it("every game result is a valid team ID", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -117,7 +117,7 @@ describe("simulateBracket", () => {
     }
   });
 
-  it("all 63 game IDs from the bracket are present in results", () => {
+  it("all 63 game IDs from the bracket are present in results", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -136,7 +136,7 @@ describe("simulateBracket", () => {
     }
   });
 
-  it("is deterministic with the same seeded random", () => {
+  it("is deterministic with the same seeded random", async () => {
     const rng1 = createSeededRandom(42);
     const result1 = simulateBracket(
       teamsMap,
@@ -161,7 +161,7 @@ describe("simulateBracket", () => {
     expect(result1.gameResults).toEqual(result2.gameResults);
   });
 
-  it("produces different results with different seeds", () => {
+  it("produces different results with different seeds", async () => {
     // Run multiple simulations with different seeds to verify variance
     const results: SimulatedBracket[] = [];
     for (let seed = 1; seed <= 20; seed++) {
@@ -184,7 +184,7 @@ describe("simulateBracket", () => {
     expect(uniqueChampions.size).toBeGreaterThan(1);
   });
 
-  it("the NCG winner matches the champion field", () => {
+  it("the NCG winner matches the champion field", async () => {
     const rng = createSeededRandom(42);
     const result = simulateBracket(
       teamsMap,
@@ -208,15 +208,15 @@ describe("simulateBracket", () => {
 // runSimulation
 // ---------------------------------------------------------------------------
 
-describe("runSimulation", () => {
-  it("returns the correct number of simulation results", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+describe("runSimulation", async () => {
+  it("returns the correct number of simulation results", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.numSimulations).toBe(defaultConfig.numSimulations);
   });
 
-  it("team results cover all 64 teams", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("team results cover all 64 teams", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.teamResults).toHaveLength(64);
 
@@ -228,8 +228,8 @@ describe("runSimulation", () => {
     }
   });
 
-  it("all round probabilities are between 0 and 1", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("all round probabilities are between 0 and 1", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     for (const teamResult of result.teamResults) {
       for (const round of ALL_ROUNDS) {
@@ -240,14 +240,14 @@ describe("runSimulation", () => {
     }
   });
 
-  it("round probabilities are monotonically decreasing (R64 >= R32 >= S16 >= ...)", () => {
+  it("round probabilities are monotonically decreasing (R64 >= R32 >= S16 >= ...)", async () => {
     // Use more simulations for smoother probabilities
     const config: SimulationConfig = {
       numSimulations: 500,
       engineConfig: { ...DEFAULT_ENGINE_CONFIG },
       randomSeed: 42,
     };
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     for (const teamResult of result.teamResults) {
       for (let i = 0; i < ALL_ROUNDS.length - 1; i++) {
@@ -263,16 +263,16 @@ describe("runSimulation", () => {
     }
   });
 
-  it("R64 probabilities are all 1.0 (every team plays in the first round)", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("R64 probabilities are all 1.0 (every team plays in the first round)", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     for (const teamResult of result.teamResults) {
       expect(teamResult.roundProbabilities["R64"]).toBe(1.0);
     }
   });
 
-  it("championship probabilities sum to approximately 1.0", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("championship probabilities sum to approximately 1.0", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const totalChampionshipProb = result.teamResults.reduce(
       (sum, r) => sum + r.championshipProbability,
@@ -283,8 +283,8 @@ describe("runSimulation", () => {
     expect(totalChampionshipProb).toBeCloseTo(1.0, 2);
   });
 
-  it("NCG round probabilities sum to approximately 2.0 (two teams reach the final)", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("NCG round probabilities sum to approximately 2.0 (two teams reach the final)", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const totalNCGProb = result.teamResults.reduce(
       (sum, r) => sum + r.roundProbabilities["NCG"],
@@ -295,8 +295,8 @@ describe("runSimulation", () => {
     expect(totalNCGProb).toBeCloseTo(2.0, 1);
   });
 
-  it("F4 round probabilities sum to approximately 4.0", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("F4 round probabilities sum to approximately 4.0", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const totalF4Prob = result.teamResults.reduce(
       (sum, r) => sum + r.roundProbabilities["F4"],
@@ -306,8 +306,8 @@ describe("runSimulation", () => {
     expect(totalF4Prob).toBeCloseTo(4.0, 1);
   });
 
-  it("E8 round probabilities sum to approximately 8.0", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("E8 round probabilities sum to approximately 8.0", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const totalE8Prob = result.teamResults.reduce(
       (sum, r) => sum + r.roundProbabilities["E8"],
@@ -317,8 +317,8 @@ describe("runSimulation", () => {
     expect(totalE8Prob).toBeCloseTo(8.0, 1);
   });
 
-  it("expected wins are between 0 and 6 for all teams", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("expected wins are between 0 and 6 for all teams", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     for (const teamResult of result.teamResults) {
       expect(teamResult.expectedWins).toBeGreaterThanOrEqual(0);
@@ -326,8 +326,8 @@ describe("runSimulation", () => {
     }
   });
 
-  it("expected wins sum to approximately 63 across all teams", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("expected wins sum to approximately 63 across all teams", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const totalExpectedWins = result.teamResults.reduce(
       (sum, r) => sum + r.expectedWins,
@@ -338,14 +338,14 @@ describe("runSimulation", () => {
     expect(totalExpectedWins).toBeCloseTo(63, 0);
   });
 
-  it("higher seeds generally have higher championship probabilities", () => {
+  it("higher seeds generally have higher championship probabilities", async () => {
     // Use more simulations for statistical stability
     const config: SimulationConfig = {
       numSimulations: 1000,
       engineConfig: { ...DEFAULT_ENGINE_CONFIG },
       randomSeed: 42,
     };
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     // Compare average championship probability by seed
     const seedProbs: Record<number, number[]> = {};
@@ -369,8 +369,8 @@ describe("runSimulation", () => {
     expect(avgProbs[1]).toBeGreaterThan(avgProbs[8]);
   });
 
-  it("mostLikelyChampion is the team with the highest championship probability", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("mostLikelyChampion is the team with the highest championship probability", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     const maxChampProb = Math.max(
       ...result.teamResults.map((r) => r.championshipProbability)
@@ -383,14 +383,14 @@ describe("runSimulation", () => {
     expect(result.mostLikelyChampion.probability).toBe(maxChampProb);
   });
 
-  it("mostLikelyChampion probability is greater than 0", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("mostLikelyChampion probability is greater than 0", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.mostLikelyChampion.probability).toBeGreaterThan(0);
   });
 
-  it("topChampions are sorted by probability in descending order", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("topChampions are sorted by probability in descending order", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.topChampions.length).toBeGreaterThan(0);
     expect(result.topChampions.length).toBeLessThanOrEqual(10);
@@ -402,8 +402,8 @@ describe("runSimulation", () => {
     }
   });
 
-  it("topChampions[0] matches mostLikelyChampion", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("topChampions[0] matches mostLikelyChampion", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.topChampions[0].teamId).toBe(
       result.mostLikelyChampion.teamId
@@ -413,8 +413,8 @@ describe("runSimulation", () => {
     );
   });
 
-  it("upsetRates are between 0 and 1 for all rounds", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("upsetRates are between 0 and 1 for all rounds", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     for (const round of ALL_ROUNDS) {
       const rate = result.upsetRates[round];
@@ -423,22 +423,22 @@ describe("runSimulation", () => {
     }
   });
 
-  it("executionTimeMs is a positive number", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("executionTimeMs is a positive number", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     expect(result.executionTimeMs).toBeGreaterThan(0);
     expect(Number.isFinite(result.executionTimeMs)).toBe(true);
   });
 
-  it("is reproducible with the same random seed", () => {
+  it("is reproducible with the same random seed", async () => {
     const config: SimulationConfig = {
       numSimulations: 100,
       engineConfig: { ...DEFAULT_ENGINE_CONFIG },
       randomSeed: 42,
     };
 
-    const result1 = runSimulation(teamsMap, config);
-    const result2 = runSimulation(teamsMap, config);
+    const result1 = await runSimulation(teamsMap, config);
+    const result2 = await runSimulation(teamsMap, config);
 
     // Same seed should produce identical results
     expect(result1.mostLikelyChampion.teamId).toBe(
@@ -460,7 +460,7 @@ describe("runSimulation", () => {
     }
   });
 
-  it("produces different results with different seeds", () => {
+  it("produces different results with different seeds", async () => {
     const config1: SimulationConfig = {
       numSimulations: 200,
       engineConfig: { ...DEFAULT_ENGINE_CONFIG },
@@ -472,8 +472,8 @@ describe("runSimulation", () => {
       randomSeed: 999,
     };
 
-    const result1 = runSimulation(teamsMap, config1);
-    const result2 = runSimulation(teamsMap, config2);
+    const result1 = await runSimulation(teamsMap, config1);
+    const result2 = await runSimulation(teamsMap, config2);
 
     // The exact probabilities should differ (even if the most likely champion is the same)
     let anyDifference = false;
@@ -489,7 +489,7 @@ describe("runSimulation", () => {
     expect(anyDifference).toBe(true);
   });
 
-  it("handles matchup overrides in the config", () => {
+  it("handles matchup overrides in the config", async () => {
     // Create a config with an override on the first R64 game
     const firstR64Game = matchups.find((m) => m.round === "R64");
     expect(firstR64Game).toBeDefined();
@@ -506,13 +506,13 @@ describe("runSimulation", () => {
     };
 
     // Should run without error
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
     expect(result.numSimulations).toBe(100);
     expect(result.teamResults).toHaveLength(64);
   });
 
-  it("each team result has correct seed and region from input", () => {
-    const result = runSimulation(teamsMap, defaultConfig);
+  it("each team result has correct seed and region from input", async () => {
+    const result = await runSimulation(teamsMap, defaultConfig);
 
     for (const teamResult of result.teamResults) {
       const inputTeam = teamsArray.find((t) => t.teamId === teamResult.teamId);
@@ -527,8 +527,8 @@ describe("runSimulation", () => {
 // Picks-constrained simulation
 // ---------------------------------------------------------------------------
 
-describe("picks-constrained simulation", () => {
-  it("picks lock in game outcomes across all simulations", () => {
+describe("picks-constrained simulation", async () => {
+  it("picks lock in game outcomes across all simulations", async () => {
     // Pick team-east-1 (1-seed) to win the R64-East-1 game (1 vs 16)
     const picks: Record<string, string> = {
       "R64-East-1": "team-east-1",
@@ -541,7 +541,7 @@ describe("picks-constrained simulation", () => {
       randomSeed: 42,
     };
 
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     // The picked team should advance through R64 with 100% probability
     // (since every simulation locks in that outcome)
@@ -553,7 +553,7 @@ describe("picks-constrained simulation", () => {
     expect(eastOneSeed!.roundProbabilities["R32"]).toBe(1.0);
   });
 
-  it("unpicked games are still probabilistic", () => {
+  it("unpicked games are still probabilistic", async () => {
     // Only pick the East 1-seed game, leave everything else unconstrained
     const picks: Record<string, string> = {
       "R64-East-1": "team-east-1",
@@ -566,7 +566,7 @@ describe("picks-constrained simulation", () => {
       randomSeed: 42,
     };
 
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     // A different game (West region) should still have probabilistic outcomes.
     // The West 1-seed should NOT have exactly 1.0 R32 probability (no pick for that game).
@@ -579,7 +579,7 @@ describe("picks-constrained simulation", () => {
     expect(westOneSeed!.roundProbabilities["R32"]).toBeLessThan(1.0);
   });
 
-  it("invalid pick (wrong team) is ignored and game is sampled normally", () => {
+  it("invalid pick (wrong team) is ignored and game is sampled normally", async () => {
     // Pick a team that doesn't belong in this game
     const picks: Record<string, string> = {
       "R64-East-1": "team-west-5", // This team is NOT in the East 1v16 game
@@ -593,7 +593,7 @@ describe("picks-constrained simulation", () => {
     };
 
     // Should run without error (invalid pick silently ignored)
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
     expect(result.numSimulations).toBe(200);
     expect(result.teamResults).toHaveLength(64);
 
@@ -606,7 +606,7 @@ describe("picks-constrained simulation", () => {
     expect(eastOneSeed!.roundProbabilities["R32"]).toBeGreaterThan(0);
   });
 
-  it("picks propagate downstream — picked team appears in next round", () => {
+  it("picks propagate downstream — picked team appears in next round", async () => {
     // Pick the 16-seed upset over the 1-seed in East R64
     const picks: Record<string, string> = {
       "R64-East-1": "team-east-16", // 16-seed upsets 1-seed
@@ -619,7 +619,7 @@ describe("picks-constrained simulation", () => {
       randomSeed: 42,
     };
 
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     // The 16-seed should have 100% R32 probability (they always win R64)
     const east16Seed = result.teamResults.find(
@@ -636,7 +636,7 @@ describe("picks-constrained simulation", () => {
     expect(east1Seed!.roundProbabilities["R32"]).toBe(0);
   });
 
-  it("full bracket picks yield deterministic champion with 100% probability", () => {
+  it("full bracket picks yield deterministic champion with 100% probability", async () => {
     // Pick East 1-seed to win every game through the championship.
     // R64-East-1 (1 vs 16): pick 1-seed
     // R32-East-1 (winner of R64-East-1 vs R64-East-2): pick 1-seed
@@ -725,14 +725,14 @@ describe("picks-constrained simulation", () => {
       randomSeed: 42,
     };
 
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
 
     // The champion should be the East 1-seed with 100% probability
     expect(result.mostLikelyChampion.teamId).toBe(eastChampion);
     expect(result.mostLikelyChampion.probability).toBe(1.0);
   });
 
-  it("without picks, simulateBracket behaves identically to before (backwards compatible)", () => {
+  it("without picks, simulateBracket behaves identically to before (backwards compatible)", async () => {
     // Verify that omitting picks produces the same results as explicitly passing undefined
     const rng1 = createSeededRandom(42);
     const result1 = simulateBracket(
@@ -767,8 +767,8 @@ describe("picks-constrained simulation", () => {
 // Performance
 // ---------------------------------------------------------------------------
 
-describe("simulation performance", () => {
-  it("1000 simulations complete in under 5 seconds", () => {
+describe("simulation performance", async () => {
+  it("1000 simulations complete in under 5 seconds", async () => {
     const config: SimulationConfig = {
       numSimulations: 1000,
       engineConfig: { ...DEFAULT_ENGINE_CONFIG },
@@ -776,7 +776,7 @@ describe("simulation performance", () => {
     };
 
     const startTime = performance.now();
-    const result = runSimulation(teamsMap, config);
+    const result = await runSimulation(teamsMap, config);
     const elapsed = performance.now() - startTime;
 
     expect(result.numSimulations).toBe(1000);

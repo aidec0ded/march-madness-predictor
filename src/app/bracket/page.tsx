@@ -109,7 +109,7 @@ export default async function BracketPage() {
         <p style={{ fontSize: "0.875rem", maxWidth: "400px" }}>
           {teamsError?.message ||
             entriesError?.message ||
-            {`No team data available for the ${CURRENT_SEASON} season. Please ensure tournament data has been imported.`}}
+            `No team data available for the ${CURRENT_SEASON} season. Please ensure tournament data has been imported.`}
         </p>
       </div>
     );

@@ -201,18 +201,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Fetch team data from Supabase for each season ---
+    // --- Fetch team data from Supabase for all seasons in parallel ---
     const supabase = createPublicClient();
     const teamsBySeason = new Map<number, TeamSeason[]>();
 
-    for (const season of seasons) {
-      // Query team_seasons for this season, joining teams and coaches
-      const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
-        .from("team_seasons")
-        .select("*, teams!inner(*), coaches(*)")
-        .eq("season", season)
-        .returns<TeamSeasonJoinedRow[]>();
+    const seasonResults = await Promise.all(
+      seasons.map(async (season) => {
+        const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
+          .from("team_seasons")
+          .select("*, teams!inner(*), coaches(*)")
+          .eq("season", season)
+          .returns<TeamSeasonJoinedRow[]>();
+        return { season, teamSeasonRows, teamSeasonsError };
+      })
+    );
 
+    for (const { season, teamSeasonRows, teamSeasonsError } of seasonResults) {
       if (teamSeasonsError) {
         logger.error(
           `Error fetching team seasons for ${season}`,

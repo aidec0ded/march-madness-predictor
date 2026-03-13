@@ -16,7 +16,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
 import { useGameProbabilities } from "@/hooks/useGameProbabilities";
-import { buildBracketMatchups } from "@/lib/engine/bracket";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
@@ -92,15 +91,9 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 
 export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
   const [activeTab, setActiveTab] = useState<TabId>("East");
-  const { state, dispatch } = useBracket();
+  const { state, dispatch, allMatchups } = useBracket();
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
-
-  // Build matchup tree dynamically based on play-in config
-  const allMatchups = useMemo(
-    () => buildBracketMatchups(state.playInConfig),
-    [state.playInConfig]
-  );
 
   // Split matchups by region (includes FF extraction)
   const { regionMatchups, finalFourMatchups, firstFourMatchups } = useMemo(

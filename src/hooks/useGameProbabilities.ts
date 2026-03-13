@@ -10,11 +10,13 @@
  *
  * Unlike simulation path probabilities (which require running Monte Carlo),
  * these are available immediately whenever both teams in a matchup are known.
+ *
+ * Reads the pre-computed matchup tree from BracketContext (via `allMatchups`)
+ * instead of rebuilding it, eliminating redundant `buildBracketMatchups()` calls.
  */
 
 import { useMemo } from "react";
 import { useBracket } from "@/hooks/useBracket";
-import { buildBracketMatchups } from "@/lib/engine/bracket";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
 import { resolveMatchup } from "@/lib/engine/matchup";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
@@ -49,13 +51,7 @@ export type GameProbabilities = Record<string, GameProbability>;
  * @returns Record of gameId → { probA, probB } for all resolved matchups
  */
 export function useGameProbabilities(): GameProbabilities {
-  const { state } = useBracket();
-
-  // Dynamic bracket structure: includes FF games when play-in config exists
-  const allMatchups = useMemo(
-    () => buildBracketMatchups(state.playInConfig),
-    [state.playInConfig]
-  );
+  const { state, allMatchups } = useBracket();
 
   return useMemo(() => {
     const probs: GameProbabilities = {};

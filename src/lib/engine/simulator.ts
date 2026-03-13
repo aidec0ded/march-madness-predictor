@@ -17,8 +17,10 @@
  *
  * Targets < 5 seconds for 50K simulations on a modern server.
  *
- * All heavy computation is pure and synchronous. The caller (API route)
- * is responsible for async scheduling if needed.
+ * The main `runSimulation()` function is async — it yields to the event
+ * loop every `YIELD_INTERVAL` iterations (via `setTimeout(0)`) to prevent
+ * blocking other requests on the server. Each yield adds ~1ms of overhead,
+ * so with a 500-iteration interval, a 50K simulation yields ~100 times.
  */
 
 import type { TeamSeason } from "@/types/team";
@@ -38,6 +40,24 @@ import { sampleGameOutcome, createSeededRandom } from "@/lib/engine/sampler";
 import { buildBracketMatchups, buildBracketSlots } from "@/lib/engine/bracket";
 import { createStreamingAggregator } from "@/lib/engine/aggregator";
 import { createMatchupCache } from "@/lib/engine/simulation-cache";
+
+// ---------------------------------------------------------------------------
+// Event loop yielding
+// ---------------------------------------------------------------------------
+
+/**
+ * Number of simulation iterations between event loop yields.
+ * Lower values are more responsive but add overhead (~1ms per yield).
+ */
+const YIELD_INTERVAL = 500;
+
+/**
+ * Yields control to the event loop so other requests can be processed.
+ * Uses setTimeout(0) which is available in all JS environments.
+ */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 // ---------------------------------------------------------------------------
 // Progress callback type
@@ -206,18 +226,18 @@ export function simulateBracket(
  *   randomSeed: 42, // optional, for reproducibility
  * };
  *
- * const result = runSimulation(teamsMap, config);
+ * const result = await runSimulation(teamsMap, config);
  * console.log(result.mostLikelyChampion);
  * console.log(result.executionTimeMs);
  * ```
  */
-export function runSimulation(
+export async function runSimulation(
   teams: Map<string, TeamSeason>,
   config: SimulationConfig,
   siteMap?: SiteMap,
   onProgress?: SimulationProgressCallback,
   progressInterval?: number
-): SimulationResult {
+): Promise<SimulationResult> {
   const startTime = performance.now();
   const interval = progressInterval ?? 1000;
 
@@ -265,6 +285,13 @@ export function runSimulation(
         total: config.numSimulations,
         elapsedMs: performance.now() - startTime,
       });
+    }
+
+    // Yield to the event loop periodically to prevent blocking other requests.
+    // Only yield at YIELD_INTERVAL boundaries that don't coincide with
+    // progress reporting (to avoid double-yielding).
+    if ((i + 1) % YIELD_INTERVAL === 0 && (i + 1) % interval !== 0) {
+      await yieldToEventLoop();
     }
   }
 

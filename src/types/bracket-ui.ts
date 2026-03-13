@@ -58,9 +58,6 @@ export interface BracketState {
   /** Whether a simulation is currently running */
   isSimulating: boolean;
 
-  /** Real-time progress during a streaming simulation (null when idle or non-streaming) */
-  simulationProgress: SimulationProgress | null;
-
   /** Hash of simulation inputs (picks + levers + overrides) at time of last run. Null if never simulated. */
   simulationInputHash: string | null;
 
@@ -102,7 +99,6 @@ export type BracketAction =
   | { type: "REMOVE_MATCHUP_OVERRIDE"; gameId: string }
   | { type: "SET_SIMULATION_RESULT"; result: SimulationResult }
   | { type: "SET_SIMULATING"; isSimulating: boolean }
-  | { type: "SET_SIMULATION_PROGRESS"; progress: SimulationProgress }
   | { type: "LOAD_BRACKET"; bracket: SavedBracketData }
   | { type: "CLEAR_BRACKET" }
   | { type: "CLEAR_PICKS" }

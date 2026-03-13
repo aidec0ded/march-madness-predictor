@@ -49,6 +49,7 @@ vi.mock("@/hooks/useBracket", () => ({
       globalLevers: {},
     },
     dispatch: vi.fn(),
+    allMatchups: [],
   }),
 }));
 

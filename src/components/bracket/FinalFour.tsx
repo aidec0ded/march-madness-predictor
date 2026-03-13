@@ -195,7 +195,7 @@ function ChampionCard({ team, probability }: ChampionCardProps) {
 // Component
 // ---------------------------------------------------------------------------
 
-export function FinalFour({
+export const FinalFour = React.memo(function FinalFour({
   matchups,
   teams,
   picks,
@@ -431,4 +431,6 @@ export function FinalFour({
       `}</style>
     </div>
   );
-}
+});
+
+FinalFour.displayName = "FinalFour";

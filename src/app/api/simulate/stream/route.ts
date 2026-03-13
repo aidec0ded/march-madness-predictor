@@ -247,9 +247,9 @@ export async function POST(request: Request) {
 
     // --- Stream the simulation ---
     const stream = new ReadableStream({
-      start(controller) {
+      async start(controller) {
         try {
-          const result = runSimulation(
+          const result = await runSimulation(
             teamsMap,
             simulationConfig,
             siteMap,

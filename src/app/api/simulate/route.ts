@@ -385,7 +385,7 @@ export async function POST(request: Request) {
       randomSeed: resolvedSeed,
     };
 
-    const result = runSimulation(teamsMap, simulationConfig, siteMap);
+    const result = await runSimulation(teamsMap, simulationConfig, siteMap);
 
     return NextResponse.json(
       { success: true, result },

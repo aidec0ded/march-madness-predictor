@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { useBracket } from "./useBracket";
+import { useBracket, useSimulationProgress } from "./useBracket";
 import type { SimulationResult } from "@/types/simulation";
 import type { SimulationProgress } from "@/types/bracket-ui";
 import { CURRENT_SEASON } from "@/lib/constants";
@@ -48,6 +48,9 @@ function parseSSEFrame(frame: string): { event: string; data: string } | null {
  * overrides, consumes the Server-Sent Event stream for real-time progress
  * reporting, and dispatches results into BracketContext.
  *
+ * Progress updates are routed to the separate SimulationProgressContext
+ * so that frequent progress ticks don't re-render the entire bracket tree.
+ *
  * Falls back to the non-streaming /api/simulate endpoint if streaming fails
  * (e.g., browser doesn't support ReadableStream).
  *
@@ -55,6 +58,7 @@ function parseSSEFrame(frame: string): { event: string; data: string } | null {
  */
 export function useBracketSimulation() {
   const { state, dispatch } = useBracket();
+  const { progress: simulationProgress, setProgress } = useSimulationProgress();
   const abortRef = useRef<AbortController | null>(null);
 
   const simulate = useCallback(
@@ -65,6 +69,7 @@ export function useBracketSimulation() {
       abortRef.current = controller;
 
       dispatch({ type: "SET_SIMULATING", isSimulating: true });
+      setProgress(null);
 
       try {
         const body = JSON.stringify({
@@ -129,7 +134,7 @@ export function useBracketSimulation() {
             switch (parsed.event) {
               case "progress": {
                 const progress = JSON.parse(parsed.data) as SimulationProgress;
-                dispatch({ type: "SET_SIMULATION_PROGRESS", progress });
+                setProgress(progress);
                 break;
               }
               case "result": {
@@ -172,17 +177,18 @@ export function useBracketSimulation() {
         throw error;
       } finally {
         dispatch({ type: "SET_SIMULATING", isSimulating: false });
+        setProgress(null);
         abortRef.current = null;
       }
     },
-    [state.globalLevers, state.matchupOverrides, state.picks, state.playInConfig, dispatch]
+    [state.globalLevers, state.matchupOverrides, state.picks, state.playInConfig, dispatch, setProgress]
   );
 
   return {
     simulate,
     isSimulating: state.isSimulating,
     simulationResult: state.simulationResult,
-    simulationProgress: state.simulationProgress,
+    simulationProgress,
     isSimulationStale: state.isSimulationStale,
   };
 }

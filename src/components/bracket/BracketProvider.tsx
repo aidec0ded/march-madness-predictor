@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useReducer, useMemo, useCallback, type ReactNode } from "react";
+import { createContext, useReducer, useState, useMemo, useCallback, type ReactNode } from "react";
 import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
@@ -9,21 +9,43 @@ import type {
   BracketState,
   BracketAction,
   SavedBracketData,
+  SimulationProgress,
 } from "@/types/bracket-ui";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import type { BracketMatchup, PlayInConfig } from "@/types/simulation";
 import { isGameId } from "@/lib/bracket-utils";
 
 // ---------------------------------------------------------------------------
-// Context
+// Bracket Context
 // ---------------------------------------------------------------------------
 
 export interface BracketContextValue {
   state: BracketState;
   dispatch: React.Dispatch<BracketAction>;
+  /** Pre-computed bracket matchup tree. Shared via context to avoid redundant
+   *  calls to `buildBracketMatchups()` in child components. */
+  allMatchups: BracketMatchup[];
 }
 
 export const BracketContext = createContext<BracketContextValue | null>(null);
+
+// ---------------------------------------------------------------------------
+// Simulation Progress Context (separated to prevent re-renders)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulation progress is updated frequently during streaming simulations
+ * (~50–100 times per run). Keeping it in a separate context prevents every
+ * `useBracket()` consumer from re-rendering on each progress tick. Only
+ * components that call `useSimulationProgress()` re-render on progress.
+ */
+export interface SimulationProgressContextValue {
+  progress: SimulationProgress | null;
+  setProgress: (progress: SimulationProgress | null) => void;
+}
+
+export const SimulationProgressContext =
+  createContext<SimulationProgressContextValue | null>(null);
 
 // ---------------------------------------------------------------------------
 // Cascade invalidation helpers
@@ -239,7 +261,6 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
           ...state,
           simulationResult: action.result,
           isSimulating: false,
-          simulationProgress: null,
           simulationInputHash: inputHash,
           isSimulationStale: false,
         };
@@ -249,15 +270,6 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
         return {
           ...state,
           isSimulating: action.isSimulating,
-          // Clear progress when simulation starts or stops
-          simulationProgress: action.isSimulating ? null : state.simulationProgress,
-        };
-      }
-
-      case "SET_SIMULATION_PROGRESS": {
-        return {
-          ...state,
-          simulationProgress: action.progress,
         };
       }
 
@@ -290,7 +302,6 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
           matchupOverrides: {},
           simulationResult: null,
           isSimulating: false,
-          simulationProgress: null,
           simulationInputHash: null,
           isSimulationStale: false,
           bracketId: null,
@@ -307,7 +318,6 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
           picks: {},
           simulationResult: null,
           isSimulating: false,
-          simulationProgress: null,
           simulationInputHash: null,
           isSimulationStale: false,
           isDirty: state.bracketId ? true : false,
@@ -422,7 +432,6 @@ export function BracketProvider({
       matchupOverrides: savedBracket?.matchupOverrides ?? {},
       simulationResult: savedBracket?.simulationSnapshot ?? null,
       isSimulating: false,
-      simulationProgress: null,
       simulationInputHash: savedBracket?.simulationSnapshot
         ? computeInputHash(
             savedBracket.picks,
@@ -443,12 +452,24 @@ export function BracketProvider({
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  // Simulation progress in a separate context to avoid re-rendering the
+  // entire bracket tree on every progress tick during streaming simulations
+  const [simProgress, setSimProgress] = useState<SimulationProgress | null>(null);
+  const progressValue = useMemo<SimulationProgressContextValue>(
+    () => ({ progress: simProgress, setProgress: setSimProgress }),
+    [simProgress]
+  );
+
   const value = useMemo<BracketContextValue>(
-    () => ({ state, dispatch }),
-    [state, dispatch]
+    () => ({ state, dispatch, allMatchups }),
+    [state, dispatch, allMatchups]
   );
 
   return (
-    <BracketContext.Provider value={value}>{children}</BracketContext.Provider>
+    <BracketContext.Provider value={value}>
+      <SimulationProgressContext.Provider value={progressValue}>
+        {children}
+      </SimulationProgressContext.Provider>
+    </BracketContext.Provider>
   );
 }
