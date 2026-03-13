@@ -11,14 +11,18 @@
  * allowing the full bracket to fold inward toward the center Final Four.
  *
  * Connector lines between rounds are drawn using CSS borders on spacer divs.
+ *
+ * Most data (teams, picks, simulation results, overrides, ownership, game
+ * probabilities, play-in config) is consumed directly from BracketContext and
+ * related hooks, eliminating prop drilling from parent components.
  */
 
-import React from "react";
-import type { Region, TeamSeason, TournamentRound } from "@/types/team";
-import type { BracketMatchup, SimulationResult, PlayInConfig } from "@/types/simulation";
-import type { MatchupOverrides } from "@/types/engine";
-import type { OwnershipModel } from "@/types/game-theory";
-import type { GameProbabilities } from "@/hooks/useGameProbabilities";
+import React, { useCallback } from "react";
+import type { Region, TournamentRound } from "@/types/team";
+import type { BracketMatchup, SimulationResult } from "@/types/simulation";
+import { useBracket } from "@/hooks/useBracket";
+import { useContestStrategy } from "@/hooks/useContestStrategy";
+import { useGameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition } from "@/lib/bracket-layout";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
@@ -34,24 +38,8 @@ interface RegionBracketProps {
   direction: "ltr" | "rtl";
   /** All 15 matchups for this region (R64 through E8) */
   matchups: BracketMatchup[];
-  /** All tournament teams keyed by teamId */
-  teams: Map<string, TeamSeason>;
-  /** User picks: gameId -> winning teamId */
-  picks: Record<string, string>;
-  /** Simulation results (null if not yet run) */
-  simulationResult: SimulationResult | null;
-  /** Per-matchup overrides keyed by gameId */
-  matchupOverrides: Record<string, MatchupOverrides>;
-  /** Called when user picks a team to advance */
-  onAdvance: (gameId: string, teamId: string) => void;
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
-  /** Ownership model for displaying ownership badges (optional) */
-  ownershipModel?: OwnershipModel | null;
-  /** Per-game head-to-head probabilities from resolveMatchup (optional) */
-  gameProbabilities?: GameProbabilities;
-  /** Play-in configuration for resolving FF-sourced R64 matchups (optional) */
-  playInConfig?: PlayInConfig | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,16 +149,22 @@ export function RegionBracket({
   region,
   direction,
   matchups,
-  teams,
-  picks,
-  simulationResult,
-  matchupOverrides,
-  onAdvance,
   onMatchupClick,
-  ownershipModel,
-  gameProbabilities,
-  playInConfig,
 }: RegionBracketProps) {
+  const { state, dispatch } = useBracket();
+  const { ownershipModel } = useContestStrategy();
+  const gameProbabilities = useGameProbabilities();
+
+  const { teams, picks, simulationResult, matchupOverrides, playInConfig } =
+    state;
+
+  const handleAdvance = useCallback(
+    (gameId: string, teamId: string) => {
+      dispatch({ type: "ADVANCE_TEAM", gameId, teamId });
+    },
+    [dispatch]
+  );
+
   const connectors = generateConnectors(matchups, picks, direction);
 
   return (
@@ -303,7 +297,7 @@ export function RegionBracket({
                 pathProbA={pathProbA}
                 pathProbB={pathProbB}
                 hasOverrides={hasOverrides}
-                onAdvance={(teamId) => onAdvance(matchup.gameId, teamId)}
+                onAdvance={(teamId) => handleAdvance(matchup.gameId, teamId)}
                 onMatchupClick={onMatchupClick}
                 ownershipA={ownershipA}
                 ownershipB={ownershipB}

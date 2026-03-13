@@ -8,8 +8,8 @@
  * switch between First 4, East, West, South, Midwest, and Final 4 tabs.
  *
  * Reads the same state as BracketGrid (via useBracket, useContestStrategy,
- * useGameProbabilities) and passes identical props to RegionBracket and
- * FinalFour sub-components.
+ * useGameProbabilities) and passes props to FirstFour and FinalFour.
+ * RegionBracket reads context directly via hooks.
  */
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -208,15 +208,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
             region={activeTab}
             direction={REGION_DIRECTION[activeTab]}
             matchups={regionMatchups[activeTab]}
-            teams={state.teams}
-            picks={state.picks}
-            simulationResult={state.simulationResult}
-            matchupOverrides={state.matchupOverrides}
-            onAdvance={handleAdvance}
             onMatchupClick={handleMatchupClick}
-            ownershipModel={ownershipModel}
-            gameProbabilities={gameProbabilities}
-            playInConfig={state.playInConfig}
           />
         )}
       </div>

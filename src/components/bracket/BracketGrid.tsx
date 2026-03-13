@@ -21,7 +21,9 @@
  * 2. Builds the matchup tree using buildBracketMatchups() (memoized, dynamic)
  * 3. Splits matchups by region + F4/NCG + FF
  * 4. Computes ownership model via useContestStrategy()
- * 5. Passes props down to FirstFour, RegionBracket, and FinalFour
+ * 5. Passes props down to FirstFour and FinalFour; RegionBracket reads
+ *    context directly via useBracket(), useContestStrategy(), and
+ *    useGameProbabilities() hooks
  * 6. Wraps everything in a horizontally scrollable container
  */
 
@@ -226,15 +228,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               region={region}
               direction={REGION_LAYOUT[region].direction}
               matchups={regionMatchups[region]}
-              teams={state.teams}
-              picks={state.picks}
-              simulationResult={state.simulationResult}
-              matchupOverrides={state.matchupOverrides}
-              onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
-              ownershipModel={ownershipModel}
-              gameProbabilities={gameProbabilities}
-              playInConfig={state.playInConfig}
             />
           ))}
         </div>
@@ -266,15 +260,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
               region={region}
               direction={REGION_LAYOUT[region].direction}
               matchups={regionMatchups[region]}
-              teams={state.teams}
-              picks={state.picks}
-              simulationResult={state.simulationResult}
-              matchupOverrides={state.matchupOverrides}
-              onAdvance={handleAdvance}
               onMatchupClick={handleMatchupClick}
-              ownershipModel={ownershipModel}
-              gameProbabilities={gameProbabilities}
-              playInConfig={state.playInConfig}
             />
           ))}
         </div>
