@@ -1,26 +1,52 @@
 /**
  * Production bracket seeder for the NCAA tournament.
  *
- * Takes a JSON file with the official bracket (64 teams, seeds, regions) and
- * populates the `tournament_entries` table. Designed to run on Selection Sunday
- * after the bracket is announced.
+ * Takes a JSON file with the official bracket (64 or 68 teams, seeds, regions)
+ * and populates the `tournament_entries` table. Designed to run on Selection
+ * Sunday after the bracket is announced.
+ *
+ * Supports two formats:
+ * - **64-team bracket**: Each region has exactly seeds 1-16, no duplicates.
+ * - **68-team bracket**: 4 play-in pairs share the same region+seed. The app's
+ *   `detectPlayInPairs()` will automatically detect and configure First Four games.
  *
  * Usage:
  *   npx tsx scripts/seed-bracket.ts <bracket-file.json> [season]
  *
- * The JSON file should have this format:
+ * 64-team JSON format:
  * ```json
  * {
  *   "season": 2026,
  *   "teams": [
  *     { "name": "UConn", "seed": 1, "region": "East" },
  *     { "name": "Houston", "seed": 1, "region": "West" },
- *     { "name": "Purdue", "seed": 1, "region": "South" },
- *     { "name": "North Carolina", "seed": 1, "region": "Midwest" },
- *     ...
+ *     ...64 total entries, unique (region, seed) pairs
  *   ]
  * }
  * ```
+ *
+ * 68-team JSON format (with First Four):
+ * ```json
+ * {
+ *   "season": 2026,
+ *   "teams": [
+ *     { "name": "UConn", "seed": 1, "region": "East" },
+ *     ...60 unique (region, seed) entries...
+ *     { "name": "Team A", "seed": 16, "region": "East" },
+ *     { "name": "Team B", "seed": 16, "region": "East" },
+ *     { "name": "Team C", "seed": 16, "region": "South" },
+ *     { "name": "Team D", "seed": 16, "region": "South" },
+ *     { "name": "Team E", "seed": 11, "region": "West" },
+ *     { "name": "Team F", "seed": 11, "region": "West" },
+ *     { "name": "Team G", "seed": 11, "region": "Midwest" },
+ *     { "name": "Team H", "seed": 11, "region": "Midwest" }
+ *   ]
+ * }
+ * ```
+ *
+ * In the 68-team format, exactly 4 (region, seed) slots have 2 teams each.
+ * These become First Four play-in games. Play-in seeds must be 11 or 16
+ * (matching the real NCAA format).
  *
  * Team names are matched against `teams.name`, `teams.short_name`, and
  * `team_name_mappings.torvik_name` to find the correct team_id. The script
@@ -54,6 +80,7 @@ interface BracketTeamInput {
 }
 
 const VALID_REGIONS = ["East", "West", "South", "Midwest"];
+const VALID_PLAY_IN_SEEDS = [11, 16];
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -80,9 +107,10 @@ function validateBracketInput(input: BracketInput): string[] {
     return errors;
   }
 
-  if (input.teams.length !== 64) {
+  const teamCount = input.teams.length;
+  if (teamCount !== 64 && teamCount !== 68) {
     errors.push(
-      `Expected exactly 64 teams, got ${input.teams.length}.`
+      `Expected exactly 64 or 68 teams, got ${teamCount}.`
     );
   }
 
@@ -109,29 +137,100 @@ function validateBracketInput(input: BracketInput): string[] {
     }
   }
 
-  // Validate bracket structure: 4 regions × 16 seeds
-  const regionSeedCounts = new Map<string, Set<number>>();
+  // Validate bracket structure: count teams per (region, seed)
+  const regionSeedCounts = new Map<string, string[]>(); // key -> team names
   for (const team of input.teams) {
     if (!team.region || !team.seed) continue;
-    const key = team.region;
-    if (!regionSeedCounts.has(key)) {
-      regionSeedCounts.set(key, new Set());
+    const key = `${team.region}-${team.seed}`;
+    const existing = regionSeedCounts.get(key);
+    if (existing) {
+      existing.push(team.name);
+    } else {
+      regionSeedCounts.set(key, [team.name]);
     }
-    const seeds = regionSeedCounts.get(key)!;
-    if (seeds.has(team.seed)) {
-      errors.push(
-        `Duplicate seed ${team.seed} in region ${team.region}: "${team.name}".`
-      );
-    }
-    seeds.add(team.seed);
   }
 
-  for (const region of VALID_REGIONS) {
-    const seeds = regionSeedCounts.get(region);
-    if (!seeds || seeds.size !== 16) {
+  // Find duplicate slots (play-in pairs)
+  const playInSlots: { region: string; seed: number; teams: string[] }[] = [];
+  for (const [key, teams] of regionSeedCounts) {
+    if (teams.length === 2) {
+      const [region, seedStr] = key.split("-");
+      playInSlots.push({ region, seed: parseInt(seedStr, 10), teams });
+    } else if (teams.length > 2) {
       errors.push(
-        `Region ${region}: expected 16 unique seeds (1-16), got ${seeds?.size ?? 0}.`
+        `Slot ${key} has ${teams.length} teams — max 2 allowed (play-in pair): ${teams.join(", ")}`
       );
+    }
+  }
+
+  if (teamCount === 68) {
+    // 68-team bracket: must have exactly 4 play-in pairs
+    if (playInSlots.length !== 4) {
+      errors.push(
+        `68-team bracket requires exactly 4 play-in pairs (duplicate region+seed), found ${playInSlots.length}.`
+      );
+    }
+
+    // Play-in seeds must be 11 or 16
+    for (const slot of playInSlots) {
+      if (!VALID_PLAY_IN_SEEDS.includes(slot.seed)) {
+        errors.push(
+          `Play-in pair at ${slot.region}-${slot.seed}: play-in seeds must be 11 or 16, got ${slot.seed}.`
+        );
+      }
+    }
+
+    // Should have exactly 2 play-ins at seed 16 and 2 at seed 11
+    const countBySeed = new Map<number, number>();
+    for (const slot of playInSlots) {
+      countBySeed.set(slot.seed, (countBySeed.get(slot.seed) || 0) + 1);
+    }
+    for (const piSeed of VALID_PLAY_IN_SEEDS) {
+      const count = countBySeed.get(piSeed) || 0;
+      if (count !== 2) {
+        errors.push(
+          `Expected exactly 2 play-in pairs at seed ${piSeed}, found ${count}.`
+        );
+      }
+    }
+
+    // Validate that non-play-in slots all have exactly 1 team
+    for (const [key, teams] of regionSeedCounts) {
+      if (teams.length === 1) continue; // Normal slot
+      if (teams.length === 2) continue; // Play-in pair (validated above)
+    }
+
+    // Each region should have 16 unique seeds + play-in extras
+    for (const region of VALID_REGIONS) {
+      const regionTeams = input.teams.filter((t) => t.region === region);
+      const regionPlayIns = playInSlots.filter((s) => s.region === region).length;
+      const expectedTeams = 16 + regionPlayIns;
+      if (regionTeams.length !== expectedTeams) {
+        errors.push(
+          `Region ${region}: expected ${expectedTeams} teams (16 + ${regionPlayIns} play-ins), got ${regionTeams.length}.`
+        );
+      }
+    }
+  } else if (teamCount === 64) {
+    // 64-team bracket: no duplicates allowed
+    if (playInSlots.length > 0) {
+      errors.push(
+        `64-team bracket should have no duplicate (region, seed) slots, found ${playInSlots.length}: ` +
+          playInSlots.map((s) => `${s.region}-${s.seed}`).join(", ")
+      );
+    }
+
+    // Each region must have seeds 1-16
+    for (const region of VALID_REGIONS) {
+      const seeds = new Set<number>();
+      for (const team of input.teams) {
+        if (team.region === region) seeds.add(team.seed);
+      }
+      if (seeds.size !== 16) {
+        errors.push(
+          `Region ${region}: expected 16 unique seeds (1-16), got ${seeds.size}.`
+        );
+      }
     }
   }
 
@@ -238,7 +337,7 @@ async function main() {
   const bracketFile = process.argv[2];
   if (!bracketFile) {
     console.error("Usage: npx tsx scripts/seed-bracket.ts <bracket-file.json> [season]");
-    console.error("\nExample bracket-file.json:");
+    console.error("\n64-team bracket JSON:");
     console.error(
       JSON.stringify(
         {
@@ -246,8 +345,26 @@ async function main() {
           teams: [
             { name: "UConn", seed: 1, region: "East" },
             { name: "Houston", seed: 1, region: "West" },
-            { name: "Purdue", seed: 1, region: "South" },
-            { name: "North Carolina", seed: 1, region: "Midwest" },
+            { name: "...", seed: 0, region: "East" },
+          ],
+        },
+        null,
+        2
+      )
+    );
+    console.error("\n68-team bracket JSON (with First Four):");
+    console.error(
+      JSON.stringify(
+        {
+          season: 2026,
+          teams: [
+            { name: "UConn", seed: 1, region: "East" },
+            { name: "...", seed: 0, region: "East" },
+            {
+              _comment: "Play-in pair: 2 teams share same region+seed",
+            },
+            { name: "Team A", seed: 16, region: "East" },
+            { name: "Team B", seed: 16, region: "East" },
           ],
         },
         null,
@@ -280,7 +397,10 @@ async function main() {
     process.argv[3] || String(input.season || 2026),
     10
   );
-  console.log(`\n🏀 Bracket Seeder — Season ${season}\n`);
+  const teamCount = input.teams?.length ?? 0;
+  console.log(
+    `\n🏀 Bracket Seeder — Season ${season} (${teamCount} teams)\n`
+  );
 
   // Validate bracket structure
   const errors = validateBracketInput(input);
@@ -291,7 +411,27 @@ async function main() {
     }
     process.exit(1);
   }
-  console.log("✅ Bracket structure validated (64 teams, 4 regions × 16 seeds).\n");
+
+  // Detect and report play-in info
+  const regionSeedCounts = new Map<string, number>();
+  for (const team of input.teams) {
+    const key = `${team.region}-${team.seed}`;
+    regionSeedCounts.set(key, (regionSeedCounts.get(key) || 0) + 1);
+  }
+  const playInSlots = [...regionSeedCounts.entries()]
+    .filter(([, count]) => count === 2)
+    .map(([key]) => key);
+
+  if (teamCount === 68) {
+    console.log(
+      `✅ 68-team bracket validated (4 regions × 16 seeds + 4 First Four play-ins).`
+    );
+    console.log(`   Play-in slots: ${playInSlots.join(", ")}\n`);
+  } else {
+    console.log(
+      `✅ 64-team bracket validated (4 regions × 16 seeds).\n`
+    );
+  }
 
   // Connect to Supabase
   const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
@@ -305,7 +445,7 @@ async function main() {
   console.log("🔍 Matching team names to database...");
   const { matched, unmatched } = await matchTeams(supabase, input.teams, season);
 
-  console.log(`   ✅ Matched: ${matched.size} / 64`);
+  console.log(`   ✅ Matched: ${matched.size} / ${teamCount}`);
 
   if (unmatched.length > 0) {
     console.error(`   ❌ Unmatched: ${unmatched.length}`);
@@ -347,7 +487,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("💾 Inserting 64 tournament entries...\n");
+  console.log(`💾 Inserting ${teamCount} tournament entries...\n`);
   const { error: insertError } = await supabase
     .from("tournament_entries")
     .insert(entries);
@@ -359,19 +499,54 @@ async function main() {
 
   // Display bracket
   console.log("🏆 Official Bracket — Season " + season + ":\n");
+
+  // Show First Four play-in games if applicable
+  if (playInSlots.length > 0) {
+    console.log("  ── First Four Play-In Games ──");
+    for (const slotKey of playInSlots.sort()) {
+      const [region, seedStr] = slotKey.split("-");
+      const seed = parseInt(seedStr, 10);
+      const slotTeams = input.teams.filter(
+        (t) => t.region === region && t.seed === seed
+      );
+      console.log(
+        `    ${region} ${seed}-seed: ${slotTeams[0].name}  vs  ${slotTeams[1].name}`
+      );
+    }
+    console.log();
+  }
+
   for (const region of VALID_REGIONS) {
     console.log(`  ── ${region} Region ──`);
     const regionTeams = input.teams
       .filter((t) => t.region === region)
       .sort((a, b) => a.seed - b.seed);
 
+    // Group by seed for play-in display
+    const seedGroups = new Map<number, BracketTeamInput[]>();
     for (const team of regionTeams) {
-      console.log(`    ${String(team.seed).padStart(2)}. ${team.name}`);
+      const group = seedGroups.get(team.seed);
+      if (group) {
+        group.push(team);
+      } else {
+        seedGroups.set(team.seed, [team]);
+      }
+    }
+
+    for (const [seed, groupTeams] of [...seedGroups].sort(([a], [b]) => a - b)) {
+      for (let i = 0; i < groupTeams.length; i++) {
+        const team = groupTeams[i];
+        const playInTag =
+          groupTeams.length > 1 ? ` [First Four ${i === 0 ? "A" : "B"}]` : "";
+        console.log(`    ${String(seed).padStart(2)}. ${team.name}${playInTag}`);
+      }
     }
     console.log();
   }
 
-  console.log("✅ Bracket seeded successfully! Visit /bracket to view.\n");
+  console.log(
+    `✅ Bracket seeded successfully! (${teamCount} teams${playInSlots.length > 0 ? ", including First Four" : ""}) Visit /bracket to view.\n`
+  );
 }
 
 main().catch((err) => {
