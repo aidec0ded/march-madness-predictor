@@ -48,13 +48,50 @@ export function createRateLimiter(config: RateLimitConfig) {
     }
   }
 
+  // Auto-cleanup every 60 seconds to prevent unbounded memory growth.
+  // unref() allows Node.js to exit even with the interval running.
+  const cleanupInterval = setInterval(cleanup, 60_000);
+  if (
+    typeof cleanupInterval === "object" &&
+    "unref" in cleanupInterval
+  ) {
+    cleanupInterval.unref();
+  }
+
   return { check, cleanup, _store: store };
 }
 
+/**
+ * Extract the real client IP from request headers.
+ *
+ * Checks infrastructure-set headers first (not user-spoofable), then
+ * falls back to x-forwarded-for using the rightmost IP (the one added
+ * by the first trusted reverse proxy, harder to spoof than leftmost).
+ *
+ * Header priority:
+ * 1. x-real-ip        — set by nginx/Railway/Render infrastructure
+ * 2. cf-connecting-ip  — set by Cloudflare
+ * 3. x-forwarded-for   — rightmost entry (closest to server)
+ * 4. "unknown"
+ */
 export function getClientIp(request: Request): string {
+  // Prefer infrastructure-set headers (not user-spoofable)
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  // Fallback: x-forwarded-for — use rightmost entry.
+  // The rightmost IP is appended by our trusted reverse proxy, not the client.
+  // The leftmost IP is user-supplied and trivially spoofable.
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const ips = forwarded.split(",").map((ip) => ip.trim()).filter(Boolean);
+    if (ips.length > 0) {
+      return ips[ips.length - 1];
+    }
   }
+
   return "unknown";
 }

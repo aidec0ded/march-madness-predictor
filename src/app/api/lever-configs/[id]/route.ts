@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
+import { safeApiError } from "@/lib/api-error";
 import type { UserLeverConfigUpdate } from "@/lib/supabase/types";
 
 export async function GET(
@@ -29,8 +30,8 @@ export async function GET(
     .single();
 
   if (error) {
-    const status = error.code === "PGRST116" ? 404 : 500;
-    return NextResponse.json({ error: error.message }, { status });
+    const safe = safeApiError("Failed to load lever config.", error, "lever-configs/[id]/GET");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ leverConfig: data });
@@ -76,8 +77,8 @@ export async function PUT(
     .single();
 
   if (error) {
-    const status = error.code === "PGRST116" ? 404 : 500;
-    return NextResponse.json({ error: error.message }, { status });
+    const safe = safeApiError("Failed to update lever config.", error, "lever-configs/[id]/PUT");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ leverConfig: data });
@@ -101,7 +102,8 @@ export async function DELETE(
     .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const safe = safeApiError("Failed to delete lever config.", error, "lever-configs/[id]/DELETE");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ success: true });

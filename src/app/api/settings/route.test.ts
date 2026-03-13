@@ -136,7 +136,7 @@ describe("GET /api/settings", () => {
     const body = await response.json();
 
     expect(response.status).toBe(500);
-    expect(body.error).toBe("relation does not exist");
+    expect(body.error).toBe("Failed to load settings.");
   });
 });
 

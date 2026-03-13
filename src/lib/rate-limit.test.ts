@@ -61,9 +61,37 @@ describe("createRateLimiter", () => {
 });
 
 describe("getClientIp", () => {
-  it("extracts IP from x-forwarded-for header", () => {
+  it("prefers x-real-ip header (infrastructure-set)", () => {
+    const request = new Request("http://localhost", {
+      headers: {
+        "x-real-ip": "203.0.113.50",
+        "x-forwarded-for": "192.168.1.1, 10.0.0.1",
+      },
+    });
+    expect(getClientIp(request)).toBe("203.0.113.50");
+  });
+
+  it("prefers cf-connecting-ip over x-forwarded-for", () => {
+    const request = new Request("http://localhost", {
+      headers: {
+        "cf-connecting-ip": "198.51.100.10",
+        "x-forwarded-for": "192.168.1.1, 10.0.0.1",
+      },
+    });
+    expect(getClientIp(request)).toBe("198.51.100.10");
+  });
+
+  it("extracts rightmost IP from x-forwarded-for header", () => {
     const request = new Request("http://localhost", {
       headers: { "x-forwarded-for": "192.168.1.1, 10.0.0.1" },
+    });
+    // Rightmost IP is added by the trusted proxy, harder to spoof
+    expect(getClientIp(request)).toBe("10.0.0.1");
+  });
+
+  it("handles single IP in x-forwarded-for", () => {
+    const request = new Request("http://localhost", {
+      headers: { "x-forwarded-for": "192.168.1.1" },
     });
     expect(getClientIp(request)).toBe("192.168.1.1");
   });

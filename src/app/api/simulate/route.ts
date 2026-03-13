@@ -28,7 +28,7 @@ import type { EngineConfig, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
 import type { SimulationConfig, SimulationCount } from "@/types/simulation";
-import { createAdminClient } from "@/lib/supabase/client";
+import { createPublicClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow } from "@/lib/supabase/types";
@@ -39,6 +39,7 @@ import { processTournamentField } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
 import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { sanitizeEngineConfig, sanitizeMatchupOverrides } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -120,7 +121,11 @@ function validateRequestBody(body: unknown):
     };
   }
 
-  // --- Validate engineConfig (optional) ---
+  // --- Validate & sanitize engineConfig (optional) ---
+  // Deep sanitization: clamps all numeric values to safe ranges, strips unknown keys
+  const sanitizedEngineConfig = engineConfig !== undefined
+    ? sanitizeEngineConfig(engineConfig)
+    : undefined;
   if (engineConfig !== undefined && typeof engineConfig !== "object") {
     return {
       valid: false,
@@ -128,7 +133,11 @@ function validateRequestBody(body: unknown):
     };
   }
 
-  // --- Validate matchupOverrides (optional) ---
+  // --- Validate & sanitize matchupOverrides (optional) ---
+  // Deep sanitization: clamps adjustments to documented ranges, caps entry count
+  const sanitizedMatchupOverrides = matchupOverrides !== undefined
+    ? sanitizeMatchupOverrides(matchupOverrides)
+    : undefined;
   if (matchupOverrides !== undefined && typeof matchupOverrides !== "object") {
     return {
       valid: false,
@@ -160,10 +169,8 @@ function validateRequestBody(body: unknown):
     data: {
       season: seasonNum,
       numSimulations: numSimsValue as SimulationCount,
-      engineConfig: engineConfig as Partial<EngineConfig> | undefined,
-      matchupOverrides: matchupOverrides as
-        | Record<string, MatchupOverrides>
-        | undefined,
+      engineConfig: sanitizedEngineConfig,
+      matchupOverrides: sanitizedMatchupOverrides,
       picks: picks as Record<string, string> | undefined,
       randomSeed: randomSeed !== undefined ? Number(randomSeed) : undefined,
     },
@@ -248,7 +255,7 @@ export async function POST(request: Request) {
     const resolvedSeed = randomSeed;
 
     // --- Fetch team data from Supabase ---
-    const supabase = createAdminClient();
+    const supabase = createPublicClient();
 
     // Query team_seasons for the requested season, joining teams and coaches
     const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
@@ -262,7 +269,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `Database error fetching team data: ${teamSeasonsError.message}`,
+          error: "Failed to fetch team data. Please try again.",
         },
         { status: 500 }
       );
@@ -289,7 +296,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `Database error fetching tournament entries: ${entriesError.message}`,
+          error: "Failed to fetch tournament entries. Please try again.",
         },
         { status: 500 }
       );
@@ -393,10 +400,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred during simulation.",
+        error: "An unexpected error occurred during simulation.",
       },
       { status: 500 }
     );

@@ -17,7 +17,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/client";
+import { createPublicClient } from "@/lib/supabase/client";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import {
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     const tournamentOnly = tournamentOnlyParam === "true";
 
     // --- Query Supabase ---
-    const supabase = createAdminClient();
+    const supabase = createPublicClient();
 
     // Build team_seasons query with joins to teams and coaches
     let teamQuery = supabase
@@ -157,10 +157,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
+        error: "An unexpected error occurred while fetching teams.",
       },
       { status: 500 }
     );

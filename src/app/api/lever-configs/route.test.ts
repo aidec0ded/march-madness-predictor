@@ -106,7 +106,7 @@ describe("GET /api/lever-configs", () => {
     const body = await response.json();
 
     expect(response.status).toBe(500);
-    expect(body.error).toBe("connection refused");
+    expect(body.error).toBe("Failed to load lever configs.");
   });
 });
 

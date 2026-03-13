@@ -16,7 +16,7 @@ import type { EngineConfig, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
 import type { SimulationConfig, SimulationCount } from "@/types/simulation";
-import { createAdminClient } from "@/lib/supabase/client";
+import { createPublicClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow } from "@/lib/supabase/types";
@@ -28,6 +28,7 @@ import { processTournamentField } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
 import type { TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { sanitizeEngineConfig, sanitizeMatchupOverrides } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -108,27 +109,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Resolve config
-    const resolvedConfig: EngineConfig = engineConfig
+    // Sanitize & resolve config — clamps all values to safe ranges
+    const sanitizedConfig = sanitizeEngineConfig(engineConfig);
+    const resolvedConfig: EngineConfig = sanitizedConfig
       ? {
           levers: {
             ...DEFAULT_ENGINE_CONFIG.levers,
-            ...(engineConfig as Partial<EngineConfig>).levers,
+            ...sanitizedConfig.levers,
           },
           logisticK:
-            (engineConfig as Partial<EngineConfig>).logisticK ??
+            sanitizedConfig.logisticK ??
             DEFAULT_ENGINE_CONFIG.logisticK,
           baseVariance:
-            (engineConfig as Partial<EngineConfig>).baseVariance ??
+            sanitizedConfig.baseVariance ??
             DEFAULT_ENGINE_CONFIG.baseVariance,
         }
       : { ...DEFAULT_ENGINE_CONFIG };
 
-    const resolvedOverrides = (matchupOverrides as Record<string, MatchupOverrides>) ?? {};
+    const resolvedOverrides = sanitizeMatchupOverrides(matchupOverrides) ?? {};
     const resolvedSeed = randomSeed !== undefined ? Number(randomSeed) : undefined;
 
     // --- Fetch data (same as non-streaming route) ---
-    const supabase = createAdminClient();
+    const supabase = createPublicClient();
 
     const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
       .from("team_seasons")
@@ -137,11 +139,14 @@ export async function POST(request: Request) {
       .order("team_id");
 
     if (teamSeasonsError || !teamSeasonRows?.length) {
+      if (teamSeasonsError) {
+        logger.error("Stream: error fetching team seasons", teamSeasonsError);
+      }
       return new Response(
         JSON.stringify({
           success: false,
           error: teamSeasonsError
-            ? `Database error: ${teamSeasonsError.message}`
+            ? "Failed to fetch team data. Please try again."
             : `No team data found for season ${seasonNum}.`,
         }),
         {
@@ -157,11 +162,14 @@ export async function POST(request: Request) {
       .eq("season", seasonNum);
 
     if (entriesError || !tournamentEntries?.length) {
+      if (entriesError) {
+        logger.error("Stream: error fetching tournament entries", entriesError);
+      }
       return new Response(
         JSON.stringify({
           success: false,
           error: entriesError
-            ? `Database error: ${entriesError.message}`
+            ? "Failed to fetch tournament entries. Please try again."
             : `No tournament entries found for season ${seasonNum}.`,
         }),
         {
@@ -254,10 +262,9 @@ export async function POST(request: Request) {
           controller.enqueue(sseEvent("result", { success: true, result }));
           controller.close();
         } catch (err) {
-          const message =
-            err instanceof Error ? err.message : "Simulation failed.";
+          logger.error("Streaming simulation engine error", err instanceof Error ? err : undefined);
           controller.enqueue(
-            sseEvent("error", { success: false, error: message })
+            sseEvent("error", { success: false, error: "Simulation failed." })
           );
           controller.close();
         }
@@ -279,10 +286,7 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
+        error: "An unexpected error occurred during simulation.",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

@@ -25,7 +25,7 @@ import { NextResponse } from "next/server";
 import type { EngineConfig } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import type { BacktestRequest, BacktestResponse } from "@/types/backtest";
-import { createAdminClient } from "@/lib/supabase/client";
+import { createPublicClient } from "@/lib/supabase/client";
 import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import { HISTORICAL_RESULTS } from "@/lib/backtest/historical-results";
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
     }
 
     // --- Fetch team data from Supabase for each season ---
-    const supabase = createAdminClient();
+    const supabase = createPublicClient();
     const teamsBySeason = new Map<number, TeamSeason[]>();
 
     for (const season of seasons) {
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: `Database error fetching team data for season ${season}: ${teamSeasonsError.message}`,
+            error: `Failed to fetch team data for season ${season}. Please try again.`,
           } satisfies BacktestResponse,
           { status: 500 }
         );
@@ -255,10 +255,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred during backtesting.",
+        error: "An unexpected error occurred during backtesting.",
       } satisfies BacktestResponse,
       { status: 500 }
     );

@@ -24,7 +24,7 @@ const mockTournamentEq = vi.fn();
 const mockFrom = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
-  createAdminClient: () => ({
+  createPublicClient: () => ({
     from: mockFrom,
   }),
 }));

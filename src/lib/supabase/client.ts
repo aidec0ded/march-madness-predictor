@@ -1,11 +1,12 @@
 /**
  * Supabase client factories for the March Madness Bracket Predictor.
  *
- * Four client variants:
- * - createBrowserClient()  — Client components (cookie-based auth via @supabase/ssr)
- * - createServerClient()   — Server components & Route Handlers (reads cookies from next/headers)
+ * Five client variants:
+ * - createBrowserClient()    — Client components (cookie-based auth via @supabase/ssr)
+ * - createServerClient()     — Server components & Route Handlers (reads cookies from next/headers)
  * - createMiddlewareClient() — Middleware only (read/write on request/response)
- * - createAdminClient()    — Server-only, bypasses RLS (service role key, no cookies)
+ * - createPublicClient()     — Server-only, anon key, respects RLS (for public read-only routes)
+ * - createAdminClient()      — Server-only, bypasses RLS (service role key, admin operations only)
  */
 
 import {
@@ -106,9 +107,24 @@ export function createMiddlewareClient(
 }
 
 /**
+ * Public client — server-only, uses anon key, respects RLS.
+ * Use for public API routes that read team/tournament data without auth.
+ * Requires anon SELECT policies on the target tables (see migration 006).
+ * No session overhead — lightweight for high-throughput endpoints.
+ */
+export function createPublicClient() {
+  return createClient<Database>(getSupabaseUrl(), getAnonKey(), {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+/**
  * Admin client — server-only, bypasses RLS using service role key.
- * Use for admin operations, data imports, migrations.
- * NEVER expose to client-side code.
+ * Use ONLY for admin operations, data imports, and migrations.
+ * NEVER use in public-facing API routes. NEVER expose to client-side code.
  */
 export function createAdminClient() {
   return createClient<Database>(getSupabaseUrl(), getServiceRoleKey(), {

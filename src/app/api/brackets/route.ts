@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
+import { safeApiError } from "@/lib/api-error";
 import type { UserBracketInsert } from "@/lib/supabase/types";
 
 export async function GET() {
@@ -23,7 +24,8 @@ export async function GET() {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const safe = safeApiError("Failed to load brackets.", error, "brackets/GET");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ brackets: data });
@@ -60,7 +62,8 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const safe = safeApiError("Failed to create bracket.", error, "brackets/POST");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ bracket: data }, { status: 201 });

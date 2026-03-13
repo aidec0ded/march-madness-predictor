@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
+import { safeApiError } from "@/lib/api-error";
 import type { UserSettingsInsert } from "@/lib/supabase/types";
 
 export async function GET() {
@@ -24,7 +25,8 @@ export async function GET() {
 
   if (error && error.code !== "PGRST116") {
     // PGRST116 = no rows returned — that's fine, return defaults
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const safe = safeApiError("Failed to load settings.", error, "settings/GET");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({
@@ -68,7 +70,8 @@ export async function PUT(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const safe = safeApiError("Failed to update settings.", error, "settings/PUT");
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 
   return NextResponse.json({ settings: data });

@@ -132,7 +132,7 @@ describe("GET /api/brackets", () => {
     const body = await response.json();
 
     expect(response.status).toBe(500);
-    expect(body.error).toBe("DB connection failed");
+    expect(body.error).toBe("Failed to load brackets.");
   });
 });
 

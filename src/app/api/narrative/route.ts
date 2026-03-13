@@ -18,6 +18,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import { buildNarrativePrompt } from "@/lib/narrative/prompt-builder";
 import type { NarrativeRequest } from "@/types/narrative";
 import { createRateLimiter } from "@/lib/rate-limit";
@@ -125,9 +126,9 @@ export async function POST(request: Request) {
   try {
     anthropic = getAnthropicClient();
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to initialize AI client";
+    logger.error("Failed to initialize AI client", err instanceof Error ? err : undefined);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "Failed to initialize AI client." }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -158,9 +159,8 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
         controller.close();
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to generate narrative";
-        const data = JSON.stringify({ error: message });
+        logger.error("Failed to generate narrative", err instanceof Error ? err : undefined);
+        const data = JSON.stringify({ error: "Failed to generate narrative." });
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
         controller.close();
       }
