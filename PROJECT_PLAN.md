@@ -345,9 +345,9 @@
 
 ### Batch 11 — Important Features
 
-- [ ] **Clear all picks button** — No way to reset all bracket picks without clearing levers/overrides. Add a "Clear Picks" button to the bracket header that resets picks only, preserving lever settings and overrides.
-- [ ] **Venue locations in matchup UI** — Add actual venue names/cities to the matchup view. User will provide venue data. Display as a field in the matchup header or location section.
-- [ ] **2025 backtest data** — 2025 tournament results are absent from the dataset (not architecturally blocked). Run existing scraper with 2025 added to seasons list, update `TEST_SEASONS` constant in `backtest.ts`.
+- [x] **Clear all picks button** — Added `CLEAR_PICKS` reducer action that resets all bracket picks while preserving lever settings, matchup overrides, pool size, and bracket name. New `ClearPicksButton` component in the bracket header with inline confirmation ("Clear N picks? Yes/No"). Disabled when no picks exist. Marks bracket dirty only if previously saved. 3 new tests.
+- [x] **Venue locations in matchup UI** — Added venue name and city display to the matchup view header (e.g., "KeyBank Center • Buffalo, New York"). Updated `seed-tournament-sites.ts` to parse the Arena column from CSV and store actual venue names. Exposed `venue` field from `useMatchupAnalysis` hook via `GameSiteCoordinates`.
+- [x] **2025 backtest data** — Added 2025 to scraper SEASONS array, updated `TEST_SEASONS` in `backtest.ts`, ran scraper to generate 63 games of 2025 tournament results into `historical-results.ts`.
 
 ### Batch 12 — Big Feature
 

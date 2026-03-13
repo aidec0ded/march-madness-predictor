@@ -181,7 +181,7 @@ export const TRAIN_SEASONS = [
 ] as const;
 
 /** Default test years (post-COVID) */
-export const TEST_SEASONS = [2021, 2022, 2023, 2024] as const;
+export const TEST_SEASONS = [2021, 2022, 2023, 2024, 2025] as const;
 
 /** All available seasons (2020 excluded — cancelled) */
 export const ALL_SEASONS = [...TRAIN_SEASONS, ...TEST_SEASONS] as const;
