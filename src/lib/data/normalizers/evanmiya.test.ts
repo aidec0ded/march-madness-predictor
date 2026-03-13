@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 import { normalizeEvanMiya } from "./evanmiya";
 import type { EvanMiyaCsvRow } from "@/types";
 
@@ -31,13 +32,13 @@ function makeRow(overrides: Partial<EvanMiyaCsvRow> = {}): EvanMiyaCsvRow {
 
 describe("normalizeEvanMiya", () => {
   it("should normalize a valid CSV row into a partial TeamSeason", () => {
-    const { data, errors } = normalizeEvanMiya([makeRow()], 2026);
+    const { data, errors } = normalizeEvanMiya([makeRow()], CURRENT_SEASON);
 
     expect(errors).toHaveLength(0);
     expect(data).toHaveLength(1);
 
     const ts = data[0];
-    expect(ts.season).toBe(2026);
+    expect(ts.season).toBe(CURRENT_SEASON);
     expect(ts.dataSources).toEqual(["evanmiya"]);
     expect(ts.team?.name).toBe("Michigan");
 
@@ -61,7 +62,7 @@ describe("normalizeEvanMiya", () => {
       makeRow({ team: "Duke", bpr: "36.96", obpr: "17.01", dbpr: "19.95" }),
     ];
 
-    const { data, errors } = normalizeEvanMiya(rows, 2026);
+    const { data, errors } = normalizeEvanMiya(rows, CURRENT_SEASON);
 
     expect(errors).toHaveLength(0);
     expect(data).toHaveLength(2);
@@ -72,7 +73,7 @@ describe("normalizeEvanMiya", () => {
 
   it("should produce errors for missing BPR fields", () => {
     const row = makeRow({ bpr: "", obpr: "" });
-    const { data, errors } = normalizeEvanMiya([row], 2026);
+    const { data, errors } = normalizeEvanMiya([row], CURRENT_SEASON);
 
     expect(errors.length).toBeGreaterThanOrEqual(2);
     expect(errors.some((e) => e.field === "bpr")).toBe(true);
@@ -91,7 +92,7 @@ describe("normalizeEvanMiya", () => {
       runs_margin: "",
     });
 
-    const { data, errors } = normalizeEvanMiya([row], 2026);
+    const { data, errors } = normalizeEvanMiya([row], CURRENT_SEASON);
 
     expect(errors).toHaveLength(0);
     expect(data[0].evanmiyaOpponentAdjust).toBeUndefined();
@@ -111,7 +112,7 @@ describe("normalizeEvanMiya", () => {
       runs_margin: "-0.50",
     });
 
-    const { data, errors } = normalizeEvanMiya([row], 2026);
+    const { data, errors } = normalizeEvanMiya([row], CURRENT_SEASON);
 
     expect(errors).toHaveLength(0);
     expect(data[0].evanmiyaOpponentAdjust).toBeCloseTo(-29.22);
@@ -121,7 +122,7 @@ describe("normalizeEvanMiya", () => {
 
   it("should trim team names", () => {
     const row = makeRow({ team: "  Michigan  " });
-    const { data } = normalizeEvanMiya([row], 2026);
+    const { data } = normalizeEvanMiya([row], CURRENT_SEASON);
     expect(data[0].team?.name).toBe("Michigan");
   });
 
@@ -135,7 +136,7 @@ describe("normalizeEvanMiya", () => {
       losses: "2",
     };
 
-    const { data, errors } = normalizeEvanMiya([row], 2026);
+    const { data, errors } = normalizeEvanMiya([row], CURRENT_SEASON);
 
     expect(errors).toHaveLength(0);
     expect(data).toHaveLength(1);

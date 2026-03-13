@@ -30,6 +30,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { normalizeForMerge } from "../src/lib/data/merger";
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Kaggle-specific name overrides
@@ -747,7 +748,7 @@ async function main() {
   const dryRun = args.includes("--dry-run");
   const allSeasons = args.includes("--all-seasons");
   const seasonArg = args.find((a, i) => args[i - 1] === "--season");
-  const season = seasonArg ? parseInt(seasonArg) : 2026;
+  const season = seasonArg ? parseInt(seasonArg) : CURRENT_SEASON;
   const minSeasonArg = args.find((a, i) => args[i - 1] === "--min-season");
   const minSeason = minSeasonArg ? parseInt(minSeasonArg) : 2002;
 

@@ -42,6 +42,7 @@ import type { MatchupOverrides } from "@/types/engine";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import { deserializeGlobalLevers } from "@/lib/engine/lever-serialization";
 import type { SimulationResult } from "@/types/simulation";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 export default async function BracketPage() {
   // Use admin client for public team data (RLS requires authenticated role)
@@ -51,19 +52,19 @@ export default async function BracketPage() {
   const { data: teamSeasonRows, error: teamsError } = await adminClient
     .from("team_seasons")
     .select("*, teams!inner(*), coaches(*)")
-    .eq("season", 2026);
+    .eq("season", CURRENT_SEASON);
 
   // Fetch tournament entries
   const { data: entries, error: entriesError } = await adminClient
     .from("tournament_entries")
     .select("*")
-    .eq("season", 2026);
+    .eq("season", CURRENT_SEASON);
 
   // Fetch tournament sites (optional — graceful degradation if none exist)
   const { data: sitesRows, error: sitesError } = await adminClient
     .from("tournament_sites")
     .select("*")
-    .eq("season", 2026);
+    .eq("season", CURRENT_SEASON);
 
   // Transform site rows to TournamentSite[]
   let tournamentSites: TournamentSite[] | undefined;
@@ -108,7 +109,7 @@ export default async function BracketPage() {
         <p style={{ fontSize: "0.875rem", maxWidth: "400px" }}>
           {teamsError?.message ||
             entriesError?.message ||
-            "No team data available for the 2026 season. Please ensure tournament data has been imported."}
+            {`No team data available for the ${CURRENT_SEASON} season. Please ensure tournament data has been imported.`}}
         </p>
       </div>
     );
@@ -136,7 +137,7 @@ export default async function BracketPage() {
       .select("*")
       .eq("user_id", user.id)
       .eq("is_active", true)
-      .eq("season", 2026)
+      .eq("season", CURRENT_SEASON)
       .limit(1);
 
     if (brackets && brackets.length > 0) {

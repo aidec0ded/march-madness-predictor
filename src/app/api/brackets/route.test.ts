@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be set up before importing the route
@@ -163,7 +164,7 @@ describe("POST /api/brackets", () => {
     const request = new Request("http://localhost/api/brackets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "My New Bracket", season: 2026 }),
+      body: JSON.stringify({ name: "My New Bracket", season: CURRENT_SEASON }),
     });
 
     const response = await POST(request);

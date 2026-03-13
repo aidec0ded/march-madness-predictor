@@ -5,7 +5,7 @@
  * Usage:
  *   npx tsx scripts/seed-data.ts [season]
  *
- * If no season is provided, defaults to 2026.
+ * If no season is provided, defaults to the current season.
  *
  * The generated SQL file uses ON CONFLICT for idempotency (safe to run
  * multiple times). It inserts data into:
@@ -29,12 +29,7 @@ import { fetchTorvikData } from "../src/lib/data/fetchers/torvik";
 import { normalizeTorvik } from "../src/lib/data/normalizers/torvik";
 import { getCampusLocation } from "../src/lib/data/campus-locations";
 import type { TeamSeason } from "../src/types/team";
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-const DEFAULT_SEASON = 2026;
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 // Handle both CJS (__dirname) and ESM (import.meta.url) environments
 const __script_dir =
@@ -105,7 +100,7 @@ function generateShortName(teamName: string): string {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const season = parseInt(process.argv[2] ?? String(DEFAULT_SEASON), 10);
+  const season = parseInt(process.argv[2] ?? String(CURRENT_SEASON), 10);
 
   if (isNaN(season) || season < 2002 || season > 2100) {
     console.error(`Invalid season: ${process.argv[2]}. Must be between 2002 and 2100.`);

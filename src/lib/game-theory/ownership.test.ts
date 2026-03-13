@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 import {
   calculateOwnership,
   buildFullOwnershipModel,
@@ -37,7 +38,7 @@ function makeTeam(overrides: {
   return {
     id: teamId,
     teamId,
-    season: 2026,
+    season: CURRENT_SEASON,
     team: {
       id: teamId,
       name: `Team Seed ${seed}`,

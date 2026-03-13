@@ -13,7 +13,7 @@
  *   NEXT_PUBLIC_SUPABASE_URL     — Supabase project URL
  *   SUPABASE_SERVICE_ROLE_KEY    — Service role key (bypasses RLS)
  *
- * If no season argument is provided, defaults to 2026.
+ * If no season argument is provided, defaults to the current season.
  *
  * @module
  */
@@ -33,12 +33,7 @@ import {
 import { normalizeForMerge } from "../src/lib/data/merger";
 import type { TeamSeason } from "../src/types/team";
 import type { Database } from "../src/lib/supabase/types";
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-const DEFAULT_SEASON = 2026;
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 /** Batch size for Supabase upsert operations */
 const BATCH_SIZE = 50;
@@ -708,7 +703,7 @@ class TorvikSeeder {
 
 async function main(): Promise<void> {
   // Parse season from command line
-  const season = parseInt(process.argv[2] ?? String(DEFAULT_SEASON), 10);
+  const season = parseInt(process.argv[2] ?? String(CURRENT_SEASON), 10);
 
   if (isNaN(season) || season < 2002 || season > 2100) {
     console.error(

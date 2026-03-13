@@ -19,6 +19,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,7 +214,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const seasonIdx = args.indexOf("--season");
-  const season = seasonIdx >= 0 ? parseInt(args[seasonIdx + 1], 10) : 2026;
+  const season = seasonIdx >= 0 ? parseInt(args[seasonIdx + 1], 10) : CURRENT_SEASON;
 
   const csvPath = path.resolve(process.cwd(), "team-misc-stats.csv");
   if (!fs.existsSync(csvPath)) {

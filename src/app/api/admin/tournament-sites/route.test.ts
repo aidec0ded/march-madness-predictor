@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be set up before importing the route
@@ -153,7 +154,7 @@ describe("POST /api/admin/tournament-sites", () => {
 
   it("returns 401 when not admin", async () => {
     mockIsAdmin.mockResolvedValue(false);
-    const res = await POST(makeRequest({ season: 2026, sites: makeSites() }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites: makeSites() }));
     expect(res.status).toBe(401);
   });
 
@@ -175,7 +176,7 @@ describe("POST /api/admin/tournament-sites", () => {
 
   it("returns 400 for empty sites array", async () => {
     mockIsAdmin.mockResolvedValue(true);
-    const res = await POST(makeRequest({ season: 2026, sites: [] }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites: [] }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("non-empty");
@@ -193,7 +194,7 @@ describe("POST /api/admin/tournament-sites", () => {
         rounds: ["R64"],
       },
     ];
-    const res = await POST(makeRequest({ season: 2026, sites }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("latitude");
@@ -211,7 +212,7 @@ describe("POST /api/admin/tournament-sites", () => {
         rounds: ["INVALID_ROUND"],
       },
     ];
-    const res = await POST(makeRequest({ season: 2026, sites }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("INVALID_ROUND");
@@ -230,7 +231,7 @@ describe("POST /api/admin/tournament-sites", () => {
         regions: ["InvalidRegion"],
       },
     ];
-    const res = await POST(makeRequest({ season: 2026, sites }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("InvalidRegion");
@@ -241,7 +242,7 @@ describe("POST /api/admin/tournament-sites", () => {
     setupDeleteThenInsertSuccess();
 
     const res = await POST(
-      makeRequest({ season: 2026, sites: makeSites() })
+      makeRequest({ season: CURRENT_SEASON, sites: makeSites() })
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -260,7 +261,7 @@ describe("POST /api/admin/tournament-sites", () => {
         rounds: ["R64"],
       },
     ];
-    const res = await POST(makeRequest({ season: 2026, sites }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("city");
@@ -278,7 +279,7 @@ describe("POST /api/admin/tournament-sites", () => {
         rounds: [],
       },
     ];
-    const res = await POST(makeRequest({ season: 2026, sites }));
+    const res = await POST(makeRequest({ season: CURRENT_SEASON, sites }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("rounds");
@@ -292,7 +293,7 @@ describe("GET /api/admin/tournament-sites", () => {
 
   it("returns 401 when not admin", async () => {
     mockIsAdmin.mockResolvedValue(false);
-    const res = await GET(makeGetRequest(2026));
+    const res = await GET(makeGetRequest(CURRENT_SEASON));
     expect(res.status).toBe(401);
   });
 
@@ -319,7 +320,7 @@ describe("GET /api/admin/tournament-sites", () => {
       }),
     });
 
-    const res = await GET(makeGetRequest(2026));
+    const res = await GET(makeGetRequest(CURRENT_SEASON));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
@@ -334,7 +335,7 @@ describe("DELETE /api/admin/tournament-sites", () => {
 
   it("returns 401 when not admin", async () => {
     mockIsAdmin.mockResolvedValue(false);
-    const res = await DELETE_HANDLER(makeDeleteRequest(2026));
+    const res = await DELETE_HANDLER(makeDeleteRequest(CURRENT_SEASON));
     expect(res.status).toBe(401);
   });
 
@@ -356,7 +357,7 @@ describe("DELETE /api/admin/tournament-sites", () => {
       }),
     });
 
-    const res = await DELETE_HANDLER(makeDeleteRequest(2026));
+    const res = await DELETE_HANDLER(makeDeleteRequest(CURRENT_SEASON));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);

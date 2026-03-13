@@ -6,6 +6,7 @@ import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import type { PlayInConfig } from "@/types/simulation";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
+import { CURRENT_SEASON } from "@/lib/constants";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
@@ -302,7 +303,7 @@ function BracketName() {
         letterSpacing: "0.01em",
       }}
     >
-      March Madness 2026
+      March Madness {CURRENT_SEASON}
     </div>
   );
 }

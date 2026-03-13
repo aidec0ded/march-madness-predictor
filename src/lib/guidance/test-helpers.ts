@@ -9,6 +9,7 @@ import type { TeamSeason, Seed, Region } from "@/types/team";
 import type { GuidanceContext } from "@/types/guidance";
 import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Mock TeamSeason factory
@@ -42,7 +43,7 @@ export function createMockTeam(options: MockTeamOptions = {}): TeamSeason {
   return {
     id: `season-${id}`,
     teamId: id,
-    season: 2026,
+    season: CURRENT_SEASON,
     team: {
       id,
       name: `${shortName} University`,

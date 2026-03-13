@@ -6,7 +6,7 @@
  * with joined team, coach, and tournament entry data.
  *
  * Query parameters:
- * - `season` (optional): Filter by season year (e.g., 2026). Defaults to 2026.
+ * - `season` (optional): Filter by season year. Defaults to CURRENT_SEASON.
  * - `teamId` (optional): Filter by specific team UUID
  * - `tournamentOnly` (optional): If "true", returns only teams with tournament entries
  *
@@ -25,11 +25,9 @@ import {
   type TeamSeasonJoinedRow,
 } from "@/lib/supabase/transforms";
 import type { TournamentEntryRow } from "@/lib/supabase/types";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 const rateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60_000 });
-
-/** Default season when none is specified */
-const DEFAULT_SEASON = 2026;
 
 export async function GET(request: Request) {
   try {
@@ -55,7 +53,7 @@ export async function GET(request: Request) {
     const tournamentOnlyParam = searchParams.get("tournamentOnly");
 
     // --- Validate season if provided ---
-    let season: number = DEFAULT_SEASON;
+    let season: number = CURRENT_SEASON;
     if (seasonParam !== null) {
       season = parseInt(seasonParam, 10);
       if (!Number.isInteger(season) || season < 2000 || season > 2100) {

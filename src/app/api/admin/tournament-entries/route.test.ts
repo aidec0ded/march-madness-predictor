@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be set up before importing the route
@@ -121,7 +122,7 @@ function makePostRequest(body: unknown): Request {
   });
 }
 
-function makeGetRequest(season = 2026): Request {
+function makeGetRequest(season = CURRENT_SEASON): Request {
   return new Request(
     `http://localhost/api/admin/tournament-entries?season=${season}`,
     {
@@ -131,7 +132,7 @@ function makeGetRequest(season = 2026): Request {
   );
 }
 
-function makeDeleteRequest(season = 2026): Request {
+function makeDeleteRequest(season = CURRENT_SEASON): Request {
   return new Request(
     `http://localhost/api/admin/tournament-entries?season=${season}`,
     {
@@ -143,7 +144,7 @@ function makeDeleteRequest(season = 2026): Request {
 
 function setupSuccessfulPostMocks(entries: { team: string }[]) {
   const teamRows = buildTeamRows(entries);
-  const teamSeasonRows = buildTeamSeasonRows(teamRows, 2026);
+  const teamSeasonRows = buildTeamSeasonRows(teamRows, CURRENT_SEASON);
 
   mockFrom.mockImplementation((table: string) => {
     if (table === "teams") {
@@ -198,7 +199,7 @@ describe("POST /api/admin/tournament-entries", () => {
   it("returns 401 when not admin", async () => {
     mockIsAdmin.mockResolvedValue(false);
 
-    const response = await POST(makePostRequest({ season: 2026, entries: [] }));
+    const response = await POST(makePostRequest({ season: CURRENT_SEASON, entries: [] }));
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -225,7 +226,7 @@ describe("POST /api/admin/tournament-entries", () => {
 
   it("returns 400 when entries is not an array", async () => {
     const response = await POST(
-      makePostRequest({ season: 2026, entries: "not-array" })
+      makePostRequest({ season: CURRENT_SEASON, entries: "not-array" })
     );
     const body = await response.json();
 
@@ -237,7 +238,7 @@ describe("POST /api/admin/tournament-entries", () => {
     const partialEntries = make68Entries().slice(0, 64);
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries: partialEntries })
+      makePostRequest({ season: CURRENT_SEASON, entries: partialEntries })
     );
     const body = await response.json();
 
@@ -251,7 +252,7 @@ describe("POST /api/admin/tournament-entries", () => {
     entries[0].seed = 17; // Invalid
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 
@@ -265,7 +266,7 @@ describe("POST /api/admin/tournament-entries", () => {
     entries[0].region = "North"; // Invalid
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 
@@ -280,7 +281,7 @@ describe("POST /api/admin/tournament-entries", () => {
     entries[entries.length - 1].seed = 1;
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 
@@ -314,7 +315,7 @@ describe("POST /api/admin/tournament-entries", () => {
     });
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 
@@ -329,7 +330,7 @@ describe("POST /api/admin/tournament-entries", () => {
     setupSuccessfulPostMocks(entries);
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 
@@ -344,7 +345,7 @@ describe("POST /api/admin/tournament-entries", () => {
     setupSuccessfulPostMocks(entries);
 
     const response = await POST(
-      makePostRequest({ season: 2026, entries })
+      makePostRequest({ season: CURRENT_SEASON, entries })
     );
     const body = await response.json();
 

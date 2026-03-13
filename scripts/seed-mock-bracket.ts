@@ -22,12 +22,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/lib/supabase/types";
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-const DEFAULT_SEASON = 2026;
+import { CURRENT_SEASON } from "../src/lib/constants";
 type Region = "East" | "West" | "South" | "Midwest";
 const REGIONS: Region[] = ["East", "West", "South", "Midwest"];
 
@@ -63,7 +58,7 @@ async function main() {
   const args = process.argv.slice(2);
   const noPlayIns = args.includes("--no-play-ins");
   const seasonArg = args.find((a) => !a.startsWith("--"));
-  const season = parseInt(seasonArg || String(DEFAULT_SEASON), 10);
+  const season = parseInt(seasonArg || String(CURRENT_SEASON), 10);
   const totalTeams = noPlayIns ? 64 : 68;
 
   console.log(

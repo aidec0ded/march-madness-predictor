@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
 import { safeApiError } from "@/lib/api-error";
 import type { UserBracketInsert } from "@/lib/supabase/types";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 export async function GET() {
   const { supabase, user } = await createAuthenticatedClient();
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   const insertData: UserBracketInsert = {
     user_id: user.id,
     name: (body.name as string) || "My Bracket",
-    season: (body.season as number) || 2026,
+    season: (body.season as number) || CURRENT_SEASON,
     picks: (body.picks as Record<string, unknown>) || {},
     global_levers: (body.global_levers as Record<string, unknown>) || {},
     matchup_overrides: (body.matchup_overrides as Record<string, unknown>) || {},

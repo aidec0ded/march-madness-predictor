@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import { useBracket } from "./useBracket";
 import type { SimulationResult } from "@/types/simulation";
 import type { SimulationProgress } from "@/types/bracket-ui";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // SSE parsing helpers
@@ -67,7 +68,7 @@ export function useBracketSimulation() {
 
       try {
         const body = JSON.stringify({
-          season: 2026, // Current season
+          season: CURRENT_SEASON,
           numSimulations: options?.numSimulations ?? 10000,
           engineConfig: {
             levers: state.globalLevers,

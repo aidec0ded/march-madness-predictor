@@ -8,6 +8,7 @@ import type { SimulationResult } from "@/types/simulation";
 import type { GlobalLevers, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import { deserializeGlobalLevers } from "@/lib/engine/lever-serialization";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 /**
  * Hook for saving and loading brackets via the /api/brackets endpoints.
@@ -26,7 +27,7 @@ export function useBracketPersistence() {
 
     const bracketData = {
       name: state.bracketName,
-      season: 2026,
+      season: CURRENT_SEASON,
       picks: state.picks,
       global_levers: state.globalLevers,
       matchup_overrides: state.matchupOverrides,

@@ -60,6 +60,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
 import type { Database } from "../src/lib/supabase/types";
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -341,7 +342,7 @@ async function main() {
     console.error(
       JSON.stringify(
         {
-          season: 2026,
+          season: CURRENT_SEASON,
           teams: [
             { name: "UConn", seed: 1, region: "East" },
             { name: "Houston", seed: 1, region: "West" },
@@ -356,7 +357,7 @@ async function main() {
     console.error(
       JSON.stringify(
         {
-          season: 2026,
+          season: CURRENT_SEASON,
           teams: [
             { name: "UConn", seed: 1, region: "East" },
             { name: "...", seed: 0, region: "East" },
@@ -394,7 +395,7 @@ async function main() {
   }
 
   const season = parseInt(
-    process.argv[3] || String(input.season || 2026),
+    process.argv[3] || String(input.season || CURRENT_SEASON),
     10
   );
   const teamCount = input.teams?.length ?? 0;

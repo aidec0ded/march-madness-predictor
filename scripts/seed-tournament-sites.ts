@@ -17,6 +17,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { CURRENT_SEASON } from "../src/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -299,7 +300,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const seasonArg = args.find((_, i) => args[i - 1] === "--season");
-  const season = seasonArg ? parseInt(seasonArg) : 2026;
+  const season = seasonArg ? parseInt(seasonArg) : CURRENT_SEASON;
   const csvArg = args.find((_, i) => args[i - 1] === "--csv");
   const csvPath = csvArg || path.join(__dirname, "..", "tourney_locations.csv");
 

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { ValidationError } from "@/types/data-import";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +49,7 @@ interface CommitResult {
 // ---------------------------------------------------------------------------
 
 const SEASON_OPTIONS: number[] = [];
-for (let y = 2026; y >= 2015; y--) {
+for (let y = CURRENT_SEASON; y >= 2015; y--) {
   SEASON_OPTIONS.push(y);
 }
 
@@ -656,7 +657,7 @@ function KenPomPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
 }
 
 function KenPomPanel({ adminKey }: { adminKey: string }) {
-  const [season, setSeason] = useState(2026);
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [commitStatus, setCommitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -1087,7 +1088,7 @@ function TorvikPreviewTable({ teams }: { teams: Array<Record<string, unknown>> }
 // ---------------------------------------------------------------------------
 
 function TorvikPanel({ adminKey }: { adminKey: string }) {
-  const [season, setSeason] = useState(2026);
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [mode, setMode] = useState<"fetch" | "csv">("csv");
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -1641,7 +1642,7 @@ function EvanMiyaPreviewTable({ teams }: { teams: Array<Record<string, unknown>>
 }
 
 function EvanMiyaPanel({ adminKey }: { adminKey: string }) {
-  const [season, setSeason] = useState(2026);
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [csvContent, setCsvContent] = useState("");
   const [csvFileName, setCsvFileName] = useState("");
   const [status, setStatus] = useState<SourceStatus>("idle");
@@ -1979,7 +1980,7 @@ interface ExistingEntry {
 }
 
 function TournamentBracketPanel({ adminKey }: { adminKey: string }) {
-  const [season, setSeason] = useState(2026);
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [csvContent, setCsvContent] = useState("");
   const [csvFileName, setCsvFileName] = useState("");
@@ -2630,7 +2631,7 @@ const SITE_CITY_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 function TournamentSitesPanel({ adminKey }: { adminKey: string }) {
-  const [season, setSeason] = useState(2026);
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [status, setStatus] = useState<SourceStatus>("idle");
   const [csvContent, setCsvContent] = useState("");
   const [csvFileName, setCsvFileName] = useState("");

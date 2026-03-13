@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { CURRENT_SEASON } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be set up before importing the route
@@ -36,7 +37,7 @@ vi.mock("@/lib/supabase/transforms", () => ({
     return (rows ?? []).map((row: { team_id: string; teams: { name: string; short_name: string; conference: string } }) => ({
       id: `ts-${row.team_id}`,
       teamId: row.team_id,
-      season: 2026,
+      season: CURRENT_SEASON,
       team: {
         id: row.team_id,
         name: row.teams.name,
@@ -88,20 +89,20 @@ import { GET } from "./route";
 const MOCK_TEAM_ROWS = [
   {
     team_id: "team-1",
-    season: 2026,
+    season: CURRENT_SEASON,
     teams: { name: "Duke Blue Devils", short_name: "Duke", conference: "ACC" },
     coaches: null,
   },
   {
     team_id: "team-2",
-    season: 2026,
+    season: CURRENT_SEASON,
     teams: { name: "North Carolina Tar Heels", short_name: "UNC", conference: "ACC" },
     coaches: null,
   },
 ];
 
 const MOCK_ENTRIES = [
-  { team_season_id: "ts-team-1", season: 2026, seed: 1, region: "East", bracket_position: 1 },
+  { team_season_id: "ts-team-1", season: CURRENT_SEASON, seed: 1, region: "East", bracket_position: 1 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -168,7 +169,7 @@ describe("GET /api/teams", () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.count).toBe(2);
-    expect(body.data.season).toBe(2026);
+    expect(body.data.season).toBe(CURRENT_SEASON);
     expect(body.data.teams).toHaveLength(2);
     expect(body.data.teams[0].team.name).toBe("Duke Blue Devils");
     expect(body.data.teams[1].team.name).toBe("North Carolina Tar Heels");
