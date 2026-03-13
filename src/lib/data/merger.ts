@@ -42,9 +42,131 @@ function getTeamName(record: Partial<TeamSeason>): string | undefined {
 }
 
 /**
+ * Abbreviation normalization rules applied during merge key resolution.
+ *
+ * These handle the most common naming discrepancies between KenPom, Torvik,
+ * and Evan Miya. Each rule is a [pattern, replacement] pair applied in order
+ * to a lowercased team name. Rules should produce the SAME output regardless
+ * of which source's naming convention the input uses.
+ *
+ * Examples:
+ *   "Ohio State"  →  "ohio state"   (KenPom)
+ *   "Ohio St."    →  "ohio state"   (Torvik — "st." becomes "state")
+ *   "UConn"       →  "connecticut"  (either source)
+ */
+const NAME_NORMALIZATION_RULES: [RegExp, string][] = [
+  // "Saint" / "St." at START of name → "saint" (for "St. Mary's", "St. John's")
+  // MUST come before the suffix "St." → "state" rules to avoid
+  // "St. Mary's" → "State Mary's".
+  [/^st\.\s+/g, "saint "],
+
+  // "St." at word boundary (suffix) → "state" (e.g., "Ohio St." → "Ohio State")
+  // Only matches "St." preceded by a space — never at start of name.
+  [/\bst\.$/g, "state"],
+  [/(\s)st\.\s/g, "$1state "],
+  [/(\s)st\.$/g, "$1state"],
+
+  // Common multi-word abbreviations
+  [/\bn\.c\.\s*/g, "north carolina "],
+  [/\bn\.c\b/g, "north carolina"],
+  [/\bs\.c\.\s*/g, "south carolina "],
+  [/\bs\.c\b/g, "south carolina"],
+
+  // "Fla." → "florida"
+  [/\bfla\.?\b/g, "florida"],
+
+  // "Ill." → "illinois"
+  [/\bill\.?\b/g, "illinois"],
+
+  // Directional abbreviations
+  [/\bn\.\s*/g, "north "],
+  [/\bs\.\s*/g, "south "],
+  [/\be\.\s*/g, "east "],
+  [/\bw\.\s*/g, "west "],
+
+  // "UConn" → "connecticut"
+  [/\buconn\b/g, "connecticut"],
+
+  // "UCF" → "central florida"
+  [/\bucf\b/g, "central florida"],
+
+  // "USF" → "south florida"
+  [/\busf\b/g, "south florida"],
+
+  // "UMass" → "massachusetts"
+  [/\bumass\b/g, "massachusetts"],
+
+  // "BYU" → "brigham young"
+  [/\bbyu\b/g, "brigham young"],
+
+  // "TCU" → "texas christian"
+  [/\btcu\b/g, "texas christian"],
+
+  // "VCU" → "virginia commonwealth"
+  [/\bvcu\b/g, "virginia commonwealth"],
+
+  // "UNC" → "north carolina"
+  [/\bunc\b/g, "north carolina"],
+
+  // "USC" → "southern california"
+  [/\busc\b/g, "southern california"],
+
+  // "FGCU" → "florida gulf coast"
+  [/\bfgcu\b/g, "florida gulf coast"],
+
+  // "SLU" → "saint louis"
+  [/\bslu\b/g, "saint louis"],
+
+  // "MTSU" → "middle tennessee"
+  [/\bmtsu\b/g, "middle tennessee"],
+
+  // "ETSU" → "east tennessee state"
+  [/\betsu\b/g, "east tennessee state"],
+
+  // "UNI" → "northern iowa"
+  [/\buni\b/g, "northern iowa"],
+
+  // Possessive variation: "Mary's" vs "Marys"
+  [/'/g, ""],
+
+  // Trailing/extra punctuation
+  [/\./g, ""],
+
+  // Collapse multiple spaces
+  [/\s+/g, " "],
+];
+
+/**
+ * Normalizes a team name to a canonical merge key by applying abbreviation
+ * rules that handle discrepancies between data sources.
+ *
+ * This is a pure function: same input always yields same output.
+ *
+ * @param name - Raw team name from any data source.
+ * @returns A normalized key suitable for grouping across sources.
+ *
+ * @example
+ * normalizeForMerge("Ohio State")  // → "ohio state"
+ * normalizeForMerge("Ohio St.")    // → "ohio state"
+ * normalizeForMerge("UConn")       // → "connecticut"
+ * normalizeForMerge("St. Mary's")  // → "saint marys"
+ */
+export function normalizeForMerge(name: string): string {
+  let result = name.trim().toLowerCase();
+
+  for (const [pattern, replacement] of NAME_NORMALIZATION_RULES) {
+    // Reset lastIndex since we reuse regex objects with /g flag
+    pattern.lastIndex = 0;
+    result = result.replace(pattern, replacement);
+  }
+
+  return result.trim();
+}
+
+/**
  * Resolves a team name from a specific source to a canonical key using
- * the name mapping table. If no mapping is found, the original name
- * (lowercased and trimmed) is returned as the key.
+ * the name mapping table. If no mapping is found, the name is normalized
+ * using abbreviation rules to produce a consistent merge key.
  *
  * @param name - The team name as it appears in the source data.
  * @param source - Which data source the name comes from.
@@ -77,8 +199,8 @@ function resolveCanonicalKey(
     }
   }
 
-  // Fallback: use the normalized name as the key
-  return normalized;
+  // Fallback: normalize using abbreviation rules for cross-source matching
+  return normalizeForMerge(name);
 }
 
 /**
