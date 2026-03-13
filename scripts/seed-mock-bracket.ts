@@ -52,6 +52,15 @@ async function main() {
   const season = parseInt(process.argv[2] || String(DEFAULT_SEASON), 10);
   console.log(`\n🏀 Mock Bracket Seeder — Season ${season}\n`);
 
+  // Load environment variables
+  try {
+    const dotenv = await import("dotenv");
+    dotenv.config({ path: ".env.local" });
+    dotenv.config({ path: ".env" });
+  } catch {
+    // dotenv not installed — environment variables must be set externally
+  }
+
   const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 

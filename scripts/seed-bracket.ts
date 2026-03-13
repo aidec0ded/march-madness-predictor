@@ -257,6 +257,15 @@ async function main() {
     process.exit(1);
   }
 
+  // Load environment variables
+  try {
+    const dotenv = await import("dotenv");
+    dotenv.config({ path: ".env.local" });
+    dotenv.config({ path: ".env" });
+  } catch {
+    // dotenv not installed — environment variables must be set externally
+  }
+
   // Read and parse bracket file
   let input: BracketInput;
   try {
