@@ -330,7 +330,7 @@
 ### Batch 8 — Infrastructure & Tooling
 
 - [ ] **Custom domain setup** — Configure custom domain on deployment provider (Render)
-- [ ] **Fix Vitest / Vite ESM compatibility** — Vitest 4.0.x CJS entrypoint cannot `require()` ESM-only Vite 7.x; likely fix is adding `"type": "module"` to `package.json` or pinning Vite to v6
+- [x] **Fix Vitest / Vite ESM compatibility** — Root cause was two test files using vitest globals (`beforeEach`, `afterEach`) without importing them. While `globals: true` in vitest.config.ts makes them available at runtime, TypeScript couldn't resolve the types. Fixed by adding the missing imports to `page.test.tsx` and `PoolSizeSelector.test.tsx`. `npx tsc --noEmit` now passes with zero errors.
 
 ### Batch 9 — Documentation & Guides
 
