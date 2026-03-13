@@ -30,6 +30,7 @@ interface CsvRow {
   region: string;
   city: string;
   state: string;
+  arena: string;
 }
 
 interface SiteRecord {
@@ -107,6 +108,7 @@ function parseCsv(filePath: string): CsvRow[] {
       round: parts[0],
       region: parts[1],
       city: parts[2],
+      arena: parts[4] || "",
       state: parts[3],
     });
   }
@@ -125,6 +127,7 @@ function buildSiteRecords(rows: CsvRow[], season: number): SiteRecord[] {
     {
       city: string;
       state: string;
+      arena: string;
       rounds: Set<TournamentRound>;
       regions: Set<Region>;
     }
@@ -152,10 +155,16 @@ function buildSiteRecords(rows: CsvRow[], season: number): SiteRecord[] {
       site = {
         city: row.city,
         state: row.state,
+        arena: row.arena,
         rounds: new Set(),
         regions: new Set(),
       };
       siteMap.set(key, site);
+    }
+
+    // Prefer arena names from later rows (they may be more specific)
+    if (row.arena && !site.arena) {
+      site.arena = row.arena;
     }
 
     site.rounds.add(round);
@@ -171,8 +180,11 @@ function buildSiteRecords(rows: CsvRow[], season: number): SiteRecord[] {
     const rounds = [...site.rounds].sort();
     const regions = [...site.regions].sort();
 
+    // Use arena name if available, otherwise fall back to city + rounds
+    const displayName = site.arena || `${site.city} - ${rounds.join("/")}`;
+
     records.push({
-      name: `${site.city} - ${rounds.join("/")}`,
+      name: displayName,
       city: site.city,
       state: site.state,
       latitude: coords.lat,

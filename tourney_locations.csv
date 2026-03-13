@@ -1,44 +1,44 @@
-﻿Round,Region,City,State
-First_Four,N/A,Dayton,Ohio
-First,South,Buffalo,New York
-First,South,Greenville,South Carolina
-First,South,Oklahoma City,Oklahoma
-First,South,Portland,Oregon
-First,Midwest,Tampa,Florida
-First,Midwest,Philadelphia,Pennsylvania
-First,Midwest,San Diego,California
-First,Midwest,St. Louis,Missouri
-First,East,Buffalo,New York
-First,East,Greenville,South Carolina
-First,East,Oklahoma City,Oklahoma
-First,East,Portland,Oregon
-First,West,Tampa,Florida
-First,West,Philadelphia,Pennsylvania
-First,West,San Diego,California
-First,West,St. Louis,Missouri
-Second,South,Buffalo,New York
-Second,South,Greenville,South Carolina
-Second,South,Oklahoma City,Oklahoma
-Second,South,Portland,Oregon
-Second,Midwest,Tampa,Florida
-Second,Midwest,Philadelphia,Pennsylvania
-Second,Midwest,San Diego,California
-Second,Midwest,St. Louis,Missouri
-Second,East,Buffalo,New York
-Second,East,Greenville,South Carolina
-Second,East,Oklahoma City,Oklahoma
-Second,East,Portland,Oregon
-Second,West,Tampa,Florida
-Second,West,Philadelphia,Pennsylvania
-Second,West,San Diego,California
-Second,West,St. Louis,Missouri
-Sweet_Sixteen,South,Houston,Texas
-Sweet_Sixteen,Midwest,Chicago,Illinois
-Sweet_Sixteen,East,Washington,District of Columbia
-Sweet_Sixteen,West,San Jose,California
-Elite_Eight,South,Houston,Texas
-Elite_Eight,Midwest,Chicago,Illinois
-Elite_Eight,East,Washington,District of Columbia
-Elite_Eight,West,San Jose,California
-Final_Four,N/A,Indianapolis,Indiana
-National_Championship,N/A,Indianapolis,Indiana
+﻿Round,Region,City,State,Arena
+First_Four,N/A,Dayton,Ohio,UD Arena
+First,South,Buffalo,New York,KeyBank Center
+First,South,Greenville,South Carolina,Bon Secours Wellness Center
+First,South,Oklahoma City,Oklahoma,Paycom Center
+First,South,Portland,Oregon,Moda Center
+First,Midwest,Tampa,Florida,Benchmark International Arena
+First,Midwest,Philadelphia,Pennsylvania,Xfinity Mobile Arena
+First,Midwest,San Diego,California,Viejas Arena
+First,Midwest,St. Louis,Missouri,Enterprise Arena
+First,East,Buffalo,New York,KeyBank Center
+First,East,Greenville,South Carolina,Bon Secours Wellness Center
+First,East,Oklahoma City,Oklahoma,Paycom Center
+First,East,Portland,Oregon,Moda Center
+First,West,Tampa,Florida,Benchmark International Arena
+First,West,Philadelphia,Pennsylvania,Xfinity Mobile Arena
+First,West,San Diego,California,Viejas Arena
+First,West,St. Louis,Missouri,Enterprise Arena
+Second,South,Buffalo,New York,KeyBank Center
+Second,South,Greenville,South Carolina,Bon Secours Wellness Center
+Second,South,Oklahoma City,Oklahoma,Paycom Center
+Second,South,Portland,Oregon,Moda Center
+Second,Midwest,Tampa,Florida,Benchmark International Arena
+Second,Midwest,Philadelphia,Pennsylvania,Xfinity Mobile Arena
+Second,Midwest,San Diego,California,Viejas Arena
+Second,Midwest,St. Louis,Missouri,Enterprise Arena
+Second,East,Buffalo,New York,KeyBank Center
+Second,East,Greenville,South Carolina,Bon Secours Wellness Center
+Second,East,Oklahoma City,Oklahoma,Paycom Center
+Second,East,Portland,Oregon,Moda Center
+Second,West,Tampa,Florida,Benchmark International Arena
+Second,West,Philadelphia,Pennsylvania,Xfinity Mobile Arena
+Second,West,San Diego,California,Viejas Arena
+Second,West,St. Louis,Missouri,Enterprise Arena
+Sweet_Sixteen,South,Houston,Texas,Toyota Center
+Sweet_Sixteen,Midwest,Chicago,Illinois,United Center
+Sweet_Sixteen,East,Washington,District of Columbia,Capital One Arena
+Sweet_Sixteen,West,San Jose,California,SAP Center
+Elite_Eight,South,Houston,Texas,Toyota Center
+Elite_Eight,Midwest,Chicago,Illinois,United Center
+Elite_Eight,East,Washington,District of Columbia,Capital One Arena
+Elite_Eight,West,San Jose,California,SAP Center
+Final_Four,N/A,Indianapolis,Indiana,Lucas Oil Stadium
+National_Championship,N/A,Indianapolis,Indiana,Lucas Oil Stadium

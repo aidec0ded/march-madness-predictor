@@ -25,6 +25,7 @@ import type {
   ProbabilityBreakdownDisplay,
   StatCategory,
 } from "@/types/matchup-view";
+import type { GameSiteCoordinates } from "@/types/engine";
 
 // ---------------------------------------------------------------------------
 // Pre-built matchup lookup
@@ -241,6 +242,8 @@ export interface UseMatchupAnalysisResult {
   stats: StatCategory[];
   /** The bracket matchup definition */
   matchup: BracketMatchup | null;
+  /** Venue coordinates and metadata for this game (null if no site data) */
+  venue: GameSiteCoordinates | null;
 }
 
 /**
@@ -262,18 +265,19 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
 
   return useMemo(() => {
     if (!gameId) {
-      return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null };
+      return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null, venue: null };
     }
 
     const matchup = MATCHUP_MAP.get(gameId) ?? null;
     if (!matchup) {
-      return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null };
+      return { analysis: null, teamA: null, teamB: null, stats: [], matchup: null, venue: null };
     }
 
     const { teamA, teamB } = resolveMatchupTeams(matchup, state.teams, state.picks);
 
     if (!teamA || !teamB) {
-      return { analysis: null, teamA, teamB, stats: [], matchup };
+      const venue = state.tournamentSiteMap?.get(gameId) ?? null;
+      return { analysis: null, teamA, teamB, stats: [], matchup, venue };
     }
 
     // Build engine config from global levers
@@ -390,6 +394,6 @@ export function useMatchupAnalysis(gameId: string | null): UseMatchupAnalysisRes
       rawBreakdown: result.breakdown,
     };
 
-    return { analysis, teamA, teamB, stats, matchup };
+    return { analysis, teamA, teamB, stats, matchup, venue: siteCoords ?? null };
   }, [gameId, state.teams, state.picks, state.globalLevers, state.matchupOverrides, state.tournamentSiteMap]);
 }

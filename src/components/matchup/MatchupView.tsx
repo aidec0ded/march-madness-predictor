@@ -73,7 +73,7 @@ const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
 
 export function MatchupView({ gameId, onClose }: MatchupViewProps) {
   const { state } = useBracket();
-  const { analysis, teamA, teamB, stats } = useMatchupAnalysis(gameId);
+  const { analysis, teamA, teamB, stats, venue } = useMatchupAnalysis(gameId);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -180,6 +180,11 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
             <h2 className="matchup-view__title">
               {regionLabel ? `${regionLabel} — ` : ""}{roundLabel}
             </h2>
+            {venue?.name && (
+              <span className="matchup-view__venue">
+                {venue.name}{venue.city ? ` \u2022 ${venue.city}, ${venue.state}` : ""}
+              </span>
+            )}
             <span className="matchup-view__game-id">{gameId}</span>
           </div>
         </header>
@@ -303,6 +308,11 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           font-weight: 700;
           color: var(--text-primary);
           margin: 0;
+        }
+        .matchup-view__venue {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+          font-weight: 500;
         }
         .matchup-view__game-id {
           font-size: 0.6875rem;
