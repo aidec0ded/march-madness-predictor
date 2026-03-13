@@ -332,9 +332,9 @@
 - [ ] **Custom domain setup** — Configure custom domain on deployment provider (Render)
 - [x] **Fix Vitest / Vite ESM compatibility** — Root cause was two test files using vitest globals (`beforeEach`, `afterEach`) without importing them. While `globals: true` in vitest.config.ts makes them available at runtime, TypeScript couldn't resolve the types. Fixed by adding the missing imports to `page.test.tsx` and `PoolSizeSelector.test.tsx`. `npx tsc --noEmit` now passes with zero errors.
 
-### Batch 9 — Documentation & Guides
+### Batch 9 — Documentation & Guides ✅
 
-- [ ] **Comprehensive User Guide update** — Flesh out `docs/USER_GUIDE.md` with: simulation workflow documentation (when to run, what it adds beyond per-game probabilities, interpreting results), lever explanations with calibration guidance, game theory strategy guide by pool size, matchup view walkthrough, and interpretation guidance for all probability numbers
+- [x] **Comprehensive User Guide update** — Complete rewrite of `docs/USER_GUIDE.md` with flow-first structure: 9-step walkthrough from first visit to finished bracket (browse → matchup deep dive → picks → overrides → simulate → results → guidance → levers → iterate). Detailed "How the Probabilities Work" section covering composite ratings, rating differential, lever adjustments with math (logistic conversion formula, additive vs. variance adjustments), and Monte Carlo path probability engine. Full backtesting guide (Brier Score interpretation, calibration plot reading, train/test split rationale, 2021 anomaly). Expanded FAQ (8 questions) and glossary (12 terms). All content verified against actual UI component implementations.
 
 ### Claude Code Skills _(completed)_
 
