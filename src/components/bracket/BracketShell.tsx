@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
+import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
@@ -71,6 +72,7 @@ interface BracketShellProps {
  * - MatchupView (full-screen overlay, conditional on selectedMatchupId)
  */
 export function BracketShell({ initialTeams, savedBracket, tournamentSites }: BracketShellProps) {
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const [isLeverPanelOpen, setIsLeverPanelOpen] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
@@ -136,9 +138,10 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "10px 24px",
+            padding: isMobile ? "8px 12px" : "10px 24px",
             backgroundColor: "var(--bg-primary)",
             borderBottom: "1px solid var(--border-primary)",
+            gap: isMobile ? "8px" : "16px",
           }}
         >
           {/* Left section: bracket name + pool size */}
@@ -146,10 +149,12 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "16px",
+              gap: isMobile ? "8px" : "16px",
+              minWidth: 0,
+              flex: isMobile ? "0 1 auto" : undefined,
             }}
           >
-            <BracketName />
+            {!isMobile && <BracketName />}
             <PoolSizeSelector />
           </div>
 
@@ -158,7 +163,8 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: isMobile ? "6px" : "10px",
+              flexShrink: 0,
             }}
           >
             <SimulationButton onSimulationComplete={handleSimulationComplete} />
@@ -167,9 +173,10 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
               type="button"
               onClick={toggleResults}
               aria-pressed={isResultsOpen}
+              title="Results"
               style={{
-                padding: "8px 14px",
-                fontSize: "0.8125rem",
+                padding: isMobile ? "6px 10px" : "8px 14px",
+                fontSize: isMobile ? "0.75rem" : "0.8125rem",
                 fontWeight: 600,
                 color: isResultsOpen
                   ? "var(--accent-primary)"
@@ -190,9 +197,10 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
               type="button"
               onClick={toggleGuidance}
               aria-pressed={isGuidanceOpen}
+              title="Guidance"
               style={{
-                padding: "8px 14px",
-                fontSize: "0.8125rem",
+                padding: isMobile ? "6px 10px" : "8px 14px",
+                fontSize: isMobile ? "0.75rem" : "0.8125rem",
                 fontWeight: 600,
                 color: isGuidanceOpen
                   ? "var(--accent-primary)"
@@ -206,16 +214,17 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites }: Br
                 transition: "all 0.15s ease",
               }}
             >
-              Guidance
+              {isMobile ? "Guide" : "Guidance"}
             </button>
 
             <button
               type="button"
               onClick={toggleLevers}
               aria-pressed={isLeverPanelOpen}
+              title="Levers"
               style={{
-                padding: "8px 14px",
-                fontSize: "0.8125rem",
+                padding: isMobile ? "6px 10px" : "8px 14px",
+                fontSize: isMobile ? "0.75rem" : "0.8125rem",
                 fontWeight: 600,
                 color: isLeverPanelOpen
                   ? "var(--accent-primary)"

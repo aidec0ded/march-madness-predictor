@@ -304,7 +304,7 @@
 - [x] **Tournament venue / location data** — Admin API (`POST/GET/DELETE /api/admin/tournament-sites`), `tournament_sites` Supabase table, `buildSiteMap()` for round/region→venue mapping, continuous exponential decay distance model for site proximity global lever, auto-computed from campus-to-venue haversine distance
 - [x] **NET Ranking / Strength of Schedule lever** — `sosWeight` global lever (default 1.0) with `sosNetRating` data field, `calculateSosAdjustment()` in engine, "Strength of Schedule" slider in LeverPanel Schedule & Luck section
 - [x] **Luck regression lever** — `luckRegressionWeight` global lever (default 1.0) with `luck` data field (KenPom), `calculateLuckRegressionAdjustment()` in engine (8.0 eff pts scaling), "Luck Regression" slider in LeverPanel Schedule & Luck section
-- [ ] **2-Foul Participation editability** — Type fields exist in `MatchupOverrides` (`twoFoulParticipationA/B`) but no UI slider in `MatchupOverridePanel` yet. Currently display-only in `TeamProfileCard` and used for narrative context only.
+- [x] **2-Foul Participation editability** — No longer needed as a per-matchup override; data is ingested via the stats upload script and displayed read-only in TeamProfileCard. Used for narrative context.
 
 ### Batch 5 — Model Validation & Backtest Parity ✅
 
@@ -320,12 +320,12 @@
 - [x] **Ownership model transparency** — Enhanced OwnershipBadge tooltip to mention 4 factors (seed position, round depth, conference profile, rating strength). Created collapsible OwnershipExplainer component in matchup view documenting all 4 ownership factors with specific values from the model (seed baselines, round decay multipliers, conference premiums, rating adjustment range). Includes disclaimer that estimates are heuristic.
 - [x] **Backtest results interpretation guide** — Created collapsible BacktestInterpretationGuide component rendered at top of backtest dashboard. Covers 5 topics: Brier Score (scale, interpretation ranges), Model vs. Baseline (what seed-only baseline means), Train vs. Test (why test matters more, overfitting risk), Calibration Chart (diagonal, over/under-confidence, point size), 2021 Anomaly (COVID bubble context).
 
-### Batch 7 — Performance & Polish _(parallel)_
+### Batch 7 — Performance & Polish _(parallel)_ ✅
 
-- [ ] **Simulation performance optimization** — Target 50K sims in <5 seconds (deferred from Phase 3)
-- [ ] **Simulation progress reporting** — Real-time progress indicator for long-running simulations (deferred from Phase 3)
-- [ ] **Performance audit** — Bundle analyzer, API response time benchmarks (deferred from Phase 11)
-- [ ] **Responsive / mobile design polish** — Tablet horizontal scroll, mobile region-by-region bracket view (deferred from Phase 5 and Phase 11)
+- [x] **Simulation performance optimization** — Two-tier caching + fast path: `resolveMatchupFast()` returns only probability number (skipping all ProbabilityBreakdown diagnostic allocation), `MatchupCache` Map wrapper deduplicates (teamA, teamB) pairs across simulations (at most ~2,016 unique pairings for 64 teams). Cache only stores results for games without per-matchup overrides. `simulateBracket()` checks cache before computing, falls back to fast path. Targets <5s for 50K sims.
+- [x] **Simulation progress reporting** — SSE streaming via ReadableStream. New `/api/simulate/stream` endpoint sends `progress` events every 1,000 sims with `{completed, total, elapsedMs}` and a final `result` event. `runSimulation()` accepts optional `onProgress` callback and `progressInterval`. Frontend: `useBracketSimulation` hook consumes SSE stream with TextDecoder, dispatches `SET_SIMULATION_PROGRESS` actions into BracketProvider state. `SimulationButton` shows "Simulating... XX%" label + thin 2px progress bar at button bottom during streaming.
+- [x] **Performance audit** — Installed `@next/bundle-analyzer` with `ANALYZE=true` env var wrapper in `next.config.ts`. Added `"analyze"` npm script. Created `scripts/perf-benchmark.ts` measuring `runSimulation()` at 1K/5K/10K/25K/50K with median/P95/min/max/sims-per-sec. Added `Server-Timing` header to `/api/simulate` response. Documented targets and reproduction steps in `docs/PERFORMANCE.md`.
+- [x] **Responsive / mobile design polish** — Three breakpoints: desktop (≥1024px) unchanged, tablet (768–1023px) scroll affordance gradient, mobile (<768px) region-by-region tabbed view. Created `useMediaQuery` hook (SSR-safe, returns false during hydration) with `MOBILE_QUERY`/`TABLET_QUERY` constants. `MobileBracketView` component with 5 tabs (East/West/South/Midwest/Final 4), proper ARIA tablist/tab/tabpanel roles. `BracketGrid` delegates to MobileBracketView on mobile. `BracketShell` responsive header (condensed padding/fonts, hidden bracket name on mobile). `LeverPanel` full-width drawer (100vw) on mobile. Added `--border-primary` CSS variable, scroll affordance gradient, and mobile tab bar styles to globals.css.
 
 ### Batch 8 — Infrastructure & Tooling
 

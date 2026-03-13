@@ -262,6 +262,7 @@ function bracketReducer(
         ...state,
         simulationResult: action.result,
         isSimulating: false,
+        simulationProgress: null,
         simulationInputHash: inputHash,
         isSimulationStale: false,
       };
@@ -271,6 +272,15 @@ function bracketReducer(
       return {
         ...state,
         isSimulating: action.isSimulating,
+        // Clear progress when simulation starts or stops
+        simulationProgress: action.isSimulating ? null : state.simulationProgress,
+      };
+    }
+
+    case "SET_SIMULATION_PROGRESS": {
+      return {
+        ...state,
+        simulationProgress: action.progress,
       };
     }
 
@@ -303,6 +313,7 @@ function bracketReducer(
         matchupOverrides: {},
         simulationResult: null,
         isSimulating: false,
+        simulationProgress: null,
         simulationInputHash: null,
         isSimulationStale: false,
         bracketId: null,
@@ -397,6 +408,7 @@ export function BracketProvider({
       matchupOverrides: savedBracket?.matchupOverrides ?? {},
       simulationResult: savedBracket?.simulationSnapshot ?? null,
       isSimulating: false,
+      simulationProgress: null,
       simulationInputHash: savedBracket?.simulationSnapshot
         ? computeInputHash(
             savedBracket.picks,

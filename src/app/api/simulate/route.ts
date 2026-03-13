@@ -367,10 +367,14 @@ export async function POST(request: Request) {
 
     const result = runSimulation(teamsMap, simulationConfig, siteMap);
 
-    return NextResponse.json({
-      success: true,
-      result,
-    });
+    return NextResponse.json(
+      { success: true, result },
+      {
+        headers: {
+          "Server-Timing": `simulation;dur=${result.executionTimeMs}`,
+        },
+      }
+    );
   } catch (error) {
     logger.error("Simulation error", error instanceof Error ? error : undefined);
     return NextResponse.json(

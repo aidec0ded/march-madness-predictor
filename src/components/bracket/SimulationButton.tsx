@@ -11,10 +11,6 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 type ButtonState = "idle" | "loading" | "success" | "error";
 
 // ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
@@ -33,14 +29,18 @@ interface SimulationButtonProps {
  * States:
  * - idle:    "Run Simulation" with play icon, blue background
  * - idle (stale): "Re-run Simulation" with play icon + amber dot
- * - loading: "Simulating..." with spinner, disabled, reduced opacity
+ * - loading: "Simulating... XX%" with spinner + thin progress bar, disabled
  * - success: "Done" with checkmark, green background (reverts after 2s)
  * - error:   Error message, red background (reverts after 3s)
+ *
+ * Shows a thin 2px progress bar at the bottom of the button during streaming
+ * simulations. Progress percentage is shown in the label text.
  *
  * Reads simulation state from useBracketSimulation hook.
  */
 export function SimulationButton({ onSimulationComplete }: SimulationButtonProps) {
-  const { simulate, isSimulating, isSimulationStale } = useBracketSimulation();
+  const { simulate, isSimulating, isSimulationStale, simulationProgress } =
+    useBracketSimulation();
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,13 +82,19 @@ export function SimulationButton({ onSimulationComplete }: SimulationButtonProps
   // Derive display properties from state
   const isDisabled = buttonState === "loading" || isSimulating;
 
+  // Progress percentage (0–100)
+  const progressPct =
+    simulationProgress && simulationProgress.total > 0
+      ? Math.round((simulationProgress.completed / simulationProgress.total) * 100)
+      : 0;
+
   let backgroundColor: string;
   let label: string;
 
   switch (buttonState) {
     case "loading":
       backgroundColor = "var(--accent-primary)";
-      label = "Simulating...";
+      label = progressPct > 0 ? `Simulating... ${progressPct}%` : "Simulating...";
       break;
     case "success":
       backgroundColor = "var(--accent-success)";
@@ -130,8 +136,26 @@ export function SimulationButton({ onSimulationComplete }: SimulationButtonProps
         opacity: isDisabled ? 0.7 : 1,
         transition: "background-color 0.2s ease, opacity 0.2s ease",
         whiteSpace: "nowrap",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
+      {/* Progress bar — thin 2px strip at the bottom of the button */}
+      {buttonState === "loading" && progressPct > 0 && (
+        <span
+          data-testid="simulation-progress-bar"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            height: "2px",
+            width: `${progressPct}%`,
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            transition: "width 0.3s ease",
+            borderRadius: "0 0 6px 6px",
+          }}
+        />
+      )}
       {buttonState === "loading" && <LoadingSpinner size={16} />}
       {buttonState === "idle" && (
         <svg

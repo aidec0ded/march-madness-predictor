@@ -4,11 +4,17 @@
  * The core simulation loop that runs thousands of full-bracket simulations
  * to produce win path probabilities for every team. Each simulation plays
  * out all 63 games from R64 through the National Championship, using the
- * probability engine's `resolveMatchup` function for win probabilities
+ * probability engine's `resolveMatchupFast` function for win probabilities
  * and the sampler for random outcome draws.
  *
- * Designed for performance: the main `runSimulation` entry point uses a
- * streaming aggregator to avoid holding all simulated brackets in memory.
+ * Performance optimizations:
+ * - **Matchup cache**: Caches (teamA, teamB) → winProbability so repeated
+ *   pairings across simulations are resolved via Map lookup instead of
+ *   full recomputation. With 64 teams, at most ~2,016 unique pairings.
+ * - **Fast path**: resolveMatchupFast returns only the probability number,
+ *   skipping all ProbabilityBreakdown diagnostic object construction.
+ * - **Streaming aggregator**: O(64) memory regardless of simulation count.
+ *
  * Targets < 5 seconds for 50K simulations on a modern server.
  *
  * All heavy computation is pure and synchronous. The caller (API route)
@@ -25,11 +31,29 @@ import type {
   SimulationResult,
 } from "@/types/simulation";
 import type { SiteMap } from "@/lib/engine/site-mapping";
+import type { MatchupCache } from "@/lib/engine/simulation-cache";
 
-import { resolveMatchup } from "@/lib/engine/matchup";
+import { resolveMatchupFast } from "@/lib/engine/matchup-fast";
 import { sampleGameOutcome, createSeededRandom } from "@/lib/engine/sampler";
 import { buildBracketMatchups, buildBracketSlots } from "@/lib/engine/bracket";
 import { createStreamingAggregator } from "@/lib/engine/aggregator";
+import { createMatchupCache } from "@/lib/engine/simulation-cache";
+
+// ---------------------------------------------------------------------------
+// Progress callback type
+// ---------------------------------------------------------------------------
+
+/**
+ * Callback fired periodically during simulation to report progress.
+ */
+export type SimulationProgressCallback = (progress: {
+  /** Number of simulations completed so far */
+  completed: number;
+  /** Total number of simulations to run */
+  total: number;
+  /** Elapsed time in milliseconds since simulation started */
+  elapsedMs: number;
+}) => void;
 
 // ---------------------------------------------------------------------------
 // Single bracket simulation
@@ -41,9 +65,10 @@ import { createStreamingAggregator } from "@/lib/engine/aggregator";
  * The simulation processes games in order (R64, R32, S16, E8, F4, NCG). For each game:
  * 1. Resolve the two teams: look up from bracket slots (R64) or from previous game winners
  * 2. Look up both teams' full TeamSeason data
- * 3. Call `resolveMatchup` to get the win probability for team A
- * 4. Call `sampleGameOutcome` with the random function to determine the winner
- * 5. Record the winner in gameResults
+ * 3. Check the matchup cache for a previously computed probability
+ * 4. If not cached, call `resolveMatchupFast` and store the result
+ * 5. Call `sampleGameOutcome` with the random function to determine the winner
+ * 6. Record the winner in gameResults
  *
  * The matchups array must be in topological order (feeder games before their consumers),
  * which `buildBracketMatchups()` guarantees.
@@ -55,6 +80,7 @@ import { createStreamingAggregator } from "@/lib/engine/aggregator";
  * @param overrides - Optional per-matchup overrides keyed by gameId
  * @param random - Optional random number generator (defaults to Math.random)
  * @param siteMap - Optional pre-computed game-to-venue coordinate map for site proximity lever
+ * @param cache - Optional matchup probability cache (shared across simulation iterations)
  * @returns A SimulatedBracket with all 63 game results and the champion
  */
 export function simulateBracket(
@@ -64,12 +90,11 @@ export function simulateBracket(
   config: EngineConfig,
   overrides?: Record<string, MatchupOverrides>,
   random?: () => number,
-  siteMap?: SiteMap
+  siteMap?: SiteMap,
+  cache?: MatchupCache
 ): SimulatedBracket {
   const gameResults: Record<string, string> = {};
   const rng = random ?? Math.random;
-
-  const teamMap = teams;
 
   for (const matchup of matchups) {
     // Resolve team A
@@ -77,28 +102,48 @@ export function simulateBracket(
     // Resolve team B
     const teamBId = resolveTeamId(matchup.teamBSource, slots, gameResults);
 
-    // Look up full team data
-    const teamA = teamMap.get(teamAId);
-    const teamB = teamMap.get(teamBId);
-
-    if (!teamA) {
-      throw new Error(
-        `Team data not found for teamId "${teamAId}" in game "${matchup.gameId}"`
-      );
-    }
-    if (!teamB) {
-      throw new Error(
-        `Team data not found for teamId "${teamBId}" in game "${matchup.gameId}"`
-      );
+    // Check cache first
+    let winProbA: number | undefined;
+    if (cache) {
+      winProbA = cache.get(teamAId, teamBId);
     }
 
-    // Get win probability from the matchup resolver
-    const matchupOverrides = overrides?.[matchup.gameId];
-    const siteCoordinates = siteMap?.get(matchup.gameId);
-    const result = resolveMatchup(teamA, teamB, config, matchupOverrides, siteCoordinates);
+    if (winProbA === undefined) {
+      // Look up full team data
+      const teamA = teams.get(teamAId);
+      const teamB = teams.get(teamBId);
+
+      if (!teamA) {
+        throw new Error(
+          `Team data not found for teamId "${teamAId}" in game "${matchup.gameId}"`
+        );
+      }
+      if (!teamB) {
+        throw new Error(
+          `Team data not found for teamId "${teamBId}" in game "${matchup.gameId}"`
+        );
+      }
+
+      // Get win probability from the fast matchup resolver
+      const matchupOverrides = overrides?.[matchup.gameId];
+      const siteCoordinates = siteMap?.get(matchup.gameId);
+      winProbA = resolveMatchupFast(
+        teamA,
+        teamB,
+        config,
+        matchupOverrides,
+        siteCoordinates
+      );
+
+      // Cache the result (only for games without per-matchup overrides,
+      // since overrides make the probability game-specific)
+      if (cache && !matchupOverrides) {
+        cache.set(teamAId, teamBId, winProbA);
+      }
+    }
 
     // Sample the outcome
-    const outcome = sampleGameOutcome(result.winProbabilityA, rng);
+    const outcome = sampleGameOutcome(winProbA, rng);
     const winnerId = outcome === "A" ? teamAId : teamBId;
 
     gameResults[matchup.gameId] = winnerId;
@@ -123,9 +168,10 @@ export function simulateBracket(
  * This is the main entry point for the simulation engine. It:
  * 1. Builds the bracket structure (matchups and slots)
  * 2. Creates a seeded PRNG if a random seed is provided
- * 3. Initializes a streaming aggregator to avoid memory bloat
- * 4. Runs N bracket simulations, feeding each into the aggregator
- * 5. Returns the aggregated SimulationResult with timing information
+ * 3. Creates a matchup probability cache for deduplication
+ * 4. Initializes a streaming aggregator to avoid memory bloat
+ * 5. Runs N bracket simulations, feeding each into the aggregator
+ * 6. Returns the aggregated SimulationResult with timing information
  *
  * Uses the streaming aggregation approach internally: each simulated bracket
  * is processed immediately and not retained in memory, allowing efficient
@@ -136,6 +182,8 @@ export function simulateBracket(
  *   engine config, per-matchup overrides, and optional random seed
  * @param siteMap - Optional pre-computed game-to-venue coordinate map for
  *   site proximity lever. Computed once before the simulation loop for efficiency.
+ * @param onProgress - Optional callback fired every `progressInterval` simulations
+ * @param progressInterval - How often to fire the progress callback (default: 1000)
  * @returns Aggregated SimulationResult with per-team probabilities, champion
  *   predictions, upset rates, and execution timing
  *
@@ -157,9 +205,12 @@ export function simulateBracket(
 export function runSimulation(
   teams: Map<string, TeamSeason>,
   config: SimulationConfig,
-  siteMap?: SiteMap
+  siteMap?: SiteMap,
+  onProgress?: SimulationProgressCallback,
+  progressInterval?: number
 ): SimulationResult {
   const startTime = performance.now();
+  const interval = progressInterval ?? 1000;
 
   // Build bracket structure from the team data
   const teamArray = Array.from(teams.values());
@@ -171,6 +222,9 @@ export function runSimulation(
     config.randomSeed !== undefined
       ? createSeededRandom(config.randomSeed)
       : Math.random;
+
+  // Create matchup probability cache
+  const cache = createMatchupCache();
 
   // Create streaming aggregator
   const aggregator = createStreamingAggregator(
@@ -188,9 +242,19 @@ export function runSimulation(
       config.engineConfig,
       config.matchupOverrides,
       rng,
-      siteMap
+      siteMap,
+      cache
     );
     aggregator.addBracket(bracket);
+
+    // Report progress at configured intervals
+    if (onProgress && (i + 1) % interval === 0) {
+      onProgress({
+        completed: i + 1,
+        total: config.numSimulations,
+        elapsedMs: performance.now() - startTime,
+      });
+    }
   }
 
   const executionTimeMs = performance.now() - startTime;

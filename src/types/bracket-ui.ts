@@ -13,6 +13,23 @@ import type { PoolSizeBucket } from "./game-theory";
 import type { SiteMap } from "@/lib/engine/site-mapping";
 
 // ---------------------------------------------------------------------------
+// Simulation Progress
+// ---------------------------------------------------------------------------
+
+/**
+ * Real-time progress snapshot during a streaming simulation.
+ * Dispatched by the SSE stream consumer as simulations complete.
+ */
+export interface SimulationProgress {
+  /** Number of simulations completed so far */
+  completed: number;
+  /** Total number of simulations to run */
+  total: number;
+  /** Elapsed time in milliseconds since simulation started */
+  elapsedMs: number;
+}
+
+// ---------------------------------------------------------------------------
 // Bracket State
 // ---------------------------------------------------------------------------
 
@@ -40,6 +57,9 @@ export interface BracketState {
 
   /** Whether a simulation is currently running */
   isSimulating: boolean;
+
+  /** Real-time progress during a streaming simulation (null when idle or non-streaming) */
+  simulationProgress: SimulationProgress | null;
 
   /** Hash of simulation inputs (picks + levers + overrides) at time of last run. Null if never simulated. */
   simulationInputHash: string | null;
@@ -79,6 +99,7 @@ export type BracketAction =
   | { type: "REMOVE_MATCHUP_OVERRIDE"; gameId: string }
   | { type: "SET_SIMULATION_RESULT"; result: SimulationResult }
   | { type: "SET_SIMULATING"; isSimulating: boolean }
+  | { type: "SET_SIMULATION_PROGRESS"; progress: SimulationProgress }
   | { type: "LOAD_BRACKET"; bracket: SavedBracketData }
   | { type: "CLEAR_BRACKET" }
   | { type: "MARK_SAVED"; bracketId: string }

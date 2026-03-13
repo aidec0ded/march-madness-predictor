@@ -4,6 +4,7 @@ import React, { useCallback } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useBracket } from "@/hooks/useBracket";
+import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import type { GlobalLevers } from "@/types/engine";
 import { CompositeWeightsControl } from "./CompositeWeightsControl";
@@ -21,6 +22,7 @@ export interface LeverPanelProps {
  * Reads/writes state through BracketContext.
  */
 export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const { state, dispatch } = useBracket();
   const { globalLevers } = state;
 
@@ -39,7 +41,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
   }, [dispatch]);
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Simulation Levers" width="420px">
+    <Drawer isOpen={isOpen} onClose={onClose} title="Simulation Levers" width={isMobile ? "100vw" : "420px"}>
       <div className="lever-panel">
         {/* Composite Weights — default open */}
         <CollapsibleSection title="Composite Weights" defaultOpen>

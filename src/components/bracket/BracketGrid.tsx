@@ -26,11 +26,13 @@ import React, { useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
 import { useGameProbabilities } from "@/hooks/useGameProbabilities";
+import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { buildBracketMatchups } from "@/lib/engine/bracket";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
 import { FinalFour } from "@/components/bracket/FinalFour";
+import { MobileBracketView } from "./MobileBracketView";
 
 // ---------------------------------------------------------------------------
 // Layout Configuration
@@ -104,6 +106,7 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 // ---------------------------------------------------------------------------
 
 export function BracketGrid({ onMatchupClick }: BracketGridProps) {
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const { state, dispatch } = useBracket();
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
@@ -132,6 +135,11 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
     },
     [onMatchupClick]
   );
+
+  // On mobile, delegate to the tab-based MobileBracketView
+  if (isMobile) {
+    return <MobileBracketView onMatchupClick={onMatchupClick} />;
+  }
 
   // Empty state
   if (state.teams.size === 0) {
