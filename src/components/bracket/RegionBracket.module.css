@@ -139,8 +139,7 @@
 .tooltip {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   background-color: var(--bg-elevated);
   border: 1px solid var(--border-primary);
   border-radius: 5px;
@@ -199,8 +198,8 @@
 .tooltipArrow {
   position: absolute;
   bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
+  left: 20px;
+  transform: rotate(45deg);
   width: 7px;
   height: 7px;
   background-color: var(--bg-elevated);
