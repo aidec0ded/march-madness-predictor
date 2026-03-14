@@ -8,14 +8,22 @@
 import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/supabase/server";
 import { safeApiError } from "@/lib/api-error";
+import { createRateLimiter } from "@/lib/rate-limit";
 import type { UserLeverConfigInsert } from "@/lib/supabase/types";
 import { CURRENT_SEASON } from "@/lib/constants";
+
+const rateLimiter = createRateLimiter({ maxRequests: 60, windowMs: 60_000 });
 
 export async function GET() {
   const { supabase, user } = await createAuthenticatedClient();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = rateLimiter.check(user.id);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
   const { data, error } = await supabase
@@ -37,6 +45,11 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = rateLimiter.check(user.id);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
   let body: Record<string, unknown>;

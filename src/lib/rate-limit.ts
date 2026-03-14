@@ -61,17 +61,40 @@ export function createRateLimiter(config: RateLimitConfig) {
   return { check, cleanup, _store: store };
 }
 
+// ---------------------------------------------------------------------------
+// Private / reserved IP detection (RFC 1918, RFC 4193, loopback)
+// ---------------------------------------------------------------------------
+
+const PRIVATE_IP_PREFIXES = [
+  "10.",
+  "172.16.", "172.17.", "172.18.", "172.19.",
+  "172.20.", "172.21.", "172.22.", "172.23.",
+  "172.24.", "172.25.", "172.26.", "172.27.",
+  "172.28.", "172.29.", "172.30.", "172.31.",
+  "192.168.",
+  "127.",
+  "::1",
+  "fc",
+  "fd",
+];
+
+function isPrivateIp(ip: string): boolean {
+  const lower = ip.toLowerCase();
+  return PRIVATE_IP_PREFIXES.some((prefix) => lower.startsWith(prefix));
+}
+
 /**
  * Extract the real client IP from request headers.
  *
  * Checks infrastructure-set headers first (not user-spoofable), then
- * falls back to x-forwarded-for using the rightmost IP (the one added
- * by the first trusted reverse proxy, harder to spoof than leftmost).
+ * falls back to x-forwarded-for using the rightmost **public** IP
+ * (the one added by the first trusted reverse proxy, harder to spoof
+ * than leftmost). Private/reserved IPs in the chain are skipped.
  *
  * Header priority:
  * 1. x-real-ip        — set by nginx/Railway/Render infrastructure
  * 2. cf-connecting-ip  — set by Cloudflare
- * 3. x-forwarded-for   — rightmost entry (closest to server)
+ * 3. x-forwarded-for   — rightmost public IP (closest to server)
  * 4. "unknown"
  */
 export function getClientIp(request: Request): string {
@@ -82,12 +105,18 @@ export function getClientIp(request: Request): string {
   const cfIp = request.headers.get("cf-connecting-ip");
   if (cfIp) return cfIp.trim();
 
-  // Fallback: x-forwarded-for — use rightmost entry.
-  // The rightmost IP is appended by our trusted reverse proxy, not the client.
-  // The leftmost IP is user-supplied and trivially spoofable.
+  // Fallback: x-forwarded-for — walk from rightmost to leftmost,
+  // return the first public (non-private) IP. This skips internal
+  // proxy IPs and finds the one appended by our trusted edge proxy.
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     const ips = forwarded.split(",").map((ip) => ip.trim()).filter(Boolean);
+    for (let i = ips.length - 1; i >= 0; i--) {
+      if (!isPrivateIp(ips[i])) {
+        return ips[i];
+      }
+    }
+    // All IPs are private — use rightmost as best effort
     if (ips.length > 0) {
       return ips[ips.length - 1];
     }

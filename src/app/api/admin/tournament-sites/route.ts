@@ -236,7 +236,7 @@ export async function POST(request: Request) {
     if (insertError) {
       logger.error("Failed to insert tournament sites", insertError);
       return NextResponse.json(
-        { success: false, error: `Failed to insert sites: ${insertError.message}` },
+        { success: false, error: "Failed to insert tournament sites." },
         { status: 500 }
       );
     }
