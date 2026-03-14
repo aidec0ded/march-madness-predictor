@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "BracketLab",
+    default: "The Bracket Lab",
     template: "%s | BracketLab",
   },
   description:
@@ -16,16 +16,16 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   openGraph: {
-    title: "BracketLab",
+    title: "The Bracket Lab",
     description:
       "Build smarter brackets with Monte Carlo simulation, composite ratings, and contest-aware strategy.",
-    siteName: "BracketLab",
+    siteName: "The Bracket Lab",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "BracketLab",
+    title: "The Bracket Lab",
     description:
       "Monte Carlo simulation meets college basketball. Build data-driven brackets.",
   },

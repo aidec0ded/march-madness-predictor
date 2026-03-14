@@ -98,7 +98,7 @@ export default function SignUpPage() {
             Create Account
           </h1>
           <p className="mb-8 text-center text-sm text-[var(--text-secondary)]">
-            BracketLab
+            The Bracket Lab
           </p>
 
           {error && (

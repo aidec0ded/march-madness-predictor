@@ -11,4 +11,7 @@
 export const CURRENT_SEASON = 2026;
 
 /** The public-facing site name, used in the navbar, page titles, and metadata. */
-export const SITE_NAME = "BracketLab";
+export const SITE_NAME = "The Bracket Lab";
+
+/** Tournament title shown in the bracket header. */
+export const TOURNAMENT_TITLE = `${CURRENT_SEASON} Men's D1 Basketball Tournament`;

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "User Guide",
   description:
-    "Learn how to use BracketLab — bracket building, Monte Carlo simulation, levers, AI analysis, and more.",
+    "Learn how to use The Bracket Lab — bracket building, Monte Carlo simulation, levers, AI analysis, and more.",
 };
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ export default function GuidePage() {
       <div className="guide-header">
         <h1 className="guide-title">User Guide</h1>
         <p className="guide-subtitle">
-          Everything you need to build smarter brackets with BracketLab.
+          Everything you need to build smarter brackets with The Bracket Lab.
         </p>
       </div>
 

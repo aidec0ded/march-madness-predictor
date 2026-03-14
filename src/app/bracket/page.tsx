@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   description:
     "Build and simulate your March Madness bracket with Monte Carlo probabilities and game theory strategy.",
   openGraph: {
-    title: "Bracket Builder | BracketLab",
+    title: "Bracket Builder | The Bracket Lab",
     description:
       "Build and simulate your bracket with Monte Carlo probabilities and contest-aware strategy.",
   },

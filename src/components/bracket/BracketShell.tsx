@@ -6,7 +6,7 @@ import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import type { PlayInConfig } from "@/types/simulation";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
-import { SITE_NAME } from "@/lib/constants";
+import { TOURNAMENT_TITLE } from "@/lib/constants";
 import styles from "./BracketShell.module.css";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
@@ -250,14 +250,14 @@ function AutoSimulationTrigger() {
 }
 
 // ---------------------------------------------------------------------------
-// SiteBrand — site name in the bracket header
+// SiteBrand — tournament title in the bracket header
 // ---------------------------------------------------------------------------
 
-/** Displays the site name in the bracket header bar. */
+/** Displays the tournament title in the bracket header bar. */
 function SiteBrand() {
   return (
     <div className={styles.siteBrand}>
-      {SITE_NAME}
+      {TOURNAMENT_TITLE}
     </div>
   );
 }

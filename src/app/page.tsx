@@ -152,7 +152,7 @@ export default function Home() {
               marginBottom: 16,
             }}
           >
-            BracketLab
+            The Bracket Lab
           </h1>
           <p
             style={{

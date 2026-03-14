@@ -1,6 +1,8 @@
-# March Madness Bracket Predictor
+# The Bracket Lab
 
 A data-driven web application for building, simulating, and strategizing NCAA March Madness bracket predictions.
+
+**Live at [thebracketlab.ai](https://thebracketlab.ai)**
 
 ## What It Does
 
@@ -61,7 +63,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
-NEXT_PUBLIC_APP_URL=https://your-domain.com  # Used for OpenGraph metadata
+NEXT_PUBLIC_APP_URL=https://thebracketlab.ai  # Used for OpenGraph metadata
 ```
 
 ## Project Structure
@@ -78,6 +80,7 @@ src/
 │   ├── game-theory/  # Ownership model and strategy engine
 │   ├── guidance/     # Contextual guidance rules engine
 │   ├── narrative/    # AI narrative prompt builder
+│   ├── theme.ts      # Design token constants for JS contexts
 │   └── supabase/     # Supabase client and helpers
 └── types/            # TypeScript type definitions
 ```

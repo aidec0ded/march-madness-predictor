@@ -39,7 +39,7 @@ describe("SignInPage", () => {
   it("renders the sign-in heading and tagline", () => {
     render(<SignInPage />);
     expect(screen.getByRole("heading", { name: "Sign In" })).toBeInTheDocument();
-    expect(screen.getByText("BracketLab")).toBeInTheDocument();
+    expect(screen.getByText("The Bracket Lab")).toBeInTheDocument();
   });
 
   it("renders email and password inputs", () => {

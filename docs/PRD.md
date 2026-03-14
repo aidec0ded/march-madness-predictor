@@ -1,12 +1,13 @@
-# Product Requirements Document — March Madness Bracket Prediction App
+# Product Requirements Document — The Bracket Lab
 
 ## Document Info
 
 | Field        | Value                           |
 | ------------ | ------------------------------- |
-| Product Name | March Madness Bracket Predictor |
+| Product Name | The Bracket Lab                 |
+| Domain       | thebracketlab.ai                |
 | Version      | 0.1 (Draft)                     |
-| Last Updated | 2026-03-06                      |
+| Last Updated | 2026-03-14                      |
 | Status       | In Development                  |
 
 ---

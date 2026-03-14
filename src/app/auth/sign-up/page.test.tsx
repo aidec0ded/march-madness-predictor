@@ -35,7 +35,7 @@ describe("SignUpPage", () => {
     expect(
       screen.getByRole("heading", { name: "Create Account" })
     ).toBeInTheDocument();
-    expect(screen.getByText("BracketLab")).toBeInTheDocument();
+    expect(screen.getByText("The Bracket Lab")).toBeInTheDocument();
   });
 
   it("renders email, password, and confirm password inputs", () => {

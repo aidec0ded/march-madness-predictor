@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Admin | BracketLab",
-  description: "Admin data management for BracketLab.",
+  title: "Admin | The Bracket Lab",
+  description: "Admin data management for The Bracket Lab.",
 };
 
 export default function AdminLayout({
@@ -37,7 +37,7 @@ export default function AdminLayout({
             className="text-sm font-semibold tracking-wide"
             style={{ color: "var(--text-primary)" }}
           >
-            BracketLab
+            The Bracket Lab
           </span>
           <span
             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider"
