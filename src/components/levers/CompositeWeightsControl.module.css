@@ -20,7 +20,7 @@
 }
 .pct {
   font-size: 0.8125rem;
-  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-family: var(--font-mono, ui-monospace, monospace);
   font-weight: 600;
   color: var(--accent-primary);
 }

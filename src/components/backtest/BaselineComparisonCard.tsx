@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { BacktestResult } from "@/types/backtest";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -188,7 +189,7 @@ export function BaselineComparisonCard({ result }: BaselineComparisonCardProps) 
         .baseline-card__metric-value {
           font-size: 1.5rem;
           font-weight: 700;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           color: var(--text-primary);
           line-height: 1.1;
         }

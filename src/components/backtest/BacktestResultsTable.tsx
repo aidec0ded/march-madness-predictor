@@ -10,24 +10,36 @@
 
 import { memo, useMemo, useState, useCallback } from "react";
 import type { BacktestResult, BacktestYearResult } from "@/types/backtest";
+import {
+  ACCENT_PRIMARY,
+  ACCENT_SUCCESS,
+  ACCENT_WARNING,
+  ACCENT_DANGER,
+  BG_SECONDARY,
+  BG_ELEVATED,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_MUTED,
+  BORDER_PRIMARY,
+  FONT_MONO,
+} from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  bgPrimary: "#0a0e17",
-  bgSecondary: "#111827",
-  bgElevated: "#1a2332",
-  textPrimary: "#e2e8f0",
-  textSecondary: "#94a3b8",
-  textMuted: "#64748b",
-  accentPrimary: "#f97316",
-  accentSecondary: "#3b82f6",
-  borderPrimary: "#1e293b",
-  success: "#22c55e",
-  warning: "#eab308",
-  danger: "#ef4444",
+  bgSecondary: BG_SECONDARY,
+  bgElevated: BG_ELEVATED,
+  textPrimary: TEXT_PRIMARY,
+  textSecondary: TEXT_SECONDARY,
+  textMuted: TEXT_MUTED,
+  accentPrimary: ACCENT_PRIMARY,
+  accentWarning: ACCENT_WARNING,
+  borderPrimary: BORDER_PRIMARY,
+  success: ACCENT_SUCCESS,
+  warning: ACCENT_WARNING,
+  danger: ACCENT_DANGER,
 };
 
 // ---------------------------------------------------------------------------
@@ -403,7 +415,7 @@ export const BacktestResultsTable = memo(function BacktestResultsTable({
           white-space: nowrap;
         }
         .results-table__td--mono {
-          font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+          font-family: ${FONT_MONO};
           font-size: 0.8125rem;
         }
         .results-table__td--right {
@@ -430,7 +442,7 @@ export const BacktestResultsTable = memo(function BacktestResultsTable({
           color: ${COLORS.textPrimary};
         }
         .results-table__summary-row {
-          background-color: rgba(249, 115, 22, 0.04);
+          background-color: rgba(74, 144, 217, 0.04);
         }
         .results-table__split-badge {
           display: inline-block;
@@ -442,14 +454,14 @@ export const BacktestResultsTable = memo(function BacktestResultsTable({
           letter-spacing: 0.05em;
         }
         .results-table__split-badge--train {
-          background-color: rgba(59, 130, 246, 0.12);
-          color: ${COLORS.accentSecondary};
-          border: 1px solid rgba(59, 130, 246, 0.25);
+          background-color: rgba(74, 144, 217, 0.12);
+          color: ${COLORS.accentPrimary};
+          border: 1px solid rgba(74, 144, 217, 0.25);
         }
         .results-table__split-badge--test {
-          background-color: rgba(249, 115, 22, 0.12);
-          color: ${COLORS.accentPrimary};
-          border: 1px solid rgba(249, 115, 22, 0.25);
+          background-color: rgba(245, 158, 11, 0.12);
+          color: ${COLORS.accentWarning};
+          border: 1px solid rgba(245, 158, 11, 0.25);
         }
       `}</style>
     </div>

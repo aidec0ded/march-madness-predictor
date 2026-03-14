@@ -9,6 +9,7 @@
 
 import { memo } from "react";
 import type { TeamSeason } from "@/types/team";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -167,7 +168,7 @@ export const TeamProfileCard = memo(function TeamProfileCard({
         .team-profile-card__seed {
           font-size: 1.5rem;
           font-weight: 800;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           line-height: 1;
         }
         .team-profile-card__name-block {
@@ -264,7 +265,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
         .stat-row__value {
           font-size: 0.75rem;
           font-weight: 600;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           color: var(--text-primary);
         }
       `}</style>

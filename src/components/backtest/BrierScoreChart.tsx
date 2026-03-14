@@ -22,24 +22,36 @@ import {
   ReferenceArea,
 } from "recharts";
 import type { BacktestResult } from "@/types/backtest";
+import {
+  ACCENT_PRIMARY,
+  ACCENT_SUCCESS,
+  ACCENT_DANGER,
+  ACCENT_WARNING,
+  BG_SECONDARY,
+  BG_ELEVATED,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_MUTED,
+  BORDER_PRIMARY,
+  FONT_MONO,
+} from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  model: "#f97316", // --accent-primary (orange)
-  baseline: "#64748b", // --text-muted (gray)
-  bgPrimary: "#0a0e17",
-  bgSecondary: "#111827",
-  bgElevated: "#1a2332",
-  textPrimary: "#e2e8f0",
-  textSecondary: "#94a3b8",
-  textMuted: "#64748b",
-  borderPrimary: "#1e293b",
-  trainBand: "rgba(59, 130, 246, 0.06)", // subtle blue tint for train
-  testBand: "rgba(249, 115, 22, 0.06)", // subtle orange tint for test
-  gridStroke: "#1e293b",
+  model: ACCENT_PRIMARY,
+  baseline: TEXT_MUTED,
+  bgSecondary: BG_SECONDARY,
+  bgElevated: BG_ELEVATED,
+  textPrimary: TEXT_PRIMARY,
+  textSecondary: TEXT_SECONDARY,
+  textMuted: TEXT_MUTED,
+  borderPrimary: BORDER_PRIMARY,
+  trainBand: "rgba(74, 144, 217, 0.06)", // subtle accent-primary tint for train
+  testBand: "rgba(245, 158, 11, 0.06)", // subtle accent-warning tint for test
+  gridStroke: BORDER_PRIMARY,
 };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +129,7 @@ function BrierTooltip({
         <span className="brier-tooltip__label">Improvement:</span>
         <span
           className="brier-tooltip__value"
-          style={{ color: improvement >= 0 ? "#22c55e" : "#ef4444" }}
+          style={{ color: improvement >= 0 ? ACCENT_SUCCESS : ACCENT_DANGER }}
         >
           {improvement >= 0 ? "+" : ""}
           {improvement.toFixed(1)}%
@@ -140,7 +152,7 @@ function BrierTooltip({
           font-size: 0.8125rem;
         }
         .brier-tooltip__anomaly {
-          color: #eab308;
+          color: ${ACCENT_WARNING};
           font-weight: 400;
           font-size: 0.6875rem;
         }
@@ -166,7 +178,7 @@ function BrierTooltip({
         }
         .brier-tooltip__value {
           color: ${COLORS.textPrimary};
-          font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+          font-family: ${FONT_MONO};
           margin-left: auto;
         }
       `}</style>
@@ -323,8 +335,7 @@ export const BrierScoreChart = memo(function BrierScoreChart({
                 tick={{
                   fill: COLORS.textMuted,
                   fontSize: 11,
-                  fontFamily:
-                    '"SF Mono", "Fira Code", "Cascadia Code", monospace',
+                  fontFamily: FONT_MONO,
                 }}
                 tickLine={false}
                 axisLine={false}
@@ -390,14 +401,14 @@ export const BrierScoreChart = memo(function BrierScoreChart({
             <span className="brier-chart-card__legend-item">
               <span
                 className="brier-chart-card__legend-swatch"
-                style={{ backgroundColor: "rgba(59, 130, 246, 0.2)" }}
+                style={{ backgroundColor: "rgba(74, 144, 217, 0.2)" }}
               />
               Train
             </span>
             <span className="brier-chart-card__legend-item">
               <span
                 className="brier-chart-card__legend-swatch"
-                style={{ backgroundColor: "rgba(249, 115, 22, 0.2)" }}
+                style={{ backgroundColor: "rgba(245, 158, 11, 0.2)" }}
               />
               Test
             </span>

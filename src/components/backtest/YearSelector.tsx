@@ -6,6 +6,7 @@ import {
   TEST_SEASONS,
   ANOMALOUS_SEASONS,
 } from "@/types/backtest";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -205,7 +206,7 @@ export function YearSelector({ selectedSeasons, onChange }: YearSelectorProps) {
           padding: 6px 12px;
           font-size: 0.8125rem;
           font-weight: 600;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           color: var(--text-muted);
           background: var(--bg-tertiary);
           border: 1px solid var(--border-secondary);

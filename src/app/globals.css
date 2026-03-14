@@ -17,6 +17,7 @@
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
   --accent-info: #818cf8;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
 }
 
 [data-theme="light"] {

@@ -28,6 +28,7 @@ import { MatchupOverridePanel } from "@/components/matchup/MatchupOverridePanel"
 import { OwnershipExplainer } from "@/components/matchup/OwnershipExplainer";
 import { NarrativePanel } from "@/components/matchup/NarrativePanel";
 import { parseGameId } from "@/lib/bracket-layout";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -319,7 +320,7 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
         .matchup-view__game-id {
           font-size: 0.6875rem;
           color: var(--text-muted);
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
         }
         .matchup-view__content {
           display: flex;

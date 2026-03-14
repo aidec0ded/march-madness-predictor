@@ -12,6 +12,7 @@ import { memo } from "react";
 import { ordinal } from "@/lib/engine/rankings";
 import type { StatCategory } from "@/types/matchup-view";
 import type { TeamSeason } from "@/types/team";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -268,7 +269,7 @@ function StatRow({ stat }: { stat: StatCategory }) {
         }
         .stat-row__value {
           font-size: 0.75rem;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           min-width: 48px;
           text-align: right;
         }

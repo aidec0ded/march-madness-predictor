@@ -14,6 +14,7 @@
 import { memo } from "react";
 import type { TeamSeason } from "@/types/team";
 import type { MatchupAnalysis, ProbabilityBreakdownDisplay } from "@/types/matchup-view";
+import { FONT_MONO } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -249,7 +250,7 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
         .prob-display__path-value {
           font-size: 0.8125rem;
           font-weight: 700;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
         }
         .prob-display__path-sep {
           color: var(--text-muted);
@@ -297,7 +298,7 @@ export const ProbabilityDisplay = memo(function ProbabilityDisplay({
         .prob-display__breakdown-value {
           font-size: 0.75rem;
           font-weight: 600;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
         }
       `}</style>
     </div>
@@ -346,7 +347,7 @@ function ProbColumn({
         .prob-col__value {
           font-size: 2rem;
           font-weight: 800;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+          font-family: ${FONT_MONO};
           line-height: 1;
         }
         .prob-col__base {

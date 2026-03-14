@@ -23,23 +23,35 @@ import {
   ReferenceLine,
 } from "recharts";
 import type { BacktestResult } from "@/types/backtest";
+import {
+  ACCENT_PRIMARY,
+  ACCENT_SUCCESS,
+  ACCENT_WARNING,
+  ACCENT_DANGER,
+  BG_SECONDARY,
+  BG_ELEVATED,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_MUTED,
+  BORDER_PRIMARY,
+  FONT_MONO,
+} from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  point: "#f97316", // --accent-primary (orange)
-  pointFill: "rgba(249, 115, 22, 0.85)",
-  diagonal: "#64748b", // --text-muted (gray)
-  bgPrimary: "#0a0e17",
-  bgSecondary: "#111827",
-  bgElevated: "#1a2332",
-  textPrimary: "#e2e8f0",
-  textSecondary: "#94a3b8",
-  textMuted: "#64748b",
-  borderPrimary: "#1e293b",
-  gridStroke: "#1e293b",
+  point: ACCENT_PRIMARY,
+  pointFill: "rgba(74, 144, 217, 0.85)", // accent-primary with opacity
+  diagonal: TEXT_MUTED,
+  bgSecondary: BG_SECONDARY,
+  bgElevated: BG_ELEVATED,
+  textPrimary: TEXT_PRIMARY,
+  textSecondary: TEXT_SECONDARY,
+  textMuted: TEXT_MUTED,
+  borderPrimary: BORDER_PRIMARY,
+  gridStroke: BORDER_PRIMARY,
 };
 
 // ---------------------------------------------------------------------------
@@ -97,10 +109,10 @@ function CalibrationTooltip({
           style={{
             color:
               Math.abs(diff) < 0.03
-                ? "#22c55e"
+                ? ACCENT_SUCCESS
                 : Math.abs(diff) < 0.08
-                  ? "#eab308"
-                  : "#ef4444",
+                  ? ACCENT_WARNING
+                  : ACCENT_DANGER,
           }}
         >
           {diff >= 0 ? "+" : ""}
@@ -144,7 +156,7 @@ function CalibrationTooltip({
         }
         .cal-tooltip__value {
           color: ${COLORS.textPrimary};
-          font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+          font-family: ${FONT_MONO};
         }
       `}</style>
     </div>
@@ -221,8 +233,7 @@ export const CalibrationPlot = memo(function CalibrationPlot({
                 tick={{
                   fill: COLORS.textMuted,
                   fontSize: 11,
-                  fontFamily:
-                    '"SF Mono", "Fira Code", "Cascadia Code", monospace',
+                  fontFamily: FONT_MONO,
                 }}
                 tickLine={{ stroke: COLORS.borderPrimary }}
                 axisLine={{ stroke: COLORS.borderPrimary }}
@@ -246,8 +257,7 @@ export const CalibrationPlot = memo(function CalibrationPlot({
                 tick={{
                   fill: COLORS.textMuted,
                   fontSize: 11,
-                  fontFamily:
-                    '"SF Mono", "Fira Code", "Cascadia Code", monospace',
+                  fontFamily: FONT_MONO,
                 }}
                 tickLine={false}
                 axisLine={false}

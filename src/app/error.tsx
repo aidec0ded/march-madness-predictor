@@ -57,7 +57,7 @@ export default function Error({
               borderRadius: '8px',
               padding: '16px',
               fontSize: '13px',
-              fontFamily: '"SF Mono", "Fira Code", "Fira Mono", monospace',
+              fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace',
               color: 'var(--accent-danger)',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -73,7 +73,7 @@ export default function Error({
           <p
             style={{
               fontSize: '12px',
-              fontFamily: '"SF Mono", "Fira Code", "Fira Mono", monospace',
+              fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace',
               color: 'var(--text-muted)',
               margin: '0 0 24px 0',
             }}
