@@ -44,6 +44,8 @@ interface FinalFourProps {
   ownershipModel?: OwnershipModel | null;
   /** Per-game head-to-head probabilities from resolveMatchup (optional) */
   gameProbabilities?: GameProbabilities;
+  /** Whether probabilities are preview estimates (no confirmed simulation) */
+  isPreview?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +163,7 @@ export const FinalFour = React.memo(function FinalFour({
   onMatchupClick,
   ownershipModel,
   gameProbabilities,
+  isPreview,
 }: FinalFourProps) {
   // Sort matchups: F4-1 first, then F4-2, then NCG
   const f4Game1 = matchups.find((m) => m.gameId === "F4-1");
@@ -236,6 +239,7 @@ export const FinalFour = React.memo(function FinalFour({
             onMatchupClick={onMatchupClick}
             ownershipA={getOwn(f4Game1TeamA?.teamId, "F4")}
             ownershipB={getOwn(f4Game1TeamB?.teamId, "F4")}
+            isPreview={isPreview}
           />
         </div>
       )}
@@ -272,6 +276,7 @@ export const FinalFour = React.memo(function FinalFour({
             onMatchupClick={onMatchupClick}
             ownershipA={getOwn(ncgTeamA?.teamId, "NCG")}
             ownershipB={getOwn(ncgTeamB?.teamId, "NCG")}
+            isPreview={isPreview}
           />
         </div>
       )}
@@ -310,6 +315,7 @@ export const FinalFour = React.memo(function FinalFour({
             onMatchupClick={onMatchupClick}
             ownershipA={getOwn(f4Game2TeamA?.teamId, "F4")}
             ownershipB={getOwn(f4Game2TeamB?.teamId, "F4")}
+            isPreview={isPreview}
           />
         </div>
       )}

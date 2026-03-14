@@ -54,6 +54,27 @@ export function SimulationButton({ onSimulationComplete }: SimulationButtonProps
     };
   }, []);
 
+  // Track whether the loading state was set by an external trigger (auto-simulation)
+  const externalLoadingRef = useRef(false);
+
+  // Sync with external simulation triggers (e.g., auto-simulation on first load).
+  // When isSimulating becomes true externally and our local state is still "idle",
+  // switch to loading state so the button visually reflects the in-progress simulation.
+  useEffect(() => {
+    if (isSimulating && buttonState === "idle") {
+      externalLoadingRef.current = true;
+      setButtonState("loading");
+    }
+    if (!isSimulating && buttonState === "loading" && externalLoadingRef.current) {
+      // External simulation finished — show success briefly
+      externalLoadingRef.current = false;
+      setButtonState("success");
+      timeoutRef.current = setTimeout(() => {
+        setButtonState("idle");
+      }, 2000);
+    }
+  }, [isSimulating, buttonState]);
+
   const handleClick = useCallback(async () => {
     if (buttonState === "loading" || isSimulating) return;
 

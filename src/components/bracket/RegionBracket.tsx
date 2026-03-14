@@ -156,8 +156,11 @@ export function RegionBracket({
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
-  const { teams, picks, simulationResult, matchupOverrides, playInConfig } =
-    state;
+  const { teams, picks, simulationResult, matchupOverrides, playInConfig,
+    isSimulationStale } = state;
+
+  // Preview mode: probabilities are live estimates without full simulation confirmation
+  const isPreview = simulationResult === null || isSimulationStale;
 
   const handleAdvance = useCallback(
     (gameId: string, teamId: string) => {
@@ -260,6 +263,7 @@ export function RegionBracket({
                 onMatchupClick={onMatchupClick}
                 ownershipA={ownershipA}
                 ownershipB={ownershipB}
+                isPreview={isPreview}
               />
             </div>
           );

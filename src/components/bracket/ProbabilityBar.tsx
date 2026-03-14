@@ -8,6 +8,8 @@ import styles from "./ProbabilityBar.module.css";
 interface ProbabilityBarProps {
   /** Probability value between 0 and 1 */
   probability: number;
+  /** Whether this probability is a preview estimate (no confirmed simulation) */
+  isPreview?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,7 @@ function getBarColor(probability: number): string {
  */
 export const ProbabilityBar = memo(function ProbabilityBar({
   probability,
+  isPreview,
 }: ProbabilityBarProps) {
   const widthPercent = Math.min(Math.max(probability, 0), 1) * 100;
   const color = getBarColor(probability);
@@ -45,7 +48,7 @@ export const ProbabilityBar = memo(function ProbabilityBar({
   return (
     <div className={styles.track}>
       <div
-        className={styles.fill}
+        className={`${styles.fill}${isPreview ? ` ${styles.fillPreview}` : ""}`}
         style={{
           width: `${widthPercent}%`,
           backgroundColor: color,

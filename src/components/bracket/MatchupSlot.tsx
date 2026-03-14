@@ -38,6 +38,8 @@ interface MatchupSlotProps {
   ownershipA?: number;
   /** Ownership percentage for team B (optional) */
   ownershipB?: number;
+  /** Whether probabilities are preview estimates (no confirmed simulation) */
+  isPreview?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,6 +71,7 @@ export function MatchupSlot({
   onMatchupClick,
   ownershipA,
   ownershipB,
+  isPreview,
 }: MatchupSlotProps) {
   const seedA = teamA?.tournamentEntry?.seed ?? 0;
   const seedB = teamB?.tournamentEntry?.seed ?? 0;
@@ -90,6 +93,7 @@ export function MatchupSlot({
           if (teamA) onAdvance(teamA.teamId);
         }}
         ownership={ownershipA}
+        isPreview={isPreview}
       />
 
       {/* Divider */}
@@ -107,6 +111,7 @@ export function MatchupSlot({
           if (teamB) onAdvance(teamB.teamId);
         }}
         ownership={ownershipB}
+        isPreview={isPreview}
       />
 
       {/* Matchup click overlay (for navigating to detail view) */}

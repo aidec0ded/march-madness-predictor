@@ -121,6 +121,9 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
+  // Preview mode: probabilities are live estimates without full simulation confirmation
+  const isPreview = state.simulationResult === null || state.isSimulationStale;
+
   // Split matchups by region (includes FF extraction)
   const { regionMatchups, finalFourMatchups, firstFourMatchups } = useMemo(
     () => splitMatchupsByRegion(allMatchups),
@@ -173,6 +176,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
             ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
             playInConfig={state.playInConfig}
+            isPreview={isPreview}
           />
         </div>
       )}
@@ -202,6 +206,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
           onMatchupClick={handleMatchupClick}
           ownershipModel={ownershipModel}
           gameProbabilities={gameProbabilities}
+          isPreview={isPreview}
         />
 
         {/* Right side: West (top) + Midwest (bottom) */}

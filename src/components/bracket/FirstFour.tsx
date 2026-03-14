@@ -49,6 +49,8 @@ interface FirstFourProps {
   gameProbabilities?: GameProbabilities;
   /** Play-in configuration for resolving FF slot teams */
   playInConfig?: PlayInConfig | null;
+  /** Whether probabilities are preview estimates (no confirmed simulation) */
+  isPreview?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +129,7 @@ export function FirstFour({
   ownershipModel,
   gameProbabilities,
   playInConfig,
+  isPreview,
 }: FirstFourProps) {
   const sorted = sortFFMatchups(matchups);
 
@@ -245,6 +248,7 @@ export function FirstFour({
                   onMatchupClick={onMatchupClick}
                   ownershipA={getOwn(teamA?.teamId, "FF")}
                   ownershipB={getOwn(teamB?.teamId, "FF")}
+                  isPreview={isPreview}
                 />
               </div>
 

@@ -95,6 +95,9 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
   const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
+  // Preview mode: probabilities are live estimates without full simulation confirmation
+  const isPreview = state.simulationResult === null || state.isSimulationStale;
+
   // Split matchups by region (includes FF extraction)
   const { regionMatchups, finalFourMatchups, firstFourMatchups } = useMemo(
     () => splitMatchupsByRegion(allMatchups),
@@ -183,6 +186,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
             ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
             playInConfig={state.playInConfig}
+            isPreview={isPreview}
           />
         ) : activeTab === "Final 4" ? (
           <FinalFour
@@ -195,6 +199,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
             onMatchupClick={handleMatchupClick}
             ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
+            isPreview={isPreview}
           />
         ) : (
           <RegionBracket

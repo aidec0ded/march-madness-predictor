@@ -144,9 +144,9 @@ describe("BracketShell", () => {
     expect(screen.getByText("Results")).toBeInTheDocument();
   });
 
-  it("renders the Guidance toggle button", () => {
+  it("renders the Guide toggle button", () => {
     render(<BracketShell initialTeams={initialTeams} />);
-    expect(screen.getByText("Guidance")).toBeInTheDocument();
+    expect(screen.getByText("Guide")).toBeInTheDocument();
   });
 
   it("renders the Levers toggle button", () => {
@@ -159,15 +159,15 @@ describe("BracketShell", () => {
     expect(screen.getByText("Save")).toBeInTheDocument();
   });
 
-  it("toggles the Guidance panel when Guidance button is clicked", async () => {
+  it("toggles the Guidance panel when Guide button is clicked", async () => {
     const user = userEvent.setup();
     render(<BracketShell initialTeams={initialTeams} />);
 
     // Guidance panel should not be open initially
     expect(screen.queryByLabelText("Close guidance panel")).toBeNull();
 
-    // Click Guidance button
-    await user.click(screen.getByText("Guidance"));
+    // Click Guide button
+    await user.click(screen.getByText("Guide"));
 
     // Now the guidance panel should be open
     expect(
@@ -175,18 +175,18 @@ describe("BracketShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("toggles the Guidance button aria-pressed state", async () => {
+  it("toggles the Guide button aria-pressed state", async () => {
     const user = userEvent.setup();
     render(<BracketShell initialTeams={initialTeams} />);
 
-    const guidanceBtn = screen.getByText("Guidance");
-    expect(guidanceBtn).toHaveAttribute("aria-pressed", "false");
+    const guideBtn = screen.getByText("Guide");
+    expect(guideBtn).toHaveAttribute("aria-pressed", "false");
 
-    await user.click(guidanceBtn);
-    expect(guidanceBtn).toHaveAttribute("aria-pressed", "true");
+    await user.click(guideBtn);
+    expect(guideBtn).toHaveAttribute("aria-pressed", "true");
 
-    await user.click(guidanceBtn);
-    expect(guidanceBtn).toHaveAttribute("aria-pressed", "false");
+    await user.click(guideBtn);
+    expect(guideBtn).toHaveAttribute("aria-pressed", "false");
   });
 
   it("renders the main bracket area", () => {

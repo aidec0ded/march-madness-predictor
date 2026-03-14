@@ -29,6 +29,8 @@ interface TeamCardProps {
   onClick: () => void;
   /** Estimated public ownership percentage for this round (optional) */
   ownership?: number;
+  /** Whether probabilities are preview estimates (no confirmed simulation) */
+  isPreview?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,7 @@ export const TeamCard = memo(function TeamCard({
   isClickable,
   onClick,
   ownership,
+  isPreview,
 }: TeamCardProps) {
   // Empty slot (team not yet determined)
   if (!team) {
@@ -127,7 +130,7 @@ export const TeamCard = memo(function TeamCard({
         )}
         {probability != null && (
           <span className={styles.probability}>
-            {(probability * 100).toFixed(0)}%
+            {isPreview ? "~" : ""}{(probability * 100).toFixed(0)}%
           </span>
         )}
       </div>
@@ -135,7 +138,7 @@ export const TeamCard = memo(function TeamCard({
       {/* Probability bar */}
       {probability != null && (
         <div className={styles.barWrapper}>
-          <ProbabilityBar probability={probability} />
+          <ProbabilityBar probability={probability} isPreview={isPreview} />
         </div>
       )}
     </button>

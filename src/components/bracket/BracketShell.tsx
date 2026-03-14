@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
@@ -17,6 +17,7 @@ import { PoolSizeSelector } from "@/components/bracket/PoolSizeSelector";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SaveButton } from "./BracketShellSaveButton";
 import { ClearPicksButton } from "./ClearPicksButton";
+import { useAutoSimulation } from "@/hooks/useAutoSimulation";
 
 const MatchupView = dynamic(
   () =>
@@ -83,6 +84,17 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
   const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
   const [selectedMatchupId, setSelectedMatchupId] = useState<string | null>(null);
   const [hasAutoOpenedResults, setHasAutoOpenedResults] = useState(false);
+  const [showGuideHint, setShowGuideHint] = useState(false);
+
+  // Show a hint dot on the Guide button for first-time visitors
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem("bracketlab-guide-seen");
+      if (!seen) setShowGuideHint(true);
+    } catch {
+      // localStorage not available — no hint
+    }
+  }, []);
 
   const toggleLevers = useCallback(() => {
     setIsLeverPanelOpen((prev) => !prev);
@@ -94,7 +106,16 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
 
   const toggleGuidance = useCallback(() => {
     setIsGuidanceOpen((prev) => !prev);
-  }, []);
+    // Dismiss the hint dot on first click
+    if (showGuideHint) {
+      setShowGuideHint(false);
+      try {
+        localStorage.setItem("bracketlab-guide-seen", "1");
+      } catch {
+        // localStorage not available
+      }
+    }
+  }, [showGuideHint]);
 
   const closeResults = useCallback(() => {
     setIsResultsOpen(false);
@@ -125,6 +146,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
 
   return (
     <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites} playInConfig={playInConfig}>
+      <AutoSimulationTrigger />
       <div
         style={{
           display: "flex",
@@ -202,8 +224,12 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
               type="button"
               onClick={toggleGuidance}
               aria-pressed={isGuidanceOpen}
-              title="Guidance"
+              title="Guidance — tips, warnings, and strategy recommendations for your bracket"
               style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
                 padding: isMobile ? "6px 10px" : "8px 14px",
                 fontSize: isMobile ? "0.75rem" : "0.8125rem",
                 fontWeight: 600,
@@ -219,8 +245,49 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
                 transition: "all 0.15s ease",
               }}
             >
-              {isMobile ? "Guide" : "Guidance"}
+              {/* Info icon */}
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              {isMobile ? "Guide" : "Guide"}
+              {/* First-visit hint dot */}
+              {showGuideHint && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: "var(--accent-info)",
+                    animation: "guide-hint-pulse 1.5s ease-in-out infinite",
+                  }}
+                  aria-label="New — click to see bracket guidance"
+                />
+              )}
             </button>
+            {/* Guide hint pulse keyframes (inline style tag — tiny, non-blocking) */}
+            {showGuideHint && (
+              <style>{`
+                @keyframes guide-hint-pulse {
+                  0%, 100% { opacity: 1; transform: scale(1); }
+                  50% { opacity: 0.5; transform: scale(1.4); }
+                }
+              `}</style>
+            )}
 
             <button
               type="button"
@@ -282,6 +349,20 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
       </div>
     </BracketProvider>
   );
+}
+
+// ---------------------------------------------------------------------------
+// AutoSimulationTrigger — fires a background simulation on first load
+// ---------------------------------------------------------------------------
+
+/**
+ * Must be rendered inside BracketProvider. Calls useAutoSimulation to fire
+ * a background simulation when teams are loaded but no results exist.
+ * Renders nothing — this is a hook-only component.
+ */
+function AutoSimulationTrigger() {
+  useAutoSimulation();
+  return null;
 }
 
 // ---------------------------------------------------------------------------

@@ -18,3 +18,22 @@
   border-radius: 9999px;
   transition: all 0.3s ease-out;
 }
+
+/* Preview state — subtle pulse animation to indicate the probability
+ * is a live estimate that hasn't been confirmed by full simulation.
+ * The fill bar gently oscillates opacity to communicate "this is an estimate." */
+.fillPreview {
+  animation: preview-pulse 2s ease-in-out infinite;
+}
+
+@keyframes preview-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fillPreview {
+    animation: none;
+    opacity: 0.7;
+  }
+}
