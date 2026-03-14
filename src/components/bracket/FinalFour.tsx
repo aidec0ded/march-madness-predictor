@@ -200,11 +200,31 @@ export const FinalFour = React.memo(function FinalFour({
     ? getChampionshipProbability(championId, simulationResult)
     : null;
 
-  // Ownership helpers
-  const getOwn = (teamId: string | undefined, round: TournamentRound) =>
-    ownershipModel && teamId
-      ? ownershipModel.getOwnership(teamId, round)
-      : undefined;
+  // Game-level ownership for each matchup (always sums to 100%)
+  const f4g1Own =
+    ownershipModel && f4Game1TeamA?.teamId && f4Game1TeamB?.teamId
+      ? ownershipModel.getMatchupOwnership(
+          f4Game1TeamA.teamId,
+          f4Game1TeamB.teamId,
+          "F4"
+        )
+      : null;
+  const ncgOwn =
+    ownershipModel && ncgTeamA?.teamId && ncgTeamB?.teamId
+      ? ownershipModel.getMatchupOwnership(
+          ncgTeamA.teamId,
+          ncgTeamB.teamId,
+          "NCG"
+        )
+      : null;
+  const f4g2Own =
+    ownershipModel && f4Game2TeamA?.teamId && f4Game2TeamB?.teamId
+      ? ownershipModel.getMatchupOwnership(
+          f4Game2TeamA.teamId,
+          f4Game2TeamB.teamId,
+          "F4"
+        )
+      : null;
 
   const hasAnyF4Pick = !!(picks["F4-1"] || picks["F4-2"]);
 
@@ -237,8 +257,8 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"F4-1" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-1", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={getOwn(f4Game1TeamA?.teamId, "F4")}
-            ownershipB={getOwn(f4Game1TeamB?.teamId, "F4")}
+            ownershipA={f4g1Own?.[0]}
+            ownershipB={f4g1Own?.[1]}
             isPreview={isPreview}
           />
         </div>
@@ -274,8 +294,8 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"NCG" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("NCG", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={getOwn(ncgTeamA?.teamId, "NCG")}
-            ownershipB={getOwn(ncgTeamB?.teamId, "NCG")}
+            ownershipA={ncgOwn?.[0]}
+            ownershipB={ncgOwn?.[1]}
             isPreview={isPreview}
           />
         </div>
@@ -313,8 +333,8 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"F4-2" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-2", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={getOwn(f4Game2TeamA?.teamId, "F4")}
-            ownershipB={getOwn(f4Game2TeamB?.teamId, "F4")}
+            ownershipA={f4g2Own?.[0]}
+            ownershipB={f4g2Own?.[1]}
             isPreview={isPreview}
           />
         </div>

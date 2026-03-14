@@ -135,11 +135,15 @@ export function FirstFour({
 
   if (sorted.length === 0) return null;
 
-  // Ownership helper
-  const getOwn = (teamId: string | undefined, round: TournamentRound) =>
-    ownershipModel && teamId
-      ? ownershipModel.getOwnership(teamId, round)
-      : undefined;
+  // Game-level ownership helper — returns [ownershipA, ownershipB] summing to 100%
+  const getMatchupOwn = (
+    teamAId: string | undefined,
+    teamBId: string | undefined,
+    round: TournamentRound
+  ): [number | undefined, number | undefined] => {
+    if (!ownershipModel || !teamAId || !teamBId) return [undefined, undefined];
+    return ownershipModel.getMatchupOwnership(teamAId, teamBId, round);
+  };
 
   return (
     <div
@@ -191,6 +195,11 @@ export function FirstFour({
             playInConfig
           );
           const winner = picks[matchup.gameId] ?? null;
+          const [ownA, ownB] = getMatchupOwn(
+            teamA?.teamId,
+            teamB?.teamId,
+            "FF"
+          );
 
           return (
             <div
@@ -246,8 +255,8 @@ export function FirstFour({
                     onAdvance(matchup.gameId, teamId)
                   }
                   onMatchupClick={onMatchupClick}
-                  ownershipA={getOwn(teamA?.teamId, "FF")}
-                  ownershipB={getOwn(teamB?.teamId, "FF")}
+                  ownershipA={ownA}
+                  ownershipB={ownB}
                   isPreview={isPreview}
                 />
               </div>

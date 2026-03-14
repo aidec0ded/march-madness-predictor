@@ -23,9 +23,10 @@ describe("OwnershipExplainer", () => {
     await user.click(screen.getByText("How is ownership estimated?"));
 
     expect(screen.getByText("Seed Baseline")).toBeInTheDocument();
-    expect(screen.getByText("Round Decay")).toBeInTheDocument();
-    expect(screen.getByText("Conference Profile")).toBeInTheDocument();
+    expect(screen.getByText("Conference Strength")).toBeInTheDocument();
     expect(screen.getByText("Rating Strength")).toBeInTheDocument();
+    expect(screen.getByText("Public Recognition")).toBeInTheDocument();
+    expect(screen.getByText("Chalk Multiplier")).toBeInTheDocument();
   });
 
   it("shows the disclaimer footer when expanded", async () => {

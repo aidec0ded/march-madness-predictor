@@ -127,8 +127,12 @@ export function useMatchupNarrative(
   teamB: TeamSeason | null
 ): UseMatchupNarrativeResult {
   const { state: bracketState } = useBracket();
-  const { getOwnership, getRecommendation, poolSizeBucket, poolConfig } =
-    useContestStrategy();
+  const {
+    getMatchupOwnership,
+    getRecommendation,
+    poolSizeBucket,
+    poolConfig,
+  } = useContestStrategy();
 
   const [narrativeState, setNarrativeState] = useState<NarrativeState>({
     status: "idle",
@@ -160,8 +164,11 @@ export function useMatchupNarrative(
     const overrides: MatchupOverrides | undefined =
       bracketState.matchupOverrides[analysis.gameId];
 
-    const ownershipA = getOwnership(teamA.teamId, analysis.round);
-    const ownershipB = getOwnership(teamB.teamId, analysis.round);
+    const [ownershipA, ownershipB] = getMatchupOwnership(
+      teamA.teamId,
+      teamB.teamId,
+      analysis.round
+    );
 
     const recA = getRecommendation(analysis.probA, ownershipA);
     const recB = getRecommendation(analysis.probB, ownershipB);
@@ -187,7 +194,7 @@ export function useMatchupNarrative(
     teamA,
     teamB,
     bracketState.matchupOverrides,
-    getOwnership,
+    getMatchupOwnership,
     getRecommendation,
     poolSizeBucket,
     poolConfig,

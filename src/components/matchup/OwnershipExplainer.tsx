@@ -7,7 +7,7 @@ import { useState } from "react";
 // ---------------------------------------------------------------------------
 
 /**
- * Collapsible explainer panel documenting the 4 factors behind ownership estimates.
+ * Collapsible explainer panel documenting the factors behind ownership estimates.
  *
  * Placed in the matchup view to give users context on what drives the "X% own"
  * badges they see throughout the bracket.
@@ -31,23 +31,28 @@ export function OwnershipExplainer() {
         <div className="ownership-explainer__content">
           <FactorRow
             label="Seed Baseline"
-            detail="1-seeds start ~98% owned in Round of 64; 16-seeds ~2%. Higher seeds are picked more often by the public regardless of actual team strength."
+            detail="Based on NCAA.com historical pick data. In a 1-vs-16 game, 98.5% of brackets pick the 1-seed. For a 5-vs-12 game, 64% pick the 5-seed. In later rounds, the split is determined proportionally from each seed's popularity score."
           />
           <FactorRow
-            label="Round Decay"
-            detail="Ownership drops each round (\u00d70.85 in R32, \u00d70.70 in Sweet 16, down to \u00d70.30 by the Championship). Fewer brackets pick any team to go deep."
-          />
-          <FactorRow
-            label="Conference Profile"
-            detail="Power conference teams (ACC, Big 12, Big East, Big Ten, SEC) get +4 percentage points. Strong mid-major conferences (WCC, AAC, MWC, A-10) get +1.5 pp."
+            label="Conference Strength"
+            detail="Power conference teams (ACC, Big 12, Big East, Big Ten, SEC) get +4 percentage points when facing a non-power conference opponent. This reflects the public's tendency to favor familiar programs."
           />
           <FactorRow
             label="Rating Strength"
-            detail="Teams rated above their seed expectation get an ownership bump (up to +5 pp). Teams below expectation get reduced (down to -3 pp). This reflects how media coverage influences public picks."
+            detail="Teams with a higher composite efficiency margin (KenPom/Torvik/Evan Miya) get +1 percentage point per 2 points of AdjEM advantage over their opponent."
+          />
+          <FactorRow
+            label="Public Recognition"
+            detail="Blue-blood programs (Duke, Kansas, Kentucky, North Carolina, Connecticut, UCLA) get +2 percentage points when facing a non-blue-blood opponent. These schools are historically over-picked by the public."
+          />
+          <FactorRow
+            label="Chalk Multiplier"
+            detail="In later rounds (R32 through Championship), the public picks more conservatively — the favorite's share is scaled upward slightly (×1.05 in R32 up to ×1.20 in Final Four/Championship)."
           />
           <p className="ownership-explainer__footer">
-            These are heuristic estimates of public bracket behavior, not
-            predictions of who will win. Actual contest ownership may vary.
+            Ownership always sums to 100% within each matchup. These are
+            heuristic estimates of public bracket behavior, not predictions of
+            who will win. Actual contest ownership may vary.
           </p>
         </div>
       )}

@@ -6,9 +6,11 @@
 
 export {
   calculateOwnership,
+  calculateMatchupOwnership,
   buildFullOwnershipModel,
-  SEED_BASELINES,
-  ROUND_DECAY,
+  SEED_POPULARITY,
+  CHALK_MULTIPLIER,
+  PUBLIC_GROUP,
 } from "./ownership";
 
 export {

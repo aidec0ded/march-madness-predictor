@@ -33,6 +33,7 @@ vi.mock("@/hooks/useContestStrategy", () => ({
     },
     poolSizeBucket: "medium",
     getOwnership: () => 0,
+    getMatchupOwnership: () => [50, 50] as [number, number],
     getRecommendation: () => ({
       type: "neutral",
       leverageScore: 1,

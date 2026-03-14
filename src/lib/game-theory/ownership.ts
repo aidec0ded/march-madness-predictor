@@ -1,17 +1,25 @@
 /**
- * Ownership model for estimating public pick percentages.
+ * Game-level ownership model for estimating public pick percentages.
  *
- * Uses a heuristic approach based on:
- * - Seed-based baseline ownership (historically, higher seeds are picked more)
- * - Round decay (ownership drops as rounds advance — fewer people pick a team deep)
- * - Conference premium (power conference teams get a slight bump)
- * - Rating strength (teams rated higher than seed-average get an ownership bump)
+ * Uses NCAA.com historical pick rate data as R64 baselines, then applies
+ * modifiers for conference strength, ratings, and brand recognition.
+ * Returns game-level ownership that always sums to 100%.
  *
- * This is a heuristic model, not derived from real ownership data. It provides
- * a reasonable approximation for game theory recommendations.
+ * Baseline sources (NCAA.com average R64 upset pick rates):
+ * - 16 over 1: 1.5%    →  1-seed picked 98.5%
+ * - 15 over 2: 7%      →  2-seed picked 93%
+ * - 14 over 3: 15%     →  3-seed picked 85%
+ * - 13 over 4: 20%     →  4-seed picked 80%
+ * - 12 over 5: 36%     →  5-seed picked 64%
+ * - 11 over 6: 39%     →  6-seed picked 61%
+ * - 10 over 7: ~45%    →  7-seed picked 55%
+ * - 9 over 8: ~50%     →  8/9-seed coin flip
+ *
+ * For non-standard seed pairings (later rounds), the per-seed
+ * popularity scores are used proportionally to determine the split.
  */
 
-import type { TeamSeason, TournamentRound, Seed, Conference } from "@/types/team";
+import type { TeamSeason, TournamentRound } from "@/types/team";
 import type { OwnershipEstimate, OwnershipModel } from "@/types/game-theory";
 
 // ---------------------------------------------------------------------------
@@ -19,36 +27,59 @@ import type { OwnershipEstimate, OwnershipModel } from "@/types/game-theory";
 // ---------------------------------------------------------------------------
 
 /**
- * Seed-based R64 ownership baseline (percentage).
- * Represents the estimated % of brackets that pick this seed to win their R64 game.
- * These are rough historical averages of public bracket tendencies.
+ * Per-seed public popularity scores derived from NCAA.com R64 pick rates.
+ *
+ * In R64, each standard pair sums to 17 (1v16, 2v15, etc).
+ * The higher seed's pick rate IS the popularity score.
+ *
+ * For any matchup between seeds s1 and s2:
+ *   ownershipA% = popA / (popA + popB) × 100
+ *
+ * This exactly reproduces the NCAA.com R64 data and gives sensible
+ * results for non-standard later-round matchups.
  */
-export const SEED_BASELINES: Record<number, number> = {
-  1: 98,
+export const SEED_POPULARITY: Record<number, number> = {
+  1: 98.5,
   2: 93,
   3: 85,
-  4: 78,
-  5: 65,
-  6: 60,
+  4: 80,
+  5: 64,
+  6: 61,
   7: 55,
   8: 50,
   9: 50,
   10: 45,
-  11: 40,
-  12: 35,
-  13: 15,
-  14: 10,
-  15: 5,
-  16: 2,
+  11: 39,
+  12: 36,
+  13: 20,
+  14: 15,
+  15: 7,
+  16: 1.5,
 };
 
 /**
- * Round decay multipliers.
- * Applied to the seed baseline to estimate how many brackets pick a team
- * to reach each successive round. Decay is multiplicative because each
- * round requires surviving the previous round.
+ * Chalk multiplier by round. The public picks more conservatively
+ * in later rounds, favoring higher-seeded teams more heavily.
+ *
+ * Applied to the current favorite's share to boost their ownership.
  */
-export const ROUND_DECAY: Record<TournamentRound, number> = {
+export const CHALK_MULTIPLIER: Record<TournamentRound, number> = {
+  FF: 1.0,
+  R64: 1.0,
+  R32: 1.05,
+  S16: 1.1,
+  E8: 1.15,
+  F4: 1.2,
+  NCG: 1.2,
+};
+
+/**
+ * Round decay multipliers for single-team estimates.
+ *
+ * Used only by the per-team `calculateOwnership` fallback, which
+ * provides a rough standalone ownership estimate without opponent context.
+ */
+const ROUND_DECAY: Record<TournamentRound, number> = {
   FF: 1.0,
   R64: 1.0,
   R32: 0.85,
@@ -59,8 +90,8 @@ export const ROUND_DECAY: Record<TournamentRound, number> = {
 };
 
 /**
- * Power conferences that get a slight ownership premium.
- * The public over-picks familiar blue-blood programs from major conferences.
+ * Power conferences — teams from these conferences get an ownership
+ * boost when facing non-power conference opponents.
  */
 const POWER_CONFERENCES: Set<string> = new Set([
   "ACC",
@@ -70,64 +101,75 @@ const POWER_CONFERENCES: Set<string> = new Set([
   "SEC",
 ]);
 
-/** Ownership premium (percentage points) for power conference teams */
-const POWER_CONFERENCE_PREMIUM = 4;
-
-/** Ownership premium (percentage points) for mid-major "brand name" conferences */
-const MID_MAJOR_PREMIUM_CONFERENCES: Set<string> = new Set([
-  "WCC",
-  "AAC",
-  "MWC",
-  "A-10",
+/**
+ * Schools with outsized public recognition that get extra ownership
+ * when facing non-PUBLIC_GROUP opponents.
+ */
+export const PUBLIC_GROUP: Set<string> = new Set([
+  "Duke",
+  "Kansas",
+  "Kentucky",
+  "North Carolina",
+  "Connecticut",
+  "UCLA",
 ]);
-const MID_MAJOR_PREMIUM = 1.5;
+
+// Modifier magnitudes (percentage points)
+const POWER_CONF_MODIFIER_PP = 4;
+const PUBLIC_GROUP_MODIFIER_PP = 2;
+const KENPOM_MODIFIER_PER_2PTS = 1;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Calculates the conference premium for a team's conference.
- *
- * @param conference - The team's conference
- * @returns Ownership percentage point adjustment
+ * Returns the team's average adjusted efficiency margin across all
+ * available rating sources.
  */
-function getConferencePremium(conference: string): number {
-  if (POWER_CONFERENCES.has(conference)) return POWER_CONFERENCE_PREMIUM;
-  if (MID_MAJOR_PREMIUM_CONFERENCES.has(conference)) return MID_MAJOR_PREMIUM;
-  return 0;
-}
-
-/**
- * Calculates a rating-strength adjustment based on how the team's composite
- * efficiency margin compares to the typical margin for their seed.
- *
- * Teams with better ratings than expected for their seed get an ownership bump
- * because the public tends to favor teams that "look strong" in previews.
- *
- * @param team - The team season data
- * @returns Ownership percentage point adjustment (-3 to +5)
- */
-function getRatingStrengthAdjustment(team: TeamSeason): number {
-  // Get the team's best available efficiency margin
+function getAvgAdjEM(team: TeamSeason): number {
   const margins: number[] = [];
   if (team.ratings.kenpom) margins.push(team.ratings.kenpom.adjEM);
   if (team.ratings.torvik) margins.push(team.ratings.torvik.adjEM);
   if (team.ratings.evanmiya) margins.push(team.ratings.evanmiya.adjEM);
-
   if (margins.length === 0) return 0;
+  return margins.reduce((sum, m) => sum + m, 0) / margins.length;
+}
 
-  const avgMargin = margins.reduce((sum, m) => sum + m, 0) / margins.length;
+/**
+ * Calculates the total modifier (in percentage points) that shifts
+ * ownership toward teamA and away from teamB.
+ *
+ * Positive result = teamA gets boosted, negative = teamB gets boosted.
+ * Modifiers only apply when there's a differential between the teams.
+ *
+ * Modifiers:
+ * - Power conference vs non-power opponent: +4pp
+ * - PUBLIC_GROUP vs non-PUBLIC_GROUP opponent: +2pp
+ * - KenPom AdjEM advantage: +1pp per 2 points of AdjEM differential
+ */
+function calculateModifiers(teamA: TeamSeason, teamB: TeamSeason): number {
+  let modifier = 0;
 
-  // Expected margin by seed (rough heuristic based on historical data)
-  // 1-seed: ~+28, 16-seed: ~-10, linear interpolation
-  const seed = team.tournamentEntry?.seed ?? 8;
-  const expectedMargin = 28 - (seed - 1) * 2.53; // ~28 for 1-seed, ~-10 for 16-seed
+  // Power conference modifier: only when one is power and other isn't
+  const aPower = POWER_CONFERENCES.has(teamA.team.conference);
+  const bPower = POWER_CONFERENCES.has(teamB.team.conference);
+  if (aPower && !bPower) modifier += POWER_CONF_MODIFIER_PP;
+  if (bPower && !aPower) modifier -= POWER_CONF_MODIFIER_PP;
 
-  const delta = avgMargin - expectedMargin;
+  // PUBLIC_GROUP modifier: only when one is in the group and other isn't
+  const aPublic = PUBLIC_GROUP.has(teamA.team.name);
+  const bPublic = PUBLIC_GROUP.has(teamB.team.name);
+  if (aPublic && !bPublic) modifier += PUBLIC_GROUP_MODIFIER_PP;
+  if (bPublic && !aPublic) modifier -= PUBLIC_GROUP_MODIFIER_PP;
 
-  // Clamp adjustment: max +5, min -3
-  return Math.max(-3, Math.min(5, delta * 0.5));
+  // KenPom AdjEM modifier: +1pp per 2 points of advantage
+  const emA = getAvgAdjEM(teamA);
+  const emB = getAvgAdjEM(teamB);
+  const emDiff = emA - emB;
+  modifier += (emDiff / 2) * KENPOM_MODIFIER_PER_2PTS;
+
+  return modifier;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,63 +177,127 @@ function getRatingStrengthAdjustment(team: TeamSeason): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Calculates the estimated public ownership percentage for a team in a given round.
+ * Calculates game-level ownership for a matchup between two teams.
  *
- * The formula is:
- *   ownership = clamp(seedBaseline × roundDecay + conferencePremium + ratingAdj, 0, 100)
+ * Returns [ownershipA, ownershipB] as percentages that always sum to 100.
  *
- * @param team - The team season data (must have tournamentEntry)
+ * Steps:
+ * 1. Seed-based baseline from NCAA.com data (proportional popularity split)
+ * 2. Modifiers shift ownership (conference, ratings, brand recognition)
+ * 3. Chalk multiplier boosts the favorite in later rounds
+ * 4. Clamped to [1, 99] to ensure valid percentages
+ *
+ * @param teamA - First team in the matchup
+ * @param teamB - Second team in the matchup
  * @param round - The tournament round
- * @returns Estimated ownership percentage (0-100)
+ * @returns [ownershipA, ownershipB] summing to 100
+ */
+export function calculateMatchupOwnership(
+  teamA: TeamSeason,
+  teamB: TeamSeason,
+  round: TournamentRound
+): [number, number] {
+  const seedA = teamA.tournamentEntry?.seed ?? 8;
+  const seedB = teamB.tournamentEntry?.seed ?? 8;
+
+  // Step 1: Seed-based baseline (proportional split from popularity scores)
+  let pctA: number;
+  if (round === "FF") {
+    // First Four: start at 50/50 before modifiers
+    pctA = 50;
+  } else {
+    const popA = SEED_POPULARITY[seedA] ?? 50;
+    const popB = SEED_POPULARITY[seedB] ?? 50;
+    const totalPop = popA + popB;
+    pctA = totalPop > 0 ? (popA / totalPop) * 100 : 50;
+  }
+
+  // Step 2: Apply modifiers (positive = boost teamA)
+  pctA += calculateModifiers(teamA, teamB);
+
+  // Step 3: Apply chalk multiplier for later rounds
+  const chalkMult = CHALK_MULTIPLIER[round];
+  if (chalkMult !== 1.0) {
+    if (pctA >= 50) {
+      // teamA is the favorite — boost their share
+      pctA = pctA * chalkMult;
+    } else {
+      // teamB is the favorite — boost their share
+      const pctB = 100 - pctA;
+      pctA = 100 - pctB * chalkMult;
+    }
+  }
+
+  // Step 4: Clamp to [1, 99] — always sum to 100
+  pctA = Math.max(1, Math.min(99, pctA));
+
+  return [pctA, 100 - pctA];
+}
+
+/**
+ * Single-team ownership estimate without opponent context.
+ *
+ * Uses seed popularity with round decay as a rough standalone metric.
+ * For accurate game-level ownership, use calculateMatchupOwnership instead.
+ *
+ * @param team - The team season data
+ * @param round - The tournament round
+ * @returns Estimated ownership percentage (1-99)
  */
 export function calculateOwnership(
   team: TeamSeason,
   round: TournamentRound
 ): number {
   const seed = team.tournamentEntry?.seed ?? 8;
-  const baseline = SEED_BASELINES[seed] ?? 50;
+  const baseline = SEED_POPULARITY[seed] ?? 50;
   const decay = ROUND_DECAY[round];
-  const confPremium = getConferencePremium(team.team.conference);
-  const ratingAdj = getRatingStrengthAdjustment(team);
-
-  const raw = baseline * decay + confPremium + ratingAdj;
-
-  // Clamp to 0-100
-  return Math.max(0, Math.min(100, raw));
+  return Math.max(1, Math.min(99, baseline * decay));
 }
 
 /**
- * Builds a complete ownership model for all teams across all rounds.
+ * Builds a complete ownership model for all teams.
  *
- * Creates a lookup map keyed by `${teamId}-${round}` and provides a
- * convenience getter function.
+ * Stores team data for on-demand game-level calculations via
+ * `getMatchupOwnership`. Also pre-computes per-team standalone estimates
+ * for backward compatibility via `getOwnership`.
  *
- * @param teams - All tournament teams (typically 64)
- * @returns An OwnershipModel with pre-computed estimates
+ * @param teams - All tournament teams (typically 64-68)
+ * @returns An OwnershipModel with both per-team and game-level lookups
  */
 export function buildFullOwnershipModel(teams: TeamSeason[]): OwnershipModel {
+  const teamMap = new Map<string, TeamSeason>();
   const estimates = new Map<string, OwnershipEstimate>();
   const rounds: TournamentRound[] = ["R64", "R32", "S16", "E8", "F4", "NCG"];
 
   for (const team of teams) {
     if (!team.tournamentEntry) continue;
+    teamMap.set(team.teamId, team);
 
+    // Pre-compute per-team standalone estimates (backward compat)
     for (const round of rounds) {
       const ownershipPct = calculateOwnership(team, round);
       const key = `${team.teamId}-${round}`;
-      estimates.set(key, {
-        teamId: team.teamId,
-        round,
-        ownershipPct,
-      });
+      estimates.set(key, { teamId: team.teamId, round, ownershipPct });
     }
   }
 
   return {
     estimates,
+
     getOwnership: (teamId: string, round: TournamentRound): number => {
       const key = `${teamId}-${round}`;
       return estimates.get(key)?.ownershipPct ?? 0;
+    },
+
+    getMatchupOwnership: (
+      teamAId: string,
+      teamBId: string,
+      round: TournamentRound
+    ): [number, number] => {
+      const teamA = teamMap.get(teamAId);
+      const teamB = teamMap.get(teamBId);
+      if (!teamA || !teamB) return [50, 50];
+      return calculateMatchupOwnership(teamA, teamB, round);
     },
   };
 }

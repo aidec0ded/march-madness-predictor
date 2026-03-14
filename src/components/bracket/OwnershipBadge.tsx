@@ -67,7 +67,7 @@ export const OwnershipBadge = memo(function OwnershipBadge({
     <span
       className={styles.badge}
       style={{ color }}
-      title={`Estimated ${ownershipPct.toFixed(1)}% public ownership. Based on: seed position, round depth, conference profile, and rating strength vs. seed expectation.`}
+      title={`Estimated ${ownershipPct.toFixed(1)}% public ownership. Based on: NCAA.com seed pick rates, conference strength, rating differential, and brand recognition. Always sums to 100% per matchup.`}
     >
       {displayPct}%
       <span className={styles.label}>

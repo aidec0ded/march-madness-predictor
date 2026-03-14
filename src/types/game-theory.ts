@@ -89,6 +89,12 @@ export interface PoolStrategyConfig {
 export interface OwnershipModel {
   /** Ownership estimates indexed by `${teamId}-${round}` */
   estimates: Map<string, OwnershipEstimate>;
-  /** Get ownership for a specific team and round */
+  /** Get standalone ownership for a specific team and round (no opponent context) */
   getOwnership: (teamId: string, round: TournamentRound) => number;
+  /** Get game-level ownership for a matchup — returns [ownershipA, ownershipB] summing to 100 */
+  getMatchupOwnership: (
+    teamAId: string,
+    teamBId: string,
+    round: TournamentRound
+  ) => [number, number];
 }

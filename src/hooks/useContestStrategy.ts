@@ -37,8 +37,14 @@ export interface ContestStrategyResult {
   poolConfig: PoolStrategyConfig;
   /** Current pool size bucket */
   poolSizeBucket: PoolSizeBucket;
-  /** Get ownership percentage for a team in a round */
+  /** Get standalone ownership percentage for a team in a round (no opponent context) */
   getOwnership: (teamId: string, round: TournamentRound) => number;
+  /** Get game-level ownership for a matchup — returns [ownershipA, ownershipB] summing to 100 */
+  getMatchupOwnership: (
+    teamAId: string,
+    teamBId: string,
+    round: TournamentRound
+  ) => [number, number];
   /** Get strategy recommendation for a pick */
   getRecommendation: (
     winProbability: number,
@@ -55,9 +61,9 @@ export interface ContestStrategyResult {
  *
  * Usage:
  * ```tsx
- * const { getOwnership, getRecommendation, poolConfig } = useContestStrategy();
- * const ownership = getOwnership(teamId, "R64");
- * const rec = getRecommendation(0.65, ownership);
+ * const { getMatchupOwnership, getRecommendation, poolConfig } = useContestStrategy();
+ * const [ownA, ownB] = getMatchupOwnership(teamAId, teamBId, "R64");
+ * const rec = getRecommendation(0.65, ownA);
  * ```
  */
 export function useContestStrategy(): ContestStrategyResult {
@@ -76,10 +82,22 @@ export function useContestStrategy(): ContestStrategyResult {
     [poolSizeBucket]
   );
 
-  // Stable getOwnership function
+  // Stable getOwnership function (standalone, no opponent context)
   const getOwnership = useCallback(
     (teamId: string, round: TournamentRound): number => {
       return ownershipModel.getOwnership(teamId, round);
+    },
+    [ownershipModel]
+  );
+
+  // Stable getMatchupOwnership function (game-level, always sums to 100)
+  const getMatchupOwnership = useCallback(
+    (
+      teamAId: string,
+      teamBId: string,
+      round: TournamentRound
+    ): [number, number] => {
+      return ownershipModel.getMatchupOwnership(teamAId, teamBId, round);
     },
     [ownershipModel]
   );
@@ -97,6 +115,7 @@ export function useContestStrategy(): ContestStrategyResult {
     poolConfig,
     poolSizeBucket,
     getOwnership,
+    getMatchupOwnership,
     getRecommendation,
   };
 }

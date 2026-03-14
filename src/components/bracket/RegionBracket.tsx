@@ -275,15 +275,17 @@ export function RegionBracket({
             simulationResult
           );
 
-          // Get ownership for this round
-          const ownershipA =
-            ownershipModel && teamA?.teamId
-              ? ownershipModel.getOwnership(teamA.teamId, matchup.round)
-              : undefined;
-          const ownershipB =
-            ownershipModel && teamB?.teamId
-              ? ownershipModel.getOwnership(teamB.teamId, matchup.round)
-              : undefined;
+          // Get game-level ownership for this matchup (always sums to 100%)
+          const matchupOwnership =
+            ownershipModel && teamA?.teamId && teamB?.teamId
+              ? ownershipModel.getMatchupOwnership(
+                  teamA.teamId,
+                  teamB.teamId,
+                  matchup.round
+                )
+              : null;
+          const ownershipA = matchupOwnership?.[0];
+          const ownershipB = matchupOwnership?.[1];
 
           const nextRound = NEXT_ROUND_SHORT[matchup.round];
 
