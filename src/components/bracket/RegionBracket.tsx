@@ -159,6 +159,34 @@ function getRoundDelay(round: string): number {
 }
 
 // ---------------------------------------------------------------------------
+// Hover tooltip helpers
+// ---------------------------------------------------------------------------
+
+/** Formats the probability spread as a compact string. */
+function getSpreadText(probA: number, probB: number): string {
+  const spread = Math.abs(probA - probB) * 100;
+  if (spread < 1) return "Even";
+  return `${spread.toFixed(0)}pt`;
+}
+
+/** Classifies the matchup competitiveness. */
+function getMatchupLabel(probA: number, probB: number): string {
+  const spread = Math.abs(probA - probB) * 100;
+  if (spread < 5) return "Toss-up";
+  if (spread < 15) return "Slight edge";
+  if (spread < 30) return "Clear favorite";
+  return "Strong favorite";
+}
+
+/** Maps a round to the next round label for path probability display. */
+const NEXT_ROUND_SHORT: Record<string, string> = {
+  R64: "R32",
+  R32: "S16",
+  S16: "E8",
+  E8: "F4",
+};
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -254,6 +282,8 @@ export function RegionBracket({
               ? ownershipModel.getOwnership(teamB.teamId, matchup.round)
               : undefined;
 
+          const nextRound = NEXT_ROUND_SHORT[matchup.round];
+
           return (
             <div
               key={matchup.gameId}
@@ -282,6 +312,43 @@ export function RegionBracket({
                 ownershipB={ownershipB}
                 isPreview={isPreview}
               />
+
+              {/* Hover tooltip — compact probability comparison */}
+              {teamA && teamB && probA !== null && probB !== null && (
+                <div className={styles.tooltip} role="tooltip">
+                  <div className={styles.tooltipRow}>
+                    <span className={styles.tooltipSpread}>
+                      {getSpreadText(probA, probB)}
+                    </span>
+                    <span className={styles.tooltipLabel}>
+                      {getMatchupLabel(probA, probB)}
+                    </span>
+                  </div>
+                  {(pathProbA != null || pathProbB != null) && nextRound && (
+                    <div className={styles.tooltipPath}>
+                      <span className={styles.tooltipPathAccent}>
+                        →{nextRound}:
+                      </span>
+                      {pathProbA != null && (
+                        <span>
+                          {teamA.team.shortName}{" "}
+                          {(pathProbA * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {pathProbA != null && pathProbB != null && (
+                        <span className={styles.tooltipSep}>·</span>
+                      )}
+                      {pathProbB != null && (
+                        <span>
+                          {teamB.team.shortName}{" "}
+                          {(pathProbB * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className={styles.tooltipArrow} />
+                </div>
+              )}
             </div>
           );
         })}
