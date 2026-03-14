@@ -24,6 +24,7 @@ import {
   transformTeamSeasonRows,
   type TeamSeasonJoinedRow,
 } from "@/lib/supabase/transforms";
+import type { TournamentEntryRow } from "@/lib/supabase/types";
 import { CURRENT_SEASON } from "@/lib/constants";
 
 const rateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60_000 });
@@ -94,14 +95,14 @@ export async function GET(request: Request) {
     let teamQuery = supabase
       .from("team_seasons")
       .select("*, teams!inner(*), coaches(*)")
-      .eq("season", season)
-      .returns<TeamSeasonJoinedRow[]>();
+      .eq("season", season);
 
     if (teamId) {
       teamQuery = teamQuery.eq("team_id", teamId);
     }
 
-    const { data: teamSeasonRows, error: teamsError } = await teamQuery;
+    const { data: teamSeasonRows, error: teamsError } = await teamQuery
+      .returns<TeamSeasonJoinedRow[]>();
 
     if (teamsError) {
       logger.error(
@@ -118,7 +119,8 @@ export async function GET(request: Request) {
     const { data: entries, error: entriesError } = await supabase
       .from("tournament_entries")
       .select("*")
-      .eq("season", season);
+      .eq("season", season)
+      .returns<TournamentEntryRow[]>();
 
     if (entriesError) {
       logger.warn("Teams API: failed to fetch tournament_entries", {

@@ -32,6 +32,7 @@ export const metadata: Metadata = {
 };
 import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import type {
+  TournamentEntryRow,
   TournamentSiteRow,
   UserBracketRow,
 } from "@/lib/supabase/types";
@@ -58,7 +59,8 @@ export default async function BracketPage() {
   const { data: entries, error: entriesError } = await adminClient
     .from("tournament_entries")
     .select("*")
-    .eq("season", CURRENT_SEASON);
+    .eq("season", CURRENT_SEASON)
+    .returns<TournamentEntryRow[]>();
 
   // Fetch tournament sites (optional — graceful degradation if none exist)
   const { data: sitesRows, error: sitesError } = await adminClient

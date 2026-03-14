@@ -119,9 +119,12 @@ function setupSuccessfulMocks(
   teamsError: { message: string } | null = null,
   entriesError: { message: string } | null = null
 ) {
-  // Team seasons query chain: from("team_seasons").select(...).eq("season", ...)
+  // Team seasons query chain: from("team_seasons").select(...).eq("season", ...).returns()
   const teamQueryResult = { data: teamsError ? null : teamRows, error: teamsError };
-  const teamEqTeamId = vi.fn().mockReturnValue(teamQueryResult);
+  const teamEqTeamId = vi.fn().mockReturnValue({
+    ...teamQueryResult,
+    returns: () => teamQueryResult,
+  });
 
   mockTeamSeasonEq.mockImplementation((_col: string, _val: unknown) => {
     // The second .eq() for team_id filter; .returns() is a type-only hint that passes through
@@ -136,10 +139,11 @@ function setupSuccessfulMocks(
     eq: mockTeamSeasonEq,
   });
 
-  // Tournament entries query chain: from("tournament_entries").select("*").eq("season", ...)
+  // Tournament entries query chain: from("tournament_entries").select("*").eq("season", ...).returns()
+  const entriesResult = { data: entriesError ? null : entries, error: entriesError };
   mockTournamentEq.mockReturnValue({
-    data: entriesError ? null : entries,
-    error: entriesError,
+    ...entriesResult,
+    returns: () => entriesResult,
   });
   mockTournamentSelect.mockReturnValue({
     eq: mockTournamentEq,

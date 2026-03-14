@@ -25,7 +25,7 @@ import { buildSiteMap } from "@/lib/engine/site-mapping";
 import type { SiteMap } from "@/lib/engine/site-mapping";
 import { processTournamentField } from "@/lib/bracket-utils";
 import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
-import type { TournamentSiteRow } from "@/lib/supabase/types";
+import type { TournamentEntryRow, TournamentSiteRow } from "@/lib/supabase/types";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { sanitizeEngineConfig, sanitizeMatchupOverrides } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
@@ -159,7 +159,8 @@ export async function POST(request: Request) {
     const { data: tournamentEntries, error: entriesError } = await supabase
       .from("tournament_entries")
       .select("*")
-      .eq("season", seasonNum);
+      .eq("season", seasonNum)
+      .returns<TournamentEntryRow[]>();
 
     if (entriesError || !tournamentEntries?.length) {
       if (entriesError) {
