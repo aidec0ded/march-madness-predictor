@@ -16,18 +16,10 @@ import type { EngineConfig, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
 import type { SimulationConfig, SimulationCount } from "@/types/simulation";
-import { createPublicClient } from "@/lib/supabase/client";
-import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
-import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import { runSimulation } from "@/lib/engine/simulator";
-import { buildBracketMatchups } from "@/lib/engine/bracket";
-import { buildSiteMap } from "@/lib/engine/site-mapping";
-import type { SiteMap } from "@/lib/engine/site-mapping";
-import { processTournamentField } from "@/lib/bracket-utils";
-import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
-import type { TournamentEntryRow, TournamentSiteRow } from "@/lib/supabase/types";
+import { fetchSimulationData } from "@/lib/supabase/fetch-simulation-data";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
-import { sanitizeEngineConfig, sanitizeMatchupOverrides } from "@/lib/validation/engine-config";
+import { sanitizeEngineConfig, sanitizeMatchupOverrides, sanitizePicks } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -128,112 +120,21 @@ export async function POST(request: Request) {
     const resolvedOverrides = sanitizeMatchupOverrides(matchupOverrides) ?? {};
     const resolvedSeed = randomSeed !== undefined ? Number(randomSeed) : undefined;
 
-    // --- Fetch data (same as non-streaming route) ---
-    const supabase = createPublicClient();
-
-    const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
-      .from("team_seasons")
-      .select("*, teams!inner(*), coaches(*)")
-      .eq("season", seasonNum)
-      .order("team_id")
-      .returns<TeamSeasonJoinedRow[]>();
-
-    if (teamSeasonsError || !teamSeasonRows?.length) {
-      if (teamSeasonsError) {
-        logger.error("Stream: error fetching team seasons", teamSeasonsError);
-      }
+    // --- Fetch data (shared with non-streaming route) ---
+    const fetchResult = await fetchSimulationData(seasonNum);
+    if ("error" in fetchResult) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: teamSeasonsError
-            ? "Failed to fetch team data. Please try again."
-            : `No team data found for season ${seasonNum}.`,
-        }),
+        JSON.stringify({ success: false, error: fetchResult.error.message }),
         {
-          status: teamSeasonsError ? 500 : 404,
+          status: fetchResult.error.status,
           headers: { "Content-Type": "application/json" },
         }
       );
     }
 
-    const { data: tournamentEntries, error: entriesError } = await supabase
-      .from("tournament_entries")
-      .select("*")
-      .eq("season", seasonNum)
-      .returns<TournamentEntryRow[]>();
+    const { teamsMap, playInConfig, siteMap } = fetchResult.data;
 
-    if (entriesError || !tournamentEntries?.length) {
-      if (entriesError) {
-        logger.error("Stream: error fetching tournament entries", entriesError);
-      }
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: entriesError
-            ? "Failed to fetch tournament entries. Please try again."
-            : `No tournament entries found for season ${seasonNum}.`,
-        }),
-        {
-          status: entriesError ? 500 : 404,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const { data: sitesRows } = await supabase
-      .from("tournament_sites")
-      .select("*")
-      .eq("season", seasonNum);
-
-    const allTeamSeasons = transformTeamSeasonRows(
-      teamSeasonRows,
-      tournamentEntries
-    );
-
-    const allTournamentTeams = allTeamSeasons.filter(
-      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
-        ts.tournamentEntry !== undefined
-    );
-
-    const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);
-
-    // Validate team count: 64 (no play-ins) or 68 (with play-ins)
-    const expectedCount = playInConfig ? 68 : 64;
-    if (tournamentTeams.length !== expectedCount) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Expected ${expectedCount} tournament teams, found ${tournamentTeams.length}.`,
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    let siteMap: SiteMap | undefined;
-    if (sitesRows && sitesRows.length > 0) {
-      const sites: TournamentSite[] = (sitesRows as TournamentSiteRow[]).map(
-        (row) => ({
-          id: row.id,
-          name: row.name,
-          city: row.city,
-          state: row.state,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          rounds: row.rounds as TournamentRound[],
-          regions: row.regions ? (row.regions as Region[]) : undefined,
-          season: row.season,
-        })
-      );
-      const matchups = buildBracketMatchups(playInConfig);
-      siteMap = buildSiteMap(matchups, sites);
-    }
-
-    const teamsMap = new Map<string, TeamSeason>();
-    for (const team of tournamentTeams) {
-      teamsMap.set(team.teamId, team);
-    }
-
-    const resolvedPicks = (picks as Record<string, string>) ?? {};
+    const resolvedPicks = sanitizePicks(picks) ?? {};
 
     const simulationConfig: SimulationConfig = {
       numSimulations: numSimsValue,

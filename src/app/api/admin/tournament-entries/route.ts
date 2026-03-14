@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/auth/admin-check";
+import { safeApiError } from "@/lib/api-error";
 import { createAdminClient } from "@/lib/supabase/client";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -383,16 +384,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    logger.error("Tournament entries import error", error instanceof Error ? error : undefined);
+    const safe = safeApiError(
+      "An unexpected error occurred during import.",
+      error,
+      "admin/tournament-entries/POST"
+    );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }
@@ -455,16 +454,14 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    logger.error("Tournament entries GET error", error instanceof Error ? error : undefined);
+    const safe = safeApiError(
+      "An unexpected error occurred.",
+      error,
+      "admin/tournament-entries/GET"
+    );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }
@@ -525,16 +522,14 @@ export async function DELETE(request: Request) {
       },
     });
   } catch (error) {
-    logger.error("Tournament entries DELETE error", error instanceof Error ? error : undefined);
+    const safe = safeApiError(
+      "An unexpected error occurred.",
+      error,
+      "admin/tournament-entries/DELETE"
+    );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }

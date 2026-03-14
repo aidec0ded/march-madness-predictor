@@ -54,6 +54,11 @@ const TWO_FOUL_RANGE = { min: 0, max: 1 } as const;
 /** Maximum number of matchup overrides (67 games max in a bracket) */
 const MAX_OVERRIDE_ENTRIES = 67;
 
+/** Maximum number of picks (67 games max in a bracket) */
+const MAX_PICKS_ENTRIES = 67;
+/** Max length for a gameId or teamId string */
+const MAX_ID_LENGTH = 50;
+
 // ---------------------------------------------------------------------------
 // Composite weights sanitizer
 // ---------------------------------------------------------------------------
@@ -190,6 +195,37 @@ export function sanitizeEngineConfig(
     BASE_VARIANCE_RANGE.max
   );
   if (baseVariance !== undefined) result.baseVariance = baseVariance;
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Picks sanitizer (public API)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sanitizes a picks map from an API request body.
+ *
+ * - Verifies input is a plain object
+ * - Caps entries to 67 (max games in a bracket)
+ * - Validates each key/value is a string within length limits
+ * - Strips invalid entries
+ */
+export function sanitizePicks(
+  input: unknown
+): Record<string, string> | undefined {
+  if (!isPlainObject(input)) return undefined;
+
+  const result: Record<string, string> = {};
+  const keys = Object.keys(input);
+  const cappedKeys = keys.slice(0, MAX_PICKS_ENTRIES);
+
+  for (const key of cappedKeys) {
+    if (typeof key !== "string" || key.length === 0 || key.length > MAX_ID_LENGTH) continue;
+    const value = input[key];
+    if (typeof value !== "string" || value.length === 0 || value.length > MAX_ID_LENGTH) continue;
+    result[key] = value;
+  }
 
   return Object.keys(result).length > 0 ? result : undefined;
 }

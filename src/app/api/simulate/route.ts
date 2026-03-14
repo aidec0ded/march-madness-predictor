@@ -28,17 +28,10 @@ import type { EngineConfig, MatchupOverrides } from "@/types/engine";
 import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
 import type { SimulationConfig, SimulationCount } from "@/types/simulation";
-import { createPublicClient } from "@/lib/supabase/client";
-import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
-import type { TeamSeasonJoinedRow } from "@/lib/supabase/transforms";
 import { runSimulation } from "@/lib/engine/simulator";
-import { buildBracketMatchups } from "@/lib/engine/bracket";
-import { buildSiteMap } from "@/lib/engine/site-mapping";
-import { processTournamentField } from "@/lib/bracket-utils";
-import type { TeamSeason, TournamentSite, TournamentRound, Region } from "@/types/team";
-import type { TournamentEntryRow, TournamentSiteRow } from "@/lib/supabase/types";
+import { fetchSimulationData } from "@/lib/supabase/fetch-simulation-data";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
-import { sanitizeEngineConfig, sanitizeMatchupOverrides } from "@/lib/validation/engine-config";
+import { sanitizeEngineConfig, sanitizeMatchupOverrides, sanitizePicks } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -170,7 +163,7 @@ function validateRequestBody(body: unknown):
       numSimulations: numSimsValue as SimulationCount,
       engineConfig: sanitizedEngineConfig,
       matchupOverrides: sanitizedMatchupOverrides,
-      picks: picks as Record<string, string> | undefined,
+      picks: sanitizePicks(picks),
       randomSeed: randomSeed !== undefined ? Number(randomSeed) : undefined,
     },
   };
@@ -254,125 +247,15 @@ export async function POST(request: Request) {
     const resolvedSeed = randomSeed;
 
     // --- Fetch team data from Supabase ---
-    const supabase = createPublicClient();
-
-    // Query team_seasons for the requested season, joining teams and coaches
-    const { data: teamSeasonRows, error: teamSeasonsError } = await supabase
-      .from("team_seasons")
-      .select("*, teams!inner(*), coaches(*)")
-      .eq("season", season)
-      .order("team_id")
-      .returns<TeamSeasonJoinedRow[]>();
-
-    if (teamSeasonsError) {
-      logger.error("Error fetching team seasons", teamSeasonsError);
+    const fetchResult = await fetchSimulationData(season);
+    if ("error" in fetchResult) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to fetch team data. Please try again.",
-        },
-        { status: 500 }
+        { success: false, error: fetchResult.error.message },
+        { status: fetchResult.error.status }
       );
     }
 
-    if (!teamSeasonRows || teamSeasonRows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `No team data found for season ${season}.`,
-        },
-        { status: 404 }
-      );
-    }
-
-    // Query tournament entries for the same season
-    const { data: tournamentEntries, error: entriesError } = await supabase
-      .from("tournament_entries")
-      .select("*")
-      .eq("season", season)
-      .returns<TournamentEntryRow[]>();
-
-    if (entriesError) {
-      logger.error("Error fetching tournament entries", entriesError);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to fetch tournament entries. Please try again.",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!tournamentEntries || tournamentEntries.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `No tournament entries found for season ${season}. The bracket may not have been set yet.`,
-        },
-        { status: 404 }
-      );
-    }
-
-    // --- Fetch tournament sites (optional — graceful degradation) ---
-    const { data: sitesRows } = await supabase
-      .from("tournament_sites")
-      .select("*")
-      .eq("season", season);
-
-    // --- Transform DB rows to application types ---
-    const allTeamSeasons = transformTeamSeasonRows(
-      teamSeasonRows,
-      tournamentEntries
-    );
-
-    // Filter to only teams that have tournament entries and detect play-in pairs
-    const allTournamentTeams = allTeamSeasons.filter(
-      (ts): ts is TeamSeason & { tournamentEntry: NonNullable<TeamSeason["tournamentEntry"]> } =>
-        ts.tournamentEntry !== undefined
-    );
-
-    const { teams: tournamentTeams, playInConfig } = processTournamentField(allTournamentTeams);
-
-    // Validate team count: 64 (no play-ins) or 68 (with play-ins)
-    const expectedCount = playInConfig ? 68 : 64;
-    if (tournamentTeams.length !== expectedCount) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Expected ${expectedCount} tournament teams for season ${season}, but found ${tournamentTeams.length}. ` +
-            `The bracket data may be incomplete.`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Transform site rows to TournamentSite[] and build site map
-    let siteMap;
-    if (sitesRows && sitesRows.length > 0) {
-      const sites: TournamentSite[] = (sitesRows as TournamentSiteRow[]).map(
-        (row) => ({
-          id: row.id,
-          name: row.name,
-          city: row.city,
-          state: row.state,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          rounds: row.rounds as TournamentRound[],
-          regions: row.regions
-            ? (row.regions as Region[])
-            : undefined,
-          season: row.season,
-        })
-      );
-      const matchups = buildBracketMatchups(playInConfig);
-      siteMap = buildSiteMap(matchups, sites);
-    }
-
-    // --- Build teams map and run simulation ---
-    const teamsMap = new Map<string, TeamSeason>();
-    for (const team of tournamentTeams) {
-      teamsMap.set(team.teamId, team);
-    }
+    const { teamsMap, playInConfig, siteMap } = fetchResult.data;
 
     const simulationConfig: SimulationConfig = {
       numSimulations,

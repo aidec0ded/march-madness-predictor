@@ -13,9 +13,10 @@
  * Connector lines between rounds are drawn as bracket forks (┐│┘ or ┌│└)
  * using CSS borders on spacer divs in the dedicated connector columns.
  *
- * Most data (teams, picks, simulation results, overrides, ownership, game
- * probabilities, play-in config) is consumed directly from BracketContext and
- * related hooks, eliminating prop drilling from parent components.
+ * Most data (teams, picks, simulation results, overrides, ownership,
+ * play-in config) is consumed directly from BracketContext and related hooks.
+ * Game probabilities are received as a prop from the parent component to
+ * avoid redundant computation (the hook is called once in BracketGrid).
  */
 
 import React, { useCallback } from "react";
@@ -23,7 +24,7 @@ import type { Region, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
-import { useGameProbabilities } from "@/hooks/useGameProbabilities";
+import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition, getConnectorColumn } from "@/lib/bracket-layout";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
@@ -42,6 +43,8 @@ interface RegionBracketProps {
   matchups: BracketMatchup[];
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
+  /** Pre-computed per-game head-to-head probabilities (passed from parent) */
+  gameProbabilities: GameProbabilities;
 }
 
 // ---------------------------------------------------------------------------
@@ -195,10 +198,10 @@ export function RegionBracket({
   direction,
   matchups,
   onMatchupClick,
+  gameProbabilities,
 }: RegionBracketProps) {
   const { state, dispatch } = useBracket();
   const { ownershipModel } = useContestStrategy();
-  const gameProbabilities = useGameProbabilities();
 
   const { teams, picks, simulationResult, matchupOverrides, playInConfig,
     isSimulationStale } = state;

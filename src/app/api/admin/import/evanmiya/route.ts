@@ -22,6 +22,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/auth/admin-check";
+import { safeApiError } from "@/lib/api-error";
 import { parseCsv } from "@/lib/data/csv-parser";
 import { normalizeEvanMiya, validateBatch } from "@/lib/data";
 import type { EvanMiyaCsvRow } from "@/types";
@@ -134,16 +135,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Evan Miya import error:", error);
+    const safe = safeApiError(
+      "An unexpected error occurred during import.",
+      error,
+      "admin/import/evanmiya"
+    );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }

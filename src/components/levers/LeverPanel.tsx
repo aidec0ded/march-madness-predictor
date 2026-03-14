@@ -4,6 +4,7 @@ import React, { useCallback } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useBracket } from "@/hooks/useBracket";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { DEFAULT_GLOBAL_LEVERS } from "@/types/engine";
 import type { GlobalLevers } from "@/types/engine";
@@ -26,11 +27,11 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
   const { state, dispatch } = useBracket();
   const { globalLevers } = state;
 
-  const updateLevers = useCallback(
+  const updateLevers = useDebouncedCallback(
     (partial: Partial<GlobalLevers>) => {
       dispatch({ type: "SET_GLOBAL_LEVERS", levers: partial });
     },
-    [dispatch],
+    150,
   );
 
   const handleReset = useCallback(() => {

@@ -7,15 +7,15 @@
  * this component shows one region at a time via a tab bar. The user can
  * switch between First 4, East, West, South, Midwest, and Final 4 tabs.
  *
- * Reads the same state as BracketGrid (via useBracket, useContestStrategy,
- * useGameProbabilities) and passes props to FirstFour and FinalFour.
- * RegionBracket reads context directly via hooks.
+ * Reads the same state as BracketGrid (via useBracket, useContestStrategy)
+ * and receives gameProbabilities as a prop from BracketGrid (computed once).
+ * Passes props to FirstFour, FinalFour, and RegionBracket.
  */
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
-import { useGameProbabilities } from "@/hooks/useGameProbabilities";
+import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
 import { RegionBracket } from "@/components/bracket/RegionBracket";
@@ -48,6 +48,8 @@ const BASE_TABS: TabId[] = ["East", "West", "South", "Midwest", "Final 4"];
 interface MobileBracketViewProps {
   /** Handler for clicking a matchup to open the detail view */
   onMatchupClick?: (gameId: string) => void;
+  /** Pre-computed per-game head-to-head probabilities (passed from BracketGrid) */
+  gameProbabilities: GameProbabilities;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,11 +91,10 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 // Component
 // ---------------------------------------------------------------------------
 
-export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
+export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileBracketViewProps) {
   const [activeTab, setActiveTab] = useState<TabId>("East");
   const { state, dispatch, allMatchups } = useBracket();
   const { ownershipModel } = useContestStrategy();
-  const gameProbabilities = useGameProbabilities();
 
   // Preview mode: probabilities are live estimates without full simulation confirmation
   const isPreview = state.simulationResult === null || state.isSimulationStale;
@@ -207,6 +208,7 @@ export function MobileBracketView({ onMatchupClick }: MobileBracketViewProps) {
             direction={REGION_DIRECTION[activeTab]}
             matchups={regionMatchups[activeTab]}
             onMatchupClick={handleMatchupClick}
+            gameProbabilities={gameProbabilities}
           />
         )}
       </div>

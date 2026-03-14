@@ -3,6 +3,7 @@
 import { useBracket } from "@/hooks/useBracket";
 import { ProbabilityBar } from "@/components/bracket/ProbabilityBar";
 import type { TournamentRound } from "@/types/team";
+import styles from "./SimulationResultsOverlay.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,46 +58,16 @@ export function SimulationResultsOverlay({
   const championTeam = teams.get(champion.teamId);
   const championEntry = championTeam?.tournamentEntry;
 
+  // Normalize probability bars relative to the top contender
+  const topMaxProb = simulationResult.topChampions[0]?.probability ?? 0;
+
   return (
-    <div
-      style={{
-        backgroundColor: "var(--bg-elevated)",
-        borderBottom: "1px solid var(--border-primary)",
-        padding: "16px 24px",
-        animation: "slideDown 0.2s ease-out",
-      }}
-    >
+    <div className={styles.overlay}>
       {/* Header row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "start",
-          justifyContent: "space-between",
-          marginBottom: "16px",
-        }}
-      >
+      <div className={styles.header}>
         <div>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "0.875rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              color: "var(--text-primary)",
-            }}
-          >
-            Simulation Results
-          </h3>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: "0.75rem",
-              color: "var(--text-muted)",
-              lineHeight: 1.4,
-              fontWeight: 400,
-            }}
-          >
+          <h3 className={styles.title}>Simulation Results</h3>
+          <p className={styles.subtitle}>
             Based on {simulationResult.numSimulations.toLocaleString()} full-bracket
             simulations using your current lever settings. Path probabilities account
             for all possible matchup combinations.
@@ -106,16 +77,7 @@ export function SimulationResultsOverlay({
           type="button"
           onClick={onClose}
           aria-label="Close results"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--text-muted)",
-            cursor: "pointer",
-            fontSize: "1.25rem",
-            lineHeight: 1,
-            padding: "4px",
-            flexShrink: 0,
-          }}
+          className={styles.closeButton}
         >
           &times;
         </button>
@@ -123,164 +85,40 @@ export function SimulationResultsOverlay({
 
       {/* Stale results banner */}
       {state.isSimulationStale && (
-        <div
-          style={{
-            padding: "8px 12px",
-            borderRadius: "6px",
-            backgroundColor: "rgba(255, 193, 7, 0.1)",
-            border: "1px solid var(--accent-warning)",
-            color: "var(--accent-warning)",
-            fontSize: "0.8125rem",
-            fontWeight: 500,
-            marginBottom: "12px",
-          }}
-        >
+        <div className={styles.staleBanner}>
           Results may be outdated — re-run simulation to reflect your latest changes.
         </div>
       )}
 
       {/* Content grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr 1fr",
-          gap: "24px",
-          alignItems: "start",
-        }}
-      >
+      <div className={styles.contentGrid}>
         {/* Most likely champion */}
         <div>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              marginBottom: "8px",
-            }}
-          >
-            Most Likely Champion
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "4px",
-            }}
-          >
+          <div className={styles.sectionLabel}>Most Likely Champion</div>
+          <div className={styles.championRow}>
             {championEntry && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "4px",
-                  backgroundColor: "var(--accent-primary)",
-                  color: "#ffffff",
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                }}
-              >
-                {championEntry.seed}
-              </span>
+              <span className={styles.seedBadge}>{championEntry.seed}</span>
             )}
-            <span
-              style={{
-                fontSize: "1.125rem",
-                fontWeight: 700,
-                color: "var(--text-primary)",
-              }}
-            >
+            <span className={styles.championName}>
               {championTeam?.team.name ?? champion.teamId}
             </span>
           </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "var(--accent-success)",
-            }}
-          >
+          <div className={styles.championProb}>
             {(champion.probability * 100).toFixed(1)}%
           </div>
         </div>
 
         {/* Top 10 champions table */}
         <div>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              marginBottom: "8px",
-            }}
-          >
-            Top 10 Championship Contenders
-          </div>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "0.8125rem",
-            }}
-          >
+          <div className={styles.sectionLabel}>Top 10 Championship Contenders</div>
+          <table className={styles.table}>
             <thead>
-              <tr
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: "0.6875rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                <th
-                  style={{
-                    textAlign: "left",
-                    padding: "4px 8px",
-                    fontWeight: 600,
-                  }}
-                >
-                  #
-                </th>
-                <th
-                  style={{
-                    textAlign: "left",
-                    padding: "4px 8px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Team
-                </th>
-                <th
-                  style={{
-                    textAlign: "center",
-                    padding: "4px 8px",
-                    fontWeight: 600,
-                    width: "40px",
-                  }}
-                >
-                  Seed
-                </th>
-                <th
-                  style={{
-                    textAlign: "right",
-                    padding: "4px 8px",
-                    fontWeight: 600,
-                    width: "60px",
-                  }}
-                >
-                  Prob
-                </th>
-                <th
-                  style={{
-                    padding: "4px 8px",
-                    width: "120px",
-                  }}
-                />
+              <tr className={styles.tableHead}>
+                <th className={styles.th}>#</th>
+                <th className={styles.th}>Team</th>
+                <th className={styles.thCenter}>Seed</th>
+                <th className={styles.thRight}>Prob</th>
+                <th className={styles.thBar} />
               </tr>
             </thead>
             <tbody>
@@ -292,52 +130,20 @@ export function SimulationResultsOverlay({
                   return (
                     <tr
                       key={entry.teamId}
-                      style={{
-                        borderTop:
-                          index === 0
-                            ? "none"
-                            : "1px solid var(--border-primary)",
-                      }}
+                      className={index === 0 ? styles.trFirst : styles.tr}
                     >
-                      <td
-                        style={{
-                          padding: "6px 8px",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-                      <td
-                        style={{
-                          padding: "6px 8px",
-                          color: "var(--text-primary)",
-                          fontWeight: 500,
-                        }}
-                      >
+                      <td className={styles.tdRank}>{index + 1}</td>
+                      <td className={styles.tdTeam}>
                         {team?.team.name ?? entry.teamId}
                       </td>
-                      <td
-                        style={{
-                          padding: "6px 8px",
-                          textAlign: "center",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {tEntry?.seed ?? "-"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "6px 8px",
-                          textAlign: "right",
-                          color: "var(--text-primary)",
-                          fontWeight: 600,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
+                      <td className={styles.tdSeed}>{tEntry?.seed ?? "-"}</td>
+                      <td className={styles.tdProb}>
                         {(entry.probability * 100).toFixed(1)}%
                       </td>
-                      <td style={{ padding: "6px 8px" }}>
-                        <ProbabilityBar probability={entry.probability * 5} />
+                      <td className={styles.tdBar}>
+                        <ProbabilityBar
+                          probability={topMaxProb > 0 ? entry.probability / topMaxProb : 0}
+                        />
                       </td>
                     </tr>
                   );
@@ -348,47 +154,17 @@ export function SimulationResultsOverlay({
 
         {/* Right column: upset rates + metadata */}
         <div>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              marginBottom: "8px",
-            }}
-          >
-            Upset Rates by Round
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "4px",
-              marginBottom: "16px",
-            }}
-          >
+          <div className={styles.sectionLabel}>Upset Rates by Round</div>
+          <div className={styles.upsetList}>
             {ROUND_ORDER.map((round) => {
               const rate = simulationResult.upsetRates[round];
               if (rate === undefined) return null;
               return (
-                <div
-                  key={round}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.8125rem",
-                  }}
-                >
-                  <span style={{ color: "var(--text-secondary)" }}>
+                <div key={round} className={styles.upsetRow}>
+                  <span className={styles.upsetLabel}>
                     {ROUND_LABELS[round]}
                   </span>
-                  <span
-                    style={{
-                      color: "var(--text-primary)",
-                      fontWeight: 600,
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
+                  <span className={styles.upsetValue}>
                     {(rate * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -397,43 +173,17 @@ export function SimulationResultsOverlay({
           </div>
 
           {/* Metadata */}
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              marginBottom: "8px",
-            }}
-          >
-            Simulation Info
-          </div>
-          <div
-            style={{
-              fontSize: "0.8125rem",
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-            }}
-          >
+          <div className={styles.sectionLabel}>Simulation Info</div>
+          <div className={styles.metaText}>
             <div>
               Simulations:{" "}
-              <span
-                style={{
-                  color: "var(--text-primary)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
+              <span className={styles.metaValue}>
                 {simulationResult.numSimulations.toLocaleString()}
               </span>
             </div>
             <div>
               Time:{" "}
-              <span
-                style={{
-                  color: "var(--text-primary)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
+              <span className={styles.metaValue}>
                 {simulationResult.executionTimeMs < 1000
                   ? `${simulationResult.executionTimeMs}ms`
                   : `${(simulationResult.executionTimeMs / 1000).toFixed(1)}s`}
@@ -442,20 +192,6 @@ export function SimulationResultsOverlay({
           </div>
         </div>
       </div>
-
-      {/* Inline animation keyframes */}
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

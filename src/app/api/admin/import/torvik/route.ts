@@ -22,6 +22,7 @@
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/auth/admin-check";
+import { safeApiError } from "@/lib/api-error";
 import { fetchTorvikData, normalizeTorvik, validateBatch } from "@/lib/data";
 
 export async function POST(request: Request) {
@@ -111,16 +112,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Torvik import error:", error);
+    const safe = safeApiError(
+      "An unexpected error occurred during import.",
+      error,
+      "admin/import/torvik"
+    );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }

@@ -27,6 +27,7 @@ import { isAdmin } from "@/lib/auth/admin-check";
 import { createAdminClient } from "@/lib/supabase/client";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { safeApiError } from "@/lib/api-error";
 import { getCampusLocation } from "@/lib/data/campus-locations";
 import {
   nanToNull,
@@ -342,19 +343,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    logger.error(
-      "Evan Miya commit error",
-      error instanceof Error ? error : new Error(String(error))
+    const safe = safeApiError(
+      "An unexpected error occurred during import.",
+      error,
+      "admin/import/evanmiya/commit"
     );
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-      },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }

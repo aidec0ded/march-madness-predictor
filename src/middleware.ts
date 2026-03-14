@@ -38,6 +38,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
+  // Admin API route protection (defense-in-depth; per-route isAdmin() checks remain)
+  const ADMIN_API_PREFIX = "/api/admin";
+
+  if (pathname.startsWith(ADMIN_API_PREFIX)) {
+    // Check 1: Supabase auth — user must have admin role
+    const isAuthAdmin = user?.app_metadata?.role === "admin";
+
+    // Check 2: API key fallback
+    const adminKey = process.env.ADMIN_API_KEY;
+    const providedKey = request.headers.get("x-admin-key");
+    const isKeyAdmin = !!(adminKey && providedKey && adminKey === providedKey);
+
+    if (!isAuthAdmin && !isKeyAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+  }
+
   return response;
 }
 

@@ -1,0 +1,232 @@
+/* SimulationResultsOverlay.module.css */
+
+.overlay {
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-primary);
+  padding: 16px 24px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.staleBanner {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background-color: rgba(255, 193, 7, 0.1);
+  border: 1px solid var(--accent-warning);
+  color: var(--accent-warning);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.sectionLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+/* Champion section */
+.championRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.seedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.championName {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.championProb {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-success);
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.tableHead {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+
+.thCenter {
+  text-align: center;
+  padding: 4px 8px;
+  font-weight: 600;
+  width: 40px;
+}
+
+.thRight {
+  text-align: right;
+  padding: 4px 8px;
+  font-weight: 600;
+  width: 60px;
+}
+
+.thBar {
+  padding: 4px 8px;
+  width: 120px;
+}
+
+.tr {
+  border-top: 1px solid var(--border-primary);
+}
+
+.trFirst {
+  border-top: none;
+}
+
+.tdRank {
+  padding: 6px 8px;
+  color: var(--text-muted);
+}
+
+.tdTeam {
+  padding: 6px 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tdSeed {
+  padding: 6px 8px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.tdProb {
+  padding: 6px 8px;
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdBar {
+  padding: 6px 8px;
+}
+
+/* Upset rates */
+.upsetRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+}
+
+.upsetLabel {
+  color: var(--text-secondary);
+}
+
+.upsetValue {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.upsetList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+/* Metadata */
+.metaText {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.metaValue {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}

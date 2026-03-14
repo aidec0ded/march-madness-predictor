@@ -32,6 +32,7 @@ import { HISTORICAL_RESULTS } from "@/lib/backtest/historical-results";
 import { runBacktestMultiYear } from "@/lib/backtest/runner";
 import type { TeamSeason } from "@/types/team";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { sanitizeEngineConfig } from "@/lib/validation/engine-config";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -112,7 +113,7 @@ function validateRequestBody(body: unknown):
     valid: true,
     data: {
       seasons: seasons.map((s: unknown) => Number(s)),
-      engineConfig: engineConfig as Partial<EngineConfig> | undefined,
+      engineConfig: engineConfig !== undefined ? sanitizeEngineConfig(engineConfig) : undefined,
     },
   };
 }

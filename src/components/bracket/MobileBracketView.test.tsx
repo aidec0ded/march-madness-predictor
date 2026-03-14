@@ -75,10 +75,8 @@ vi.mock("@/hooks/useContestStrategy", () => ({
   }),
 }));
 
-// Mock useGameProbabilities
-vi.mock("@/hooks/useGameProbabilities", () => ({
-  useGameProbabilities: () => ({}),
-}));
+// Note: useGameProbabilities is no longer called by MobileBracketView or
+// RegionBracket — gameProbabilities is passed as a prop instead.
 
 // Mock bracket-layout (used by RegionBracket)
 vi.mock("@/lib/bracket-layout", () => ({
@@ -110,7 +108,7 @@ vi.mock("@/lib/bracket-utils", () => ({
 
 describe("MobileBracketView", () => {
   it("renders all five tab buttons", () => {
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
 
     expect(screen.getByRole("tab", { name: "East" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "West" })).toBeInTheDocument();
@@ -120,7 +118,7 @@ describe("MobileBracketView", () => {
   });
 
   it("defaults to East tab being active", () => {
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
 
     const eastTab = screen.getByRole("tab", { name: "East" });
     expect(eastTab).toHaveAttribute("aria-selected", "true");
@@ -130,7 +128,7 @@ describe("MobileBracketView", () => {
   });
 
   it("shows East region content by default", () => {
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
 
     // The tabpanel should have the East label
     expect(
@@ -140,7 +138,7 @@ describe("MobileBracketView", () => {
 
   it("switches to West region when West tab is clicked", async () => {
     const user = userEvent.setup();
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
 
     await user.click(screen.getByRole("tab", { name: "West" }));
 
@@ -153,7 +151,7 @@ describe("MobileBracketView", () => {
 
   it("switches to Final 4 tab when clicked", async () => {
     const user = userEvent.setup();
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
 
     await user.click(screen.getByRole("tab", { name: "Final 4" }));
 
@@ -166,7 +164,7 @@ describe("MobileBracketView", () => {
   });
 
   it("renders the tablist with proper role", () => {
-    render(<MobileBracketView />);
+    render(<MobileBracketView gameProbabilities={{}} />);
     expect(
       screen.getByRole("tablist", { name: "Bracket regions" })
     ).toBeInTheDocument();
@@ -174,7 +172,7 @@ describe("MobileBracketView", () => {
 
   it("calls onMatchupClick when provided", () => {
     const mockClick = vi.fn();
-    render(<MobileBracketView onMatchupClick={mockClick} />);
+    render(<MobileBracketView onMatchupClick={mockClick} gameProbabilities={{}} />);
 
     // Component renders without error when callback is provided
     expect(screen.getByRole("tablist")).toBeInTheDocument();

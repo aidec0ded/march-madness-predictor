@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth/admin-check";
+import { safeApiError } from "@/lib/api-error";
 import { createAdminClient } from "@/lib/supabase/client";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -245,13 +246,14 @@ export async function POST(request: Request) {
       count: validatedSites.length,
     });
   } catch (error) {
-    logger.error(
-      "Tournament sites POST error",
-      error instanceof Error ? error : undefined
+    const safe = safeApiError(
+      "An unexpected error occurred.",
+      error,
+      "admin/tournament-sites/POST"
     );
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }
@@ -297,13 +299,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, sites: data ?? [] });
   } catch (error) {
-    logger.error(
-      "Tournament sites GET error",
-      error instanceof Error ? error : undefined
+    const safe = safeApiError(
+      "An unexpected error occurred.",
+      error,
+      "admin/tournament-sites/GET"
     );
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }
@@ -348,13 +351,14 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error(
-      "Tournament sites DELETE error",
-      error instanceof Error ? error : undefined
+    const safe = safeApiError(
+      "An unexpected error occurred.",
+      error,
+      "admin/tournament-sites/DELETE"
     );
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
+      { success: false, error: safe.message },
+      { status: safe.status }
     );
   }
 }
