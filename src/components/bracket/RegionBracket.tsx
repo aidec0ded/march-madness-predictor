@@ -3,14 +3,15 @@
 /**
  * RegionBracket — renders one region's bracket (15 matchups) in a CSS Grid.
  *
- * The grid uses 4 columns x 16 rows. R64 games are in the outermost column,
- * with each successive round moving inward and spanning more rows so matchups
- * center between their feeder games.
+ * The grid uses 7 columns × 16 rows. Odd columns (1, 3, 5, 7) hold matchup
+ * slots; even columns (2, 4, 6) hold bracket fork connector lines that
+ * visually connect feeder matchups to their target matchup in the next round.
  *
  * The direction prop controls whether R64 is on the left (ltr) or right (rtl),
  * allowing the full bracket to fold inward toward the center Final Four.
  *
- * Connector lines between rounds are drawn using CSS borders on spacer divs.
+ * Connector lines between rounds are drawn as bracket forks (┐│┘ or ┌│└)
+ * using CSS borders on spacer divs in the dedicated connector columns.
  *
  * Most data (teams, picks, simulation results, overrides, ownership, game
  * probabilities, play-in config) is consumed directly from BracketContext and
@@ -24,7 +25,7 @@ import { useBracket } from "@/hooks/useBracket";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
 import { useGameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
-import { getRegionMatchupPosition } from "@/lib/bracket-layout";
+import { getRegionMatchupPosition, getConnectorColumn } from "@/lib/bracket-layout";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
 import styles from "./RegionBracket.module.css";
 
@@ -113,9 +114,10 @@ function generateConnectors(
   const laterRounds = matchups.filter((m) => m.round !== "R64");
 
   for (const matchup of laterRounds) {
-    const targetPos = getRegionMatchupPosition(matchup.gameId, direction);
+    // Place connector in the dedicated connector column between rounds
+    const connectorColumn = getConnectorColumn(matchup.round, direction);
 
-    // We draw vertical connectors spanning from feeder A midpoint to feeder B midpoint
+    // Span from feeder A top to feeder B bottom
     const feederAPos = getRegionMatchupPosition(
       matchup.teamASource,
       direction
@@ -133,13 +135,27 @@ function generateConnectors(
       key: `conn-${matchup.gameId}`,
       gridRowStart: feederAPos.gridRowStart,
       gridRowEnd: feederBPos.gridRowEnd,
-      gridColumn: targetPos.gridColumn,
+      gridColumn: connectorColumn,
       isActive,
       direction,
     });
   }
 
   return connectors;
+}
+
+/**
+ * Returns the staggered animation delay (ms) for a round,
+ * creating a cascade effect: R64 appears first, then R32, S16, E8.
+ */
+function getRoundDelay(round: string): number {
+  switch (round) {
+    case "R64": return 0;
+    case "R32": return 100;
+    case "S16": return 200;
+    case "E8": return 300;
+    default: return 0;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -182,11 +198,11 @@ export function RegionBracket({
 
       {/* Grid container */}
       <div className={styles.grid}>
-        {/* Connector lines */}
+        {/* Bracket fork connector lines */}
         {connectors.map((conn) => (
           <div
             key={conn.key}
-            className={`${styles.connectorCell} ${conn.direction === "ltr" ? styles.connectorCellLtr : styles.connectorCellRtl}`}
+            className={styles.connectorCell}
             style={{
               gridRowStart: conn.gridRowStart,
               gridRowEnd: conn.gridRowEnd,
@@ -246,6 +262,7 @@ export function RegionBracket({
                 gridRowStart: pos.gridRowStart,
                 gridRowEnd: pos.gridRowEnd,
                 gridColumn: pos.gridColumn,
+                animationDelay: `${getRoundDelay(matchup.round)}ms`,
               }}
             >
               <MatchupSlot

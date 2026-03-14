@@ -9,7 +9,7 @@
   width: 100%;
   border-radius: 9999px;
   overflow: hidden;
-  height: 3px;
+  height: 5px;
   background-color: var(--bg-elevated);
 }
 

@@ -2,8 +2,10 @@
  * Grid position calculator for the bracket layout.
  *
  * Maps gameIds to CSS Grid coordinates for rendering the bracket.
- * Each region uses a 4-column × 16-row grid, with matchups progressively
- * centered as rounds advance:
+ * Each region uses a 7-column × 16-row grid. Odd columns (1, 3, 5, 7)
+ * hold matchup slots; even columns (2, 4, 6) hold bracket fork connector
+ * lines between rounds. Matchups are progressively centered as rounds
+ * advance:
  *
  * - R64 (8 games): 2 rows each → rows 1-2, 3-4, ..., 15-16
  * - R32 (4 games): 4 rows each → rows 1-4, 5-8, 9-12, 13-16
@@ -115,15 +117,31 @@ export function parseGameId(gameId: string): ParsedGameId {
 // ---------------------------------------------------------------------------
 
 /**
- * Column assignment for each round.
- * LTR: R64 at left, advancing rightward toward the center.
- * RTL: R64 at right, advancing leftward toward the center.
+ * Column assignment for each round in a 7-column grid.
+ *
+ * Matchups sit in odd columns (1, 3, 5, 7). Even columns (2, 4, 6)
+ * are reserved for bracket fork connector lines between rounds.
+ *
+ * LTR: R64 at left (col 1), advancing rightward toward the center (col 7).
+ * RTL: R64 at right (col 7), advancing leftward toward the center (col 1).
  */
 const ROUND_COLUMNS: Record<string, { ltr: number; rtl: number }> = {
-  R64: { ltr: 1, rtl: 4 },
-  R32: { ltr: 2, rtl: 3 },
-  S16: { ltr: 3, rtl: 2 },
-  E8: { ltr: 4, rtl: 1 },
+  R64: { ltr: 1, rtl: 7 },
+  R32: { ltr: 3, rtl: 5 },
+  S16: { ltr: 5, rtl: 3 },
+  E8: { ltr: 7, rtl: 1 },
+};
+
+/**
+ * Connector column for each target round.
+ *
+ * Connectors live in even columns (2, 4, 6) between the matchup columns.
+ * The connector for "R32" connects R64 feeders to the R32 target, etc.
+ */
+const CONNECTOR_COLUMNS: Record<string, { ltr: number; rtl: number }> = {
+  R32: { ltr: 2, rtl: 6 },
+  S16: { ltr: 4, rtl: 4 },
+  E8: { ltr: 6, rtl: 2 },
 };
 
 /**
@@ -207,4 +225,26 @@ export function getRegionMatchupPosition(
  */
 export function getMatchupMidpoint(position: GridPosition): number {
   return (position.gridRowStart + position.gridRowEnd) / 2;
+}
+
+/**
+ * Returns the CSS Grid column for the bracket connector between
+ * the feeder round and the target round.
+ *
+ * @param targetRound - The target round (R32, S16, or E8)
+ * @param direction - "ltr" or "rtl"
+ * @returns The CSS Grid column number for the connector
+ * @throws {Error} If the round is not R32, S16, or E8
+ */
+export function getConnectorColumn(
+  targetRound: string,
+  direction: "ltr" | "rtl"
+): number {
+  const cols = CONNECTOR_COLUMNS[targetRound];
+  if (!cols) {
+    throw new Error(
+      `getConnectorColumn only handles R32, S16, E8 — got "${targetRound}"`
+    );
+  }
+  return cols[direction];
 }

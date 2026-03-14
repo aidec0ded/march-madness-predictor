@@ -17,9 +17,9 @@
 
 .mainGrid {
   display: grid;
-  grid-template-columns: minmax(600px, 45%) minmax(200px, 10%) minmax(600px, 45%);
+  grid-template-columns: minmax(650px, 45%) minmax(200px, 10%) minmax(650px, 45%);
   gap: 0;
-  min-width: 1400px;
+  min-width: 1500px;
   align-items: stretch;
 }
 

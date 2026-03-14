@@ -72,6 +72,7 @@ vi.mock("@/lib/bracket-layout", () => ({
     gridRowEnd: 2,
     gridColumn: 1,
   }),
+  getConnectorColumn: (targetRound: string, direction: string) => 2,
   parseGameId: (gameId: string) => {
     const parts = gameId.split("-");
     return {

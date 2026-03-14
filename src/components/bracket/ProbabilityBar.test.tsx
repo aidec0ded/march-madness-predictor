@@ -20,28 +20,28 @@ describe("ProbabilityBar", () => {
     expect(inner.style.width).toBe("75%");
   });
 
-  it("uses danger color for low probability (< 0.3)", () => {
-    const { container } = render(<ProbabilityBar probability={0.15} />);
+  it("uses danger color for low probability (< 0.4)", () => {
+    const { container } = render(<ProbabilityBar probability={0.2} />);
     const inner = container.querySelector(
       "div > div > div"
     ) as HTMLElement;
     expect(inner.style.backgroundColor).toBe("var(--accent-danger)");
   });
 
-  it("uses warning color for medium probability (0.3 - 0.6)", () => {
-    const { container } = render(<ProbabilityBar probability={0.45} />);
+  it("uses warning color for competitive probability (0.4 - 0.6)", () => {
+    const { container } = render(<ProbabilityBar probability={0.5} />);
     const inner = container.querySelector(
       "div > div > div"
     ) as HTMLElement;
     expect(inner.style.backgroundColor).toBe("var(--accent-warning)");
   });
 
-  it("uses success color for high probability (>= 0.6)", () => {
+  it("uses primary color for high probability (> 0.6)", () => {
     const { container } = render(<ProbabilityBar probability={0.8} />);
     const inner = container.querySelector(
       "div > div > div"
     ) as HTMLElement;
-    expect(inner.style.backgroundColor).toBe("var(--accent-success)");
+    expect(inner.style.backgroundColor).toBe("var(--accent-primary)");
   });
 
   it("clamps probability at 0 (no negative width)", () => {

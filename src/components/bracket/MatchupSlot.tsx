@@ -76,8 +76,16 @@ export function MatchupSlot({
   const seedA = teamA?.tournamentEntry?.seed ?? 0;
   const seedB = teamB?.tournamentEntry?.seed ?? 0;
 
+  // Competitiveness heat: both teams present and probability spread < 10 points (45-55%)
+  const isCompetitive =
+    probA !== null &&
+    probB !== null &&
+    teamA !== null &&
+    teamB !== null &&
+    Math.abs(probA - probB) < 0.1;
+
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container}${isCompetitive ? ` ${styles.competitive}` : ""}`}>
       {/* Override indicator */}
       {hasOverrides && <OverrideIndicator />}
 

@@ -17,15 +17,18 @@ interface ProbabilityBarProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Interpolates bar color based on probability:
- * - 0.0 - 0.3: --accent-danger (red)
- * - 0.3 - 0.6: --accent-warning (yellow)
- * - 0.6 - 1.0: --accent-success (green)
+ * Maps probability to a color using blue/red duality:
+ * - 0.0 - 0.40: --accent-danger (red, clear underdog)
+ * - 0.40 - 0.60: --accent-warning (amber, competitive / toss-up)
+ * - 0.60 - 1.0: --accent-primary (blue, clear favorite)
+ *
+ * This aligns with the matchup view's blue/red accent system
+ * and communicates competitive dynamics at a glance.
  */
 function getBarColor(probability: number): string {
-  if (probability < 0.3) return "var(--accent-danger)";
-  if (probability < 0.6) return "var(--accent-warning)";
-  return "var(--accent-success)";
+  if (probability < 0.4) return "var(--accent-danger)";
+  if (probability <= 0.6) return "var(--accent-warning)";
+  return "var(--accent-primary)";
 }
 
 // ---------------------------------------------------------------------------
@@ -35,8 +38,9 @@ function getBarColor(probability: number): string {
 /**
  * Horizontal probability bar.
  *
- * A 3px-high bar whose width represents the probability (0-100%)
- * and whose color interpolates from red (low) to green (high).
+ * A 5px-high bar whose width represents the probability (0-100%)
+ * and whose color uses blue/red duality: blue for favorites,
+ * red for underdogs, amber for toss-ups.
  */
 export const ProbabilityBar = memo(function ProbabilityBar({
   probability,

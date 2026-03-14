@@ -10,6 +10,14 @@
   overflow: hidden;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+/* Competitiveness heat: warm border + subtle glow on toss-up matchups (45-55%) */
+.competitive {
+  border-color: var(--accent-warning);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.12);
 }
 
 .divider {
@@ -18,26 +26,31 @@
   background-color: var(--border-primary);
 }
 
-/* Matchup detail click overlay */
+/* Matchup detail click overlay — visible at low opacity, full on hover */
 .detailButton {
   position: absolute;
   top: 0;
   right: 0;
-  width: 20px;
+  width: 22px;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  opacity: 0.25;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
-  background-color: rgba(74, 144, 217, 0.1);
+  background-color: rgba(74, 144, 217, 0.06);
   border: none;
   padding: 0;
 }
 
+.container:hover .detailButton {
+  opacity: 0.6;
+}
+
 .detailButton:hover {
   opacity: 1;
+  background-color: rgba(74, 144, 217, 0.15);
 }
 
 .detailIcon {
