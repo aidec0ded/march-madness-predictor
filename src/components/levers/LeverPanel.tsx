@@ -12,6 +12,7 @@ import { CompositeWeightsControl } from "./CompositeWeightsControl";
 import { FourFactorsControls } from "./FourFactorsControls";
 import { LeverSlider } from "./LeverSlider";
 import { VarianceControls } from "./VarianceControls";
+import styles from "./LeverPanel.module.css";
 
 export interface LeverPanelProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Simulation Levers" width={isMobile ? "100vw" : "420px"}>
-      <div className="lever-panel">
+      <div className={styles.panel}>
         {/* Composite Weights — default open */}
         <CollapsibleSection title="Composite Weights" defaultOpen>
           <CompositeWeightsControl
@@ -135,45 +136,16 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
         </CollapsibleSection>
 
         {/* Reset button */}
-        <div className="lever-panel__footer">
+        <div className={styles.footer}>
           <button
             type="button"
-            className="lever-panel__reset-btn"
+            className={styles.resetButton}
             onClick={handleReset}
           >
             Reset to Defaults
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        .lever-panel {
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-        .lever-panel__footer {
-          padding: 20px 0 0;
-        }
-        .lever-panel__reset-btn {
-          width: 100%;
-          padding: 10px 16px;
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: var(--accent-danger);
-          background: transparent;
-          border: 1px solid var(--accent-danger);
-          border-radius: 6px;
-          cursor: pointer;
-          transition:
-            background 0.15s ease,
-            color 0.15s ease;
-        }
-        .lever-panel__reset-btn:hover {
-          background: var(--accent-danger);
-          color: #ffffff;
-        }
-      `}</style>
     </Drawer>
   );
 }

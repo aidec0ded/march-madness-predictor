@@ -1,0 +1,149 @@
+/* BracketShell.module.css — layout shell for the bracket page */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-primary);
+}
+
+/* ------------------------------------------------------------------ */
+/* Header                                                              */
+/* ------------------------------------------------------------------ */
+
+.header {
+  position: sticky;
+  top: 48px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  gap: 16px;
+}
+
+.headerMobile {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.headerLeftMobile {
+  gap: 8px;
+  flex: 0 1 auto;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.headerRightMobile {
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shared toggle button (Results, Guide, Levers)                       */
+/* ------------------------------------------------------------------ */
+
+.toggleButton {
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggleButtonMobile {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.toggleButtonActive {
+  color: var(--accent-primary);
+  background-color: rgba(74, 144, 217, 0.1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Guide button (extends toggleButton with positioning for hint dot)    */
+/* ------------------------------------------------------------------ */
+
+.guideButton {
+  composes: toggleButton;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hintDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-info);
+  animation: guideHintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes guideHintPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hintDot {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Main content area                                                   */
+/* ------------------------------------------------------------------ */
+
+.main {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dynamic-import loading overlay                                      */
+/* ------------------------------------------------------------------ */
+
+.loadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 50;
+}
+
+/* ------------------------------------------------------------------ */
+/* Site brand                                                          */
+/* ------------------------------------------------------------------ */
+
+.siteBrand {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}

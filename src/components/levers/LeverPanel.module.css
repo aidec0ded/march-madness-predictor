@@ -1,0 +1,26 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.footer {
+  padding: 20px 0 0;
+}
+.resetButton {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-danger);
+  background: transparent;
+  border: 1px solid var(--accent-danger);
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.resetButton:hover {
+  background: var(--accent-danger);
+  color: #ffffff;
+}

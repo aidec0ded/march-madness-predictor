@@ -1,0 +1,28 @@
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.value {
+  font-size: 0.8125rem;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+.description {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}

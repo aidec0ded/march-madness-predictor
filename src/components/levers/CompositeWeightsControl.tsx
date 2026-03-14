@@ -3,6 +3,7 @@
 import React, { useCallback } from "react";
 import type { CompositeWeights } from "@/types/engine";
 import { Slider } from "@/components/ui/Slider";
+import styles from "./CompositeWeightsControl.module.css";
 
 export interface CompositeWeightsControlProps {
   weights: CompositeWeights;
@@ -66,12 +67,12 @@ export function CompositeWeightsControl({
   );
 
   return (
-    <div className="composite-weights">
+    <div className={styles.container}>
       {SOURCES.map(({ key, label }) => (
-        <div key={key} className="composite-weights__row">
-          <div className="composite-weights__header">
-            <span className="composite-weights__label">{label}</span>
-            <span className="composite-weights__pct">
+        <div key={key} className={styles.row}>
+          <div className={styles.header}>
+            <span className={styles.label}>{label}</span>
+            <span className={styles.pct}>
               {Math.round(weights[key] * 100)}%
             </span>
           </div>
@@ -84,34 +85,6 @@ export function CompositeWeightsControl({
           />
         </div>
       ))}
-      <style jsx>{`
-        .composite-weights {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .composite-weights__row {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .composite-weights__header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .composite-weights__label {
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .composite-weights__pct {
-          font-size: 0.8125rem;
-          font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-          font-weight: 600;
-          color: var(--accent-primary);
-        }
-      `}</style>
     </div>
   );
 }

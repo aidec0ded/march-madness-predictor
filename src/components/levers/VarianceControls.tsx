@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LeverSlider } from "./LeverSlider";
+import styles from "./VarianceControls.module.css";
 
 export interface VarianceControlsProps {
   tempoWeight: number;
@@ -22,7 +23,7 @@ export function VarianceControls({
   onThreePtChange,
 }: VarianceControlsProps) {
   return (
-    <div className="variance-controls">
+    <div className={styles.container}>
       <LeverSlider
         label="Tempo Variance Weight"
         description="Slower pace compresses outcomes, increasing upset probability for mismatched teams."
@@ -41,13 +42,6 @@ export function VarianceControls({
         max={2}
         step={0.05}
       />
-      <style jsx>{`
-        .variance-controls {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-      `}</style>
     </div>
   );
 }

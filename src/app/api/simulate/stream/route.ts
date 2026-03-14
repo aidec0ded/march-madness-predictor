@@ -12,8 +12,7 @@
  * Request body is identical to POST /api/simulate.
  */
 
-import type { EngineConfig, MatchupOverrides } from "@/types/engine";
-import { DEFAULT_ENGINE_CONFIG } from "@/types/engine";
+import { resolveEngineConfig } from "@/lib/engine/resolve-config";
 import { SIMULATION_COUNT_OPTIONS } from "@/types/simulation";
 import type { SimulationConfig, SimulationCount } from "@/types/simulation";
 import { runSimulation } from "@/lib/engine/simulator";
@@ -102,20 +101,7 @@ export async function POST(request: Request) {
 
     // Sanitize & resolve config — clamps all values to safe ranges
     const sanitizedConfig = sanitizeEngineConfig(engineConfig);
-    const resolvedConfig: EngineConfig = sanitizedConfig
-      ? {
-          levers: {
-            ...DEFAULT_ENGINE_CONFIG.levers,
-            ...sanitizedConfig.levers,
-          },
-          logisticK:
-            sanitizedConfig.logisticK ??
-            DEFAULT_ENGINE_CONFIG.logisticK,
-          baseVariance:
-            sanitizedConfig.baseVariance ??
-            DEFAULT_ENGINE_CONFIG.baseVariance,
-        }
-      : { ...DEFAULT_ENGINE_CONFIG };
+    const resolvedConfig = resolveEngineConfig(sanitizedConfig);
 
     const resolvedOverrides = sanitizeMatchupOverrides(matchupOverrides) ?? {};
     const resolvedSeed = randomSeed !== undefined ? Number(randomSeed) : undefined;

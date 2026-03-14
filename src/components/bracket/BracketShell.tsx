@@ -7,6 +7,7 @@ import type { SavedBracketData } from "@/types/bracket-ui";
 import type { PlayInConfig } from "@/types/simulation";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import { SITE_NAME } from "@/lib/constants";
+import styles from "./BracketShell.module.css";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
@@ -26,17 +27,7 @@ const MatchupView = dynamic(
     })),
   {
     loading: () => (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          zIndex: 50,
-        }}
-      >
+      <div className={styles.loadingOverlay}>
         <LoadingSpinner size={40} />
       </div>
     ),
@@ -147,53 +138,17 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
   return (
     <BracketProvider initialTeams={initialTeams} savedBracket={savedBracket} tournamentSites={tournamentSites} playInConfig={playInConfig}>
       <AutoSimulationTrigger />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "100vh",
-          width: "100%",
-          backgroundColor: "var(--bg-primary)",
-        }}
-      >
+      <div className={styles.shell}>
         {/* Sticky header bar */}
-        <header
-          style={{
-            position: "sticky",
-            top: 48,
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: isMobile ? "8px 12px" : "10px 24px",
-            backgroundColor: "var(--bg-primary)",
-            borderBottom: "1px solid var(--border-primary)",
-            gap: isMobile ? "8px" : "16px",
-          }}
-        >
+        <header className={`${styles.header} ${isMobile ? styles.headerMobile : ""}`}>
           {/* Left section: bracket name + pool size */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: isMobile ? "8px" : "16px",
-              minWidth: 0,
-              flex: isMobile ? "0 1 auto" : undefined,
-            }}
-          >
+          <div className={`${styles.headerLeft} ${isMobile ? styles.headerLeftMobile : ""}`}>
             {!isMobile && <SiteBrand />}
             <PoolSizeSelector />
           </div>
 
           {/* Right section: action buttons */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: isMobile ? "6px" : "10px",
-              flexShrink: 0,
-            }}
-          >
+          <div className={`${styles.headerRight} ${isMobile ? styles.headerRightMobile : ""}`}>
             <SimulationButton onSimulationComplete={handleSimulationComplete} />
 
             <button
@@ -201,21 +156,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
               onClick={toggleResults}
               aria-pressed={isResultsOpen}
               title="Results"
-              style={{
-                padding: isMobile ? "6px 10px" : "8px 14px",
-                fontSize: isMobile ? "0.75rem" : "0.8125rem",
-                fontWeight: 600,
-                color: isResultsOpen
-                  ? "var(--accent-primary)"
-                  : "var(--text-secondary)",
-                backgroundColor: isResultsOpen
-                  ? "rgba(74, 144, 217, 0.1)"
-                  : "transparent",
-                border: "1px solid var(--border-primary)",
-                borderRadius: "6px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
+              className={`${styles.toggleButton} ${isMobile ? styles.toggleButtonMobile : ""} ${isResultsOpen ? styles.toggleButtonActive : ""}`}
             >
               Results
             </button>
@@ -225,25 +166,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
               onClick={toggleGuidance}
               aria-pressed={isGuidanceOpen}
               title="Guidance — tips, warnings, and strategy recommendations for your bracket"
-              style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: isMobile ? "6px 10px" : "8px 14px",
-                fontSize: isMobile ? "0.75rem" : "0.8125rem",
-                fontWeight: 600,
-                color: isGuidanceOpen
-                  ? "var(--accent-primary)"
-                  : "var(--text-secondary)",
-                backgroundColor: isGuidanceOpen
-                  ? "rgba(74, 144, 217, 0.1)"
-                  : "transparent",
-                border: "1px solid var(--border-primary)",
-                borderRadius: "6px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
+              className={`${styles.guideButton} ${isMobile ? styles.toggleButtonMobile : ""} ${isGuidanceOpen ? styles.toggleButtonActive : ""}`}
             >
               {/* Info icon */}
               <svg
@@ -261,54 +184,22 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
                 <line x1="12" y1="16" x2="12" y2="12" />
                 <line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
-              {isMobile ? "Guide" : "Guide"}
+              Guide
               {/* First-visit hint dot */}
               {showGuideHint && (
                 <span
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -2,
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: "var(--accent-info)",
-                    animation: "guide-hint-pulse 1.5s ease-in-out infinite",
-                  }}
+                  className={styles.hintDot}
                   aria-label="New — click to see bracket guidance"
                 />
               )}
             </button>
-            {/* Guide hint pulse keyframes (inline style tag — tiny, non-blocking) */}
-            {showGuideHint && (
-              <style>{`
-                @keyframes guide-hint-pulse {
-                  0%, 100% { opacity: 1; transform: scale(1); }
-                  50% { opacity: 0.5; transform: scale(1.4); }
-                }
-              `}</style>
-            )}
 
             <button
               type="button"
               onClick={toggleLevers}
               aria-pressed={isLeverPanelOpen}
               title="Levers"
-              style={{
-                padding: isMobile ? "6px 10px" : "8px 14px",
-                fontSize: isMobile ? "0.75rem" : "0.8125rem",
-                fontWeight: 600,
-                color: isLeverPanelOpen
-                  ? "var(--accent-primary)"
-                  : "var(--text-secondary)",
-                backgroundColor: isLeverPanelOpen
-                  ? "rgba(74, 144, 217, 0.1)"
-                  : "transparent",
-                border: "1px solid var(--border-primary)",
-                borderRadius: "6px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
+              className={`${styles.toggleButton} ${isMobile ? styles.toggleButtonMobile : ""} ${isLeverPanelOpen ? styles.toggleButtonActive : ""}`}
             >
               Levers
             </button>
@@ -328,14 +219,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
         />
 
         {/* Main bracket area */}
-        <main
-          id="main-content"
-          style={{
-            flex: 1,
-            overflow: "auto",
-            padding: "8px 0",
-          }}
-        >
+        <main id="main-content" className={styles.main}>
           <BracketGrid onMatchupClick={openMatchup} />
         </main>
 
@@ -372,14 +256,7 @@ function AutoSimulationTrigger() {
 /** Displays the site name in the bracket header bar. */
 function SiteBrand() {
   return (
-    <div
-      style={{
-        fontSize: "1rem",
-        fontWeight: 700,
-        color: "var(--text-primary)",
-        letterSpacing: "0.01em",
-      }}
-    >
+    <div className={styles.siteBrand}>
       {SITE_NAME}
     </div>
   );
