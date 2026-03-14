@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { SITE_NAME } from "@/lib/constants";
 
 const NAV_LINKS = [
   { href: "/bracket", label: "Bracket" },
@@ -57,7 +58,7 @@ export function Navbar() {
             whiteSpace: "nowrap",
           }}
         >
-          Predict the Madness
+          {SITE_NAME}
         </Link>
 
         {/* Center: Nav Links (desktop) */}

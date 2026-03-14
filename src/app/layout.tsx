@@ -7,8 +7,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Predict the Madness",
-    template: "%s | Predict the Madness",
+    default: "BracketLab",
+    template: "%s | BracketLab",
   },
   description:
     "Data-driven bracket predictions using Monte Carlo simulation, composite ratings from KenPom, Torvik, and Evan Miya, plus contest-aware game theory strategy.",
@@ -16,16 +16,16 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   openGraph: {
-    title: "Predict the Madness",
+    title: "BracketLab",
     description:
       "Build smarter brackets with Monte Carlo simulation, composite ratings, and contest-aware strategy.",
-    siteName: "Predict the Madness",
+    siteName: "BracketLab",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Predict the Madness",
+    title: "BracketLab",
     description:
       "Monte Carlo simulation meets college basketball. Build data-driven brackets.",
   },

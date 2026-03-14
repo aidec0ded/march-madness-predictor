@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Admin | March Madness Bracket Predictor",
-  description: "Admin data management for the March Madness Bracket Predictor.",
+  title: "Admin | BracketLab",
+  description: "Admin data management for BracketLab.",
 };
 
 export default function AdminLayout({
@@ -37,7 +37,7 @@ export default function AdminLayout({
             className="text-sm font-semibold tracking-wide"
             style={{ color: "var(--text-primary)" }}
           >
-            Predict the Madness
+            BracketLab
           </span>
           <span
             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider"

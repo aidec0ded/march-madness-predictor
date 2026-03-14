@@ -5,7 +5,7 @@ import Home from "./page";
 describe("Home page", () => {
   it("renders the title", () => {
     render(<Home />);
-    expect(screen.getByText("Predict the Madness")).toBeInTheDocument();
+    expect(screen.getByText("BracketLab")).toBeInTheDocument();
   });
 
   it("renders the tagline", () => {

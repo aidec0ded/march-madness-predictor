@@ -6,7 +6,7 @@ import type { TeamSeason, TournamentSite } from "@/types/team";
 import type { SavedBracketData } from "@/types/bracket-ui";
 import type { PlayInConfig } from "@/types/simulation";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
-import { CURRENT_SEASON } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
 import { BracketProvider } from "@/components/bracket/BracketProvider";
 import { BracketGrid } from "@/components/bracket/BracketGrid";
 import { LeverPanel } from "@/components/levers/LeverPanel";
@@ -159,7 +159,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
               flex: isMobile ? "0 1 auto" : undefined,
             }}
           >
-            {!isMobile && <BracketName />}
+            {!isMobile && <SiteBrand />}
             <PoolSizeSelector />
           </div>
 
@@ -285,15 +285,11 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
 }
 
 // ---------------------------------------------------------------------------
-// BracketName — inline editable bracket name
+// SiteBrand — site name in the bracket header
 // ---------------------------------------------------------------------------
 
-/**
- * Editable bracket name in the header bar.
- * Reads bracketName from context. In this version, it's display-only
- * since SET_BRACKET_NAME is not yet in the reducer (could be added).
- */
-function BracketName() {
+/** Displays the site name in the bracket header bar. */
+function SiteBrand() {
   return (
     <div
       style={{
@@ -303,7 +299,7 @@ function BracketName() {
         letterSpacing: "0.01em",
       }}
     >
-      March Madness {CURRENT_SEASON}
+      {SITE_NAME}
     </div>
   );
 }

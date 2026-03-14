@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CURRENT_SEASON } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
 import { BracketShell } from "./BracketShell";
 import { createStrongTeam, createWeakTeam } from "@/lib/engine/test-helpers";
 import type { TeamSeason } from "@/types/team";
@@ -126,7 +126,7 @@ const initialTeams: TeamSeason[] = [team1, team2];
 describe("BracketShell", () => {
   it("renders the bracket header with title", () => {
     render(<BracketShell initialTeams={initialTeams} />);
-    expect(screen.getByText(`March Madness ${CURRENT_SEASON}`)).toBeInTheDocument();
+    expect(screen.getByText(SITE_NAME)).toBeInTheDocument();
   });
 
   it("renders the Pool size selector", () => {

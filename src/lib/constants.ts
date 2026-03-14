@@ -9,3 +9,6 @@
 
 /** The active NCAA tournament season year (e.g., 2026 for the 2025-26 season). */
 export const CURRENT_SEASON = 2026;
+
+/** The public-facing site name, used in the navbar, page titles, and metadata. */
+export const SITE_NAME = "BracketLab";
