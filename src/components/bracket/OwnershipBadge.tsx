@@ -12,11 +12,12 @@
  * (2 per matchup × 64 matchups in the full tree).
  *
  * Styling:
- * - Tailwind for layout only
- * - CSS variables for ALL colors via inline styles
+ * - CSS Modules for static layout and typography
+ * - Inline styles only for dynamic color (ownership threshold)
  */
 
 import { memo } from "react";
+import styles from "./OwnershipBadge.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,15 +65,12 @@ export const OwnershipBadge = memo(function OwnershipBadge({
 
   return (
     <span
-      className="inline-flex items-center gap-0.5 text-[9px] font-mono tabular-nums leading-none shrink-0"
+      className={styles.badge}
       style={{ color }}
       title={`Estimated ${ownershipPct.toFixed(1)}% public ownership. Based on: seed position, round depth, conference profile, and rating strength vs. seed expectation.`}
     >
       {displayPct}%
-      <span
-        className="text-[8px]"
-        style={{ color: "var(--text-muted)", opacity: 0.7 }}
-      >
+      <span className={styles.label}>
         own
       </span>
     </span>

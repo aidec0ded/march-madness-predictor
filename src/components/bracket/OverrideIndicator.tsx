@@ -1,6 +1,7 @@
 "use client";
 
 import { Tooltip } from "@/components/ui/Tooltip";
+import styles from "./OverrideIndicator.module.css";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -14,17 +15,9 @@ import { Tooltip } from "@/components/ui/Tooltip";
  */
 export function OverrideIndicator() {
   return (
-    <div className="absolute top-1 right-1 z-10">
+    <div className={styles.wrapper}>
       <Tooltip content="Per-matchup overrides applied" position="top">
-        <div
-          className="rounded-full"
-          style={{
-            width: "8px",
-            height: "8px",
-            backgroundColor: "var(--accent-warning)",
-            boxShadow: "0 0 4px var(--accent-warning)",
-          }}
-        />
+        <div className={styles.dot} />
       </Tooltip>
     </div>
   );

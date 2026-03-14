@@ -4,6 +4,7 @@ import { memo } from "react";
 import type { TeamSeason } from "@/types/team";
 import { ProbabilityBar } from "./ProbabilityBar";
 import { OwnershipBadge } from "./OwnershipBadge";
+import styles from "./TeamCard.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,19 +75,10 @@ export const TeamCard = memo(function TeamCard({
   if (!team) {
     return (
       <div
-        className="flex items-center gap-2 px-2 py-1.5 rounded"
-        style={{
-          minWidth: "160px",
-          height: "32px",
-          border: "1px dashed var(--border-primary)",
-        }}
+        className={styles.emptySlot}
+        style={{ border: "1px dashed var(--border-primary)" }}
       >
-        <span
-          className="text-[10px] font-mono"
-          style={{ color: "var(--text-muted)" }}
-        >
-          TBD
-        </span>
+        <span className={styles.emptyLabel}>TBD</span>
       </div>
     );
   }
@@ -97,12 +89,8 @@ export const TeamCard = memo(function TeamCard({
       onClick={onClick}
       aria-label={`${seed} seed ${team.team.name}${isWinner ? ", selected winner" : ""}${probability != null ? `, ${(probability * 100).toFixed(0)}% win probability` : ""}`}
       disabled={!isClickable}
-      className={`flex flex-col justify-center gap-0.5 px-2 py-1 rounded transition-colors
-        ${isClickable ? "cursor-pointer hover:brightness-110" : "cursor-default"}
-      `}
+      className={`${styles.card} ${isClickable ? styles.clickable : ""}`}
       style={{
-        minWidth: "160px",
-        minHeight: "32px",
         backgroundColor: isWinner ? "var(--bg-elevated)" : "transparent",
         borderLeft: isWinner
           ? "2px solid var(--accent-primary)"
@@ -117,15 +105,15 @@ export const TeamCard = memo(function TeamCard({
       }
     >
       {/* Top row: seed + name + probability + ownership */}
-      <div className="flex items-center gap-1.5 w-full">
+      <div className={styles.topRow}>
         <span
-          className="text-[10px] font-bold font-mono leading-none shrink-0"
-          style={{ color: getSeedColor(seed), minWidth: "14px" }}
+          className={styles.seed}
+          style={{ color: getSeedColor(seed) }}
         >
           {seed}
         </span>
         <span
-          className="text-xs font-medium leading-none truncate"
+          className={styles.teamName}
           style={{
             color: isWinner
               ? "var(--text-primary)"
@@ -138,10 +126,7 @@ export const TeamCard = memo(function TeamCard({
           <OwnershipBadge ownershipPct={ownership} />
         )}
         {probability != null && (
-          <span
-            className="text-[10px] font-mono tabular-nums leading-none ml-auto shrink-0"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className={styles.probability}>
             {(probability * 100).toFixed(0)}%
           </span>
         )}
@@ -149,7 +134,7 @@ export const TeamCard = memo(function TeamCard({
 
       {/* Probability bar */}
       {probability != null && (
-        <div className="w-full">
+        <div className={styles.barWrapper}>
           <ProbabilityBar probability={probability} />
         </div>
       )}

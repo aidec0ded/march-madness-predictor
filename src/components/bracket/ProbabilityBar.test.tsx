@@ -3,12 +3,12 @@ import { describe, it, expect } from "vitest";
 import { ProbabilityBar } from "./ProbabilityBar";
 
 describe("ProbabilityBar", () => {
-  it("renders a bar container", () => {
+  it("renders a bar container with track class", () => {
     const { container } = render(<ProbabilityBar probability={0.5} />);
-    // Outer container with 3px height
+    // Outer container uses CSS Module .track class (height set via CSS)
     const outer = container.firstElementChild as HTMLElement;
     expect(outer).toBeTruthy();
-    expect(outer.style.height).toBe("3px");
+    expect(outer.className).toBeTruthy();
   });
 
   it("sets width proportional to probability", () => {

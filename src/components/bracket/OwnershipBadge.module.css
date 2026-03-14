@@ -1,0 +1,22 @@
+/* OwnershipBadge — compact ownership percentage indicator
+ *
+ * Static layout in CSS Modules.
+ * Dynamic color remains as inline style (depends on ownership threshold).
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 8px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}

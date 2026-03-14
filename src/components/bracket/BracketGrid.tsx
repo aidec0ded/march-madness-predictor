@@ -38,6 +38,7 @@ import { RegionBracket } from "@/components/bracket/RegionBracket";
 import { FinalFour } from "@/components/bracket/FinalFour";
 import { FirstFour } from "@/components/bracket/FirstFour";
 import { MobileBracketView } from "./MobileBracketView";
+import styles from "./BracketGrid.module.css";
 
 // ---------------------------------------------------------------------------
 // Layout Configuration
@@ -150,39 +151,17 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   // Empty state
   if (state.teams.size === 0) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "400px",
-          color: "var(--text-muted)",
-          fontSize: "14px",
-        }}
-      >
+      <div className={styles.emptyState}>
         No team data loaded. Import team data from the admin panel to begin.
       </div>
     );
   }
 
   return (
-    <div
-      className="bracket-grid"
-      style={{
-        overflowX: "auto",
-        overflowY: "hidden",
-        width: "100%",
-        padding: "8px 0",
-      }}
-    >
+    <div className={styles.scrollWrapper}>
       {/* First Four play-in games (only when 68-team bracket) */}
       {firstFourMatchups.length > 0 && (
-        <div
-          style={{
-            borderBottom: "1px solid var(--border-subtle)",
-            marginBottom: "8px",
-          }}
-        >
+        <div className={styles.firstFourWrapper}>
           <FirstFour
             matchups={firstFourMatchups}
             teams={state.teams}
@@ -198,23 +177,9 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
         </div>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(600px, 45%) minmax(200px, 10%) minmax(600px, 45%)",
-          gap: "0px",
-          minWidth: "1400px",
-          alignItems: "stretch",
-        }}
-      >
+      <div className={styles.mainGrid}>
         {/* Left side: East (top) + South (bottom) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-          }}
-        >
+        <div className={styles.regionColumn}>
           {LEFT_REGIONS.map((region) => (
             <RegionBracket
               key={region}
@@ -240,13 +205,7 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
         />
 
         {/* Right side: West (top) + Midwest (bottom) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-          }}
-        >
+        <div className={styles.regionColumn}>
           {RIGHT_REGIONS.map((region) => (
             <RegionBracket
               key={region}

@@ -1,0 +1,39 @@
+/* BracketGrid — main layout assembly for the full bracket
+ *
+ * Three-column layout: left regions, center Final Four, right regions.
+ */
+
+.scrollWrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.firstFourWrapper {
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 8px;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(600px, 45%) minmax(200px, 10%) minmax(600px, 45%);
+  gap: 0;
+  min-width: 1400px;
+  align-items: stretch;
+}
+
+.regionColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-muted);
+  font-size: 14px;
+}

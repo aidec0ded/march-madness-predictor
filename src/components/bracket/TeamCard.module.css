@@ -1,0 +1,89 @@
+/* TeamCard — compact team display for bracket matchups
+ *
+ * Static layout and typography in CSS Modules.
+ * Dynamic values (backgroundColor, borderLeft color, text colors) remain
+ * as inline styles since they depend on runtime state (isWinner, seed tier).
+ */
+
+/* Empty TBD slot */
+.emptySlot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 6px;
+  border-radius: 4px;
+  min-width: 160px;
+  height: 32px;
+}
+
+.emptyLabel {
+  font-size: 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--text-muted);
+}
+
+/* Main team card button */
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  min-width: 160px;
+  min-height: 32px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: default;
+}
+
+.card.clickable {
+  cursor: pointer;
+}
+
+.card.clickable:hover {
+  filter: brightness(1.1);
+}
+
+/* Top row: seed + name + probability + ownership */
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.seed {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  line-height: 1;
+  flex-shrink: 0;
+  min-width: 14px;
+}
+
+.teamName {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.probability {
+  font-size: 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/* Probability bar wrapper */
+.barWrapper {
+  width: 100%;
+}

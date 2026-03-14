@@ -1,4 +1,5 @@
 import { memo } from "react";
+import styles from "./ProbabilityBar.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,15 +43,9 @@ export const ProbabilityBar = memo(function ProbabilityBar({
   const color = getBarColor(probability);
 
   return (
-    <div
-      className="w-full rounded-full overflow-hidden"
-      style={{
-        height: "3px",
-        backgroundColor: "var(--bg-elevated)",
-      }}
-    >
+    <div className={styles.track}>
       <div
-        className="h-full rounded-full transition-all duration-300 ease-out"
+        className={styles.fill}
         style={{
           width: `${widthPercent}%`,
           backgroundColor: color,

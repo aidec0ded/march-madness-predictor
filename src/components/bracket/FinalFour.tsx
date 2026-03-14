@@ -19,6 +19,7 @@ import type { MatchupOverrides } from "@/types/engine";
 import type { OwnershipModel } from "@/types/game-theory";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
+import styles from "./FinalFour.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,64 +127,19 @@ function ChampionCard({ team, probability }: ChampionCardProps) {
   const seed = team.tournamentEntry?.seed;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "6px",
-        padding: "12px 16px",
-        borderRadius: "8px",
-        border: "2px solid var(--accent-warning)",
-        background:
-          "linear-gradient(135deg, var(--bg-elevated), var(--bg-surface))",
-        boxShadow: "0 0 16px rgba(245, 158, 11, 0.15)",
-        animation: "champion-glow 2s ease-in-out infinite alternate",
-      }}
-    >
-      <span style={{ fontSize: "24px" }} role="img" aria-label="Trophy">
+    <div className={styles.championCard}>
+      <span className={styles.championTrophy} role="img" aria-label="Trophy">
         🏆
       </span>
-      <span
-        style={{
-          fontSize: "10px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          color: "var(--accent-warning)",
-        }}
-      >
-        Champion
-      </span>
-      <span
-        style={{
-          fontSize: "16px",
-          fontWeight: 700,
-          color: "var(--text-primary)",
-          textAlign: "center",
-        }}
-      >
+      <span className={styles.championTitle}>Champion</span>
+      <span className={styles.championName}>
         {seed && (
-          <span
-            style={{
-              fontSize: "12px",
-              color: "var(--text-muted)",
-              marginRight: "4px",
-            }}
-          >
-            ({seed})
-          </span>
+          <span className={styles.championSeed}>({seed})</span>
         )}
         {team.team.shortName}
       </span>
       {probability !== null && (
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--accent-success)",
-          }}
-        >
+        <span className={styles.championProb}>
           {(probability * 100).toFixed(1)}% to win
         </span>
       )}
@@ -247,39 +203,16 @@ export const FinalFour = React.memo(function FinalFour({
       ? ownershipModel.getOwnership(teamId, round)
       : undefined;
 
+  const hasAnyF4Pick = !!(picks["F4-1"] || picks["F4-2"]);
+
   return (
-    <div
-      className="final-four"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "16px",
-        padding: "8px",
-        minWidth: "180px",
-        height: "100%",
-      }}
-    >
+    <div className={styles.container}>
       {/* Final Four Header */}
-      <h3
-        style={{
-          color: "var(--text-primary)",
-          fontSize: "13px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          textAlign: "center",
-          borderBottom: "2px solid var(--accent-warning)",
-          paddingBottom: "4px",
-        }}
-      >
-        Final Four
-      </h3>
+      <h3 className={styles.header}>Final Four</h3>
 
       {/* F4 Game 1 */}
       {f4Game1 && (
-        <div style={{ width: "100%", maxWidth: "180px" }}>
+        <div className={styles.matchupWrapper}>
           <MatchupSlot
             gameId={f4Game1.gameId}
             round={f4Game1.round}
@@ -309,33 +242,13 @@ export const FinalFour = React.memo(function FinalFour({
 
       {/* Connector: F4 -> NCG */}
       <div
-        style={{
-          width: "2px",
-          height: "12px",
-          background:
-            picks["F4-1"] || picks["F4-2"]
-              ? "var(--accent-primary)"
-              : "var(--border-subtle)",
-          transition: "background 0.2s ease",
-        }}
+        className={`${styles.connector} ${hasAnyF4Pick ? styles.connectorActive : styles.connectorInactive}`}
       />
 
       {/* National Championship */}
       {ncg && (
-        <div style={{ width: "100%", maxWidth: "180px" }}>
-          <div
-            style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--text-muted)",
-              textAlign: "center",
-              marginBottom: "4px",
-            }}
-          >
-            Championship
-          </div>
+        <div className={styles.matchupWrapper}>
+          <div className={styles.championshipLabel}>Championship</div>
           <MatchupSlot
             gameId="NCG"
             round="NCG"
@@ -367,34 +280,13 @@ export const FinalFour = React.memo(function FinalFour({
       {champion && <ChampionCard team={champion} probability={championProb} />}
 
       {/* Connector: NCG -> F4 Game 2 */}
-      {!champion && (
-        <div
-          style={{
-            width: "2px",
-            height: "12px",
-            background:
-              picks["F4-1"] || picks["F4-2"]
-                ? "var(--accent-primary)"
-                : "var(--border-subtle)",
-            transition: "background 0.2s ease",
-          }}
-        />
-      )}
-
-      {champion && (
-        <div
-          style={{
-            width: "2px",
-            height: "12px",
-            background: "var(--accent-primary)",
-            transition: "background 0.2s ease",
-          }}
-        />
-      )}
+      <div
+        className={`${styles.connector} ${champion || hasAnyF4Pick ? styles.connectorActive : styles.connectorInactive}`}
+      />
 
       {/* F4 Game 2 */}
       {f4Game2 && (
-        <div style={{ width: "100%", maxWidth: "180px" }}>
+        <div className={styles.matchupWrapper}>
           <MatchupSlot
             gameId={f4Game2.gameId}
             round={f4Game2.round}
@@ -421,14 +313,6 @@ export const FinalFour = React.memo(function FinalFour({
           />
         </div>
       )}
-
-      {/* Keyframe animation for champion glow */}
-      <style>{`
-        @keyframes champion-glow {
-          from { box-shadow: 0 0 8px rgba(245, 158, 11, 0.1); }
-          to { box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
-        }
-      `}</style>
     </div>
   );
 });

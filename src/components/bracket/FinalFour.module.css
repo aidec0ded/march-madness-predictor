@@ -1,0 +1,111 @@
+/* FinalFour — center section: F4-1, F4-2, NCG, and champion display
+ *
+ * Static layout in CSS Modules.
+ * Dynamic connector colors remain as inline styles.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px;
+  min-width: 180px;
+  height: 100%;
+}
+
+.header {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  border-bottom: 2px solid var(--accent-warning);
+  padding-bottom: 4px;
+}
+
+.matchupWrapper {
+  width: 100%;
+  max-width: 180px;
+}
+
+.championshipLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* Vertical connector between matchups */
+.connector {
+  width: 2px;
+  height: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.connectorInactive {
+  background-color: var(--border-subtle);
+}
+
+.connectorActive {
+  background-color: var(--accent-primary);
+}
+
+/* Champion Card */
+.championCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--accent-warning);
+  background: linear-gradient(135deg, var(--bg-elevated), var(--bg-surface));
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+  animation: champion-glow 2s ease-in-out infinite alternate;
+}
+
+.championTrophy {
+  font-size: 24px;
+}
+
+.championTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-warning);
+}
+
+.championName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.championSeed {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.championProb {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-success);
+}
+
+@keyframes champion-glow {
+  from {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.1);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+  }
+}

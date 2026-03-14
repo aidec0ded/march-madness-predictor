@@ -149,11 +149,11 @@ describe("TeamCard", () => {
           onClick={() => {}}
         />
       );
-      // ProbabilityBar renders a 3px-high div
-      const barContainer = container.querySelector(
-        'div[style*="height: 3px"]'
+      // ProbabilityBar renders with CSS Module classes; inner fill div has inline width
+      const fillBar = container.querySelector(
+        'div[style*="width: 65%"]'
       );
-      expect(barContainer).toBeTruthy();
+      expect(fillBar).toBeTruthy();
     });
 
     it("does not render ProbabilityBar when probability is null", () => {

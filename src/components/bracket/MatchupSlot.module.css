@@ -1,0 +1,45 @@
+/* MatchupSlot — container for two TeamCards in a matchup
+ *
+ * Static layout in CSS Modules.
+ * Dynamic colors (border, background) remain as inline styles.
+ */
+
+.container {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background-color: var(--border-primary);
+}
+
+/* Matchup detail click overlay */
+.detailButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+  background-color: rgba(74, 144, 217, 0.1);
+  border: none;
+  padding: 0;
+}
+
+.detailButton:hover {
+  opacity: 1;
+}
+
+.detailIcon {
+  color: var(--accent-primary);
+}

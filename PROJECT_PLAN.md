@@ -58,7 +58,7 @@
 > The mathematical heart of the application.
 
 - [x] Implement composite rating calculator (weighted KenPom/Torvik/Miya with auto-renormalization)
-- [x] Implement log5 logistic model for pairwise win probability (k=0.0325, calibrated)
+- [x] Implement log5 logistic model for pairwise win probability (k=0.11, derived from game σ≈11 and ~68 possessions)
 - [x] Build global lever system — mean-adjusting levers:
   - Four Factors weights (8 sub-levers: offense/defense × 4 factors, scaling factor 0.15)
   - Roster Experience weight (0.75 eff pts / year)

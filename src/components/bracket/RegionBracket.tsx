@@ -26,6 +26,7 @@ import { useGameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition } from "@/lib/bracket-layout";
 import { resolveMatchupTeams } from "@/lib/bracket-utils";
+import styles from "./RegionBracket.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -168,69 +169,29 @@ export function RegionBracket({
   const connectors = generateConnectors(matchups, picks, direction);
 
   return (
-    <div className="region-bracket" style={{ position: "relative" }}>
+    <div className={styles.wrapper}>
       {/* Region header */}
       <h3
-        style={{
-          color: "var(--text-primary)",
-          fontSize: "13px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          padding: "4px 8px",
-          marginBottom: "4px",
-          textAlign: direction === "ltr" ? "left" : "right",
-          borderBottom: "2px solid var(--accent-primary)",
-        }}
+        className={`${styles.regionHeader} ${direction === "ltr" ? styles.regionHeaderLtr : styles.regionHeaderRtl}`}
       >
         {region}
       </h3>
 
       {/* Grid container */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            direction === "ltr"
-              ? "minmax(140px, 180px) minmax(140px, 180px) minmax(140px, 180px) minmax(140px, 180px)"
-              : "minmax(140px, 180px) minmax(140px, 180px) minmax(140px, 180px) minmax(140px, 180px)",
-          gridTemplateRows: "repeat(16, minmax(28px, 1fr))",
-          gap: "0px 8px",
-          padding: "4px 0",
-          position: "relative",
-        }}
-      >
+      <div className={styles.grid}>
         {/* Connector lines */}
         {connectors.map((conn) => (
           <div
             key={conn.key}
+            className={`${styles.connectorCell} ${conn.direction === "ltr" ? styles.connectorCellLtr : styles.connectorCellRtl}`}
             style={{
               gridRowStart: conn.gridRowStart,
               gridRowEnd: conn.gridRowEnd,
               gridColumn: conn.gridColumn,
-              display: "flex",
-              alignItems: "center",
-              justifyContent:
-                conn.direction === "ltr" ? "flex-start" : "flex-end",
-              pointerEvents: "none",
-              zIndex: 0,
             }}
           >
             <div
-              style={{
-                width: "8px",
-                height: "100%",
-                borderTop: "none",
-                borderBottom: "none",
-                ...(conn.direction === "ltr"
-                  ? {
-                      borderLeft: `2px solid ${conn.isActive ? "var(--accent-primary)" : "var(--border-subtle)"}`,
-                    }
-                  : {
-                      borderRight: `2px solid ${conn.isActive ? "var(--accent-primary)" : "var(--border-subtle)"}`,
-                    }),
-                transition: "border-color 0.2s ease",
-              }}
+              className={`${styles.connectorLine} ${conn.direction === "ltr" ? styles.connectorLineLtr : styles.connectorLineRtl} ${conn.isActive ? styles.connectorLineActive : ""}`}
             />
           </div>
         ))}
@@ -277,13 +238,11 @@ export function RegionBracket({
           return (
             <div
               key={matchup.gameId}
+              className={styles.matchupCell}
               style={{
                 gridRowStart: pos.gridRowStart,
                 gridRowEnd: pos.gridRowEnd,
                 gridColumn: pos.gridColumn,
-                display: "flex",
-                alignItems: "center",
-                zIndex: 1,
               }}
             >
               <MatchupSlot

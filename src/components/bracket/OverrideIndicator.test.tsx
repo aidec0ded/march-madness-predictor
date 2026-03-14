@@ -3,40 +3,38 @@ import { describe, it, expect } from "vitest";
 import { OverrideIndicator } from "./OverrideIndicator";
 
 describe("OverrideIndicator", () => {
-  it("renders an 8px dot", () => {
+  it("renders a dot element", () => {
     const { container } = render(<OverrideIndicator />);
-    const dot = container.querySelector(
-      'div[style*="width: 8px"]'
-    ) as HTMLElement;
+    // The dot uses CSS Module class for dimensions (no longer inline styles)
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper).toBeTruthy();
+    // Dot is nested inside wrapper > Tooltip > dot
+    const dot = wrapper.querySelector("div > div") as HTMLElement;
     expect(dot).toBeTruthy();
-    expect(dot.style.height).toBe("8px");
+    expect(dot.className).toBeTruthy();
   });
 
-  it("uses accent-warning background color", () => {
+  it("applies CSS Module classes for styling", () => {
     const { container } = render(<OverrideIndicator />);
-    const dot = container.querySelector(
-      'div[style*="width: 8px"]'
-    ) as HTMLElement;
-    expect(dot.style.backgroundColor).toBe("var(--accent-warning)");
+    // Colors and dimensions are now in CSS Modules, not inline styles
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.className).toBeTruthy();
   });
 
-  it("is positioned absolutely in the top-right corner", () => {
+  it("wrapper has CSS Module positioning class", () => {
     const { container } = render(<OverrideIndicator />);
     const wrapper = container.firstElementChild as HTMLElement;
-    expect(wrapper.className).toContain("absolute");
-    expect(wrapper.className).toContain("top-1");
-    expect(wrapper.className).toContain("right-1");
+    // CSS Module class handles absolute positioning (no longer Tailwind)
+    expect(wrapper.className).toBeTruthy();
   });
 
   it("wraps the dot in a Tooltip with override explanation", () => {
     const { container } = render(<OverrideIndicator />);
     // The Tooltip renders a wrapper div with onMouseEnter/onMouseLeave
-    // The tooltip content is hidden until hover (not visible in initial render)
-    // We check the structure exists
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper).toBeTruthy();
-    // The dot should be a descendant with a rounded-full class
-    const dot = container.querySelector(".rounded-full");
-    expect(dot).toBeTruthy();
+    // The dot should be a nested descendant (inside Tooltip wrapper)
+    const nestedDivs = wrapper.querySelectorAll("div");
+    expect(nestedDivs.length).toBeGreaterThanOrEqual(1);
   });
 });

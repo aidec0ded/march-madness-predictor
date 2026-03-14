@@ -3,6 +3,7 @@
 import type { TeamSeason } from "@/types/team";
 import { TeamCard } from "./TeamCard";
 import { OverrideIndicator } from "./OverrideIndicator";
+import styles from "./MatchupSlot.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,13 +74,7 @@ export function MatchupSlot({
   const seedB = teamB?.tournamentEntry?.seed ?? 0;
 
   return (
-    <div
-      className="relative rounded-lg overflow-hidden"
-      style={{
-        backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border-primary)",
-      }}
-    >
+    <div className={styles.container}>
       {/* Override indicator */}
       {hasOverrides && <OverrideIndicator />}
 
@@ -98,13 +93,7 @@ export function MatchupSlot({
       />
 
       {/* Divider */}
-      <div
-        className="w-full"
-        style={{
-          height: "1px",
-          backgroundColor: "var(--border-primary)",
-        }}
-      />
+      <div className={styles.divider} />
 
       {/* Team B */}
       <TeamCard
@@ -125,10 +114,7 @@ export function MatchupSlot({
         <button
           type="button"
           onClick={() => onMatchupClick(gameId)}
-          className="absolute top-0 right-0 w-5 h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-          style={{
-            backgroundColor: "rgba(74, 144, 217, 0.1)",
-          }}
+          className={styles.detailButton}
           aria-label={`View matchup details for ${gameId}`}
           title="View matchup details"
         >
@@ -141,7 +127,7 @@ export function MatchupSlot({
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ color: "var(--accent-primary)" }}
+            className={styles.detailIcon}
           >
             <path d="M3.5 1.5L7 5L3.5 8.5" />
           </svg>

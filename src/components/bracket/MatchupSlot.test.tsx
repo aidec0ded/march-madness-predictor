@@ -131,11 +131,12 @@ describe("MatchupSlot", () => {
         onAdvance={() => {}}
       />
     );
-    // OverrideIndicator renders an 8px dot
-    const dot = container.querySelector(
-      'div[style*="width: 8px"]'
-    );
-    expect(dot).toBeTruthy();
+    // OverrideIndicator renders nested divs inside the container.
+    // The outermost slot div has 3+ direct children when override is present
+    // (override wrapper, team A card, divider, team B card).
+    const slotChildren = container.firstElementChild!.children;
+    // With overrides: wrapper + teamA + divider + teamB = 4 children min
+    expect(slotChildren.length).toBeGreaterThanOrEqual(4);
   });
 
   it("does not show override indicator when hasOverrides is false", () => {
@@ -152,10 +153,9 @@ describe("MatchupSlot", () => {
         onAdvance={() => {}}
       />
     );
-    const dot = container.querySelector(
-      'div[style*="width: 8px"]'
-    );
-    expect(dot).toBeNull();
+    // Without overrides: teamA + divider + teamB = 3 children
+    const slotChildren = container.firstElementChild!.children;
+    expect(slotChildren.length).toBe(3);
   });
 
   it("marks the winner TeamCard with elevated style", () => {

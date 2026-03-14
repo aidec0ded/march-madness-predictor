@@ -1,0 +1,85 @@
+/* RegionBracket — one region's bracket grid (15 matchups)
+ *
+ * Static layout in CSS Modules.
+ * Dynamic grid positions and connector colors remain as inline styles
+ * since they depend on runtime data (matchup positions, pick state).
+ */
+
+.wrapper {
+  position: relative;
+}
+
+.regionHeader {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid var(--accent-primary);
+}
+
+.regionHeaderLtr {
+  text-align: left;
+}
+
+.regionHeaderRtl {
+  text-align: right;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 180px));
+  grid-template-rows: repeat(16, minmax(28px, 1fr));
+  gap: 0 8px;
+  padding: 4px 0;
+  position: relative;
+}
+
+/* Connector line container */
+.connectorCell {
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.connectorCellLtr {
+  justify-content: flex-start;
+}
+
+.connectorCellRtl {
+  justify-content: flex-end;
+}
+
+.connectorLine {
+  width: 8px;
+  height: 100%;
+  border-top: none;
+  border-bottom: none;
+  transition: border-color 0.2s ease;
+}
+
+.connectorLineLtr {
+  border-left: 2px solid var(--border-subtle);
+}
+
+.connectorLineRtl {
+  border-right: 2px solid var(--border-subtle);
+}
+
+.connectorLineActive.connectorLineLtr {
+  border-left-color: var(--accent-primary);
+}
+
+.connectorLineActive.connectorLineRtl {
+  border-right-color: var(--accent-primary);
+}
+
+/* Matchup position wrapper */
+.matchupCell {
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
