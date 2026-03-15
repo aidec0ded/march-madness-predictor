@@ -23,7 +23,6 @@ import React, { useCallback } from "react";
 import type { Region, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import { useBracket } from "@/hooks/useBracket";
-import { useContestStrategy } from "@/hooks/useContestStrategy";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import { getRegionMatchupPosition, getConnectorColumn } from "@/lib/bracket-layout";
@@ -201,7 +200,6 @@ export function RegionBracket({
   gameProbabilities,
 }: RegionBracketProps) {
   const { state, dispatch } = useBracket();
-  const { ownershipModel } = useContestStrategy();
 
   const { teams, picks, simulationResult, matchupOverrides, playInConfig,
     isSimulationStale } = state;
@@ -275,18 +273,6 @@ export function RegionBracket({
             simulationResult
           );
 
-          // Get game-level ownership for this matchup (always sums to 100%)
-          const matchupOwnership =
-            ownershipModel && teamA?.teamId && teamB?.teamId
-              ? ownershipModel.getMatchupOwnership(
-                  teamA.teamId,
-                  teamB.teamId,
-                  matchup.round
-                )
-              : null;
-          const ownershipA = matchupOwnership?.[0];
-          const ownershipB = matchupOwnership?.[1];
-
           const nextRound = NEXT_ROUND_SHORT[matchup.round];
 
           return (
@@ -313,8 +299,6 @@ export function RegionBracket({
                 hasOverrides={hasOverrides}
                 onAdvance={(teamId) => handleAdvance(matchup.gameId, teamId)}
                 onMatchupClick={onMatchupClick}
-                ownershipA={ownershipA}
-                ownershipB={ownershipB}
                 isPreview={isPreview}
               />
 

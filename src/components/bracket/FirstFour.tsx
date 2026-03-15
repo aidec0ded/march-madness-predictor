@@ -12,14 +12,13 @@
  */
 
 import React from "react";
-import type { TeamSeason, TournamentRound } from "@/types/team";
+import type { TeamSeason } from "@/types/team";
 import type {
   BracketMatchup,
   SimulationResult,
   PlayInConfig,
 } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
-import type { OwnershipModel } from "@/types/game-theory";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { resolveSlotTeam } from "@/lib/bracket-utils";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
@@ -43,8 +42,6 @@ interface FirstFourProps {
   onAdvance: (gameId: string, teamId: string) => void;
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
-  /** Ownership model for displaying ownership badges (optional) */
-  ownershipModel?: OwnershipModel | null;
   /** Per-game head-to-head probabilities (optional) */
   gameProbabilities?: GameProbabilities;
   /** Play-in configuration for resolving FF slot teams */
@@ -126,7 +123,6 @@ export function FirstFour({
   matchupOverrides,
   onAdvance,
   onMatchupClick,
-  ownershipModel,
   gameProbabilities,
   playInConfig,
   isPreview,
@@ -134,16 +130,6 @@ export function FirstFour({
   const sorted = sortFFMatchups(matchups);
 
   if (sorted.length === 0) return null;
-
-  // Game-level ownership helper — returns [ownershipA, ownershipB] summing to 100%
-  const getMatchupOwn = (
-    teamAId: string | undefined,
-    teamBId: string | undefined,
-    round: TournamentRound
-  ): [number | undefined, number | undefined] => {
-    if (!ownershipModel || !teamAId || !teamBId) return [undefined, undefined];
-    return ownershipModel.getMatchupOwnership(teamAId, teamBId, round);
-  };
 
   return (
     <div
@@ -195,11 +181,6 @@ export function FirstFour({
             playInConfig
           );
           const winner = picks[matchup.gameId] ?? null;
-          const [ownA, ownB] = getMatchupOwn(
-            teamA?.teamId,
-            teamB?.teamId,
-            "FF"
-          );
 
           return (
             <div
@@ -255,8 +236,6 @@ export function FirstFour({
                     onAdvance(matchup.gameId, teamId)
                   }
                   onMatchupClick={onMatchupClick}
-                  ownershipA={ownA}
-                  ownershipB={ownB}
                   isPreview={isPreview}
                 />
               </div>

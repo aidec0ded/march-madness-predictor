@@ -3,7 +3,6 @@
 import { memo } from "react";
 import type { TeamSeason } from "@/types/team";
 import { ProbabilityBar } from "./ProbabilityBar";
-import { OwnershipBadge } from "./OwnershipBadge";
 import styles from "./TeamCard.module.css";
 
 // ---------------------------------------------------------------------------
@@ -27,8 +26,6 @@ interface TeamCardProps {
   isClickable: boolean;
   /** Click handler for advancing this team */
   onClick: () => void;
-  /** Estimated public ownership percentage for this round (optional) */
-  ownership?: number;
   /** Whether probabilities are preview estimates (no confirmed simulation) */
   isPreview?: boolean;
 }
@@ -58,7 +55,7 @@ function getSeedColor(seed: number): string {
 /**
  * Compact team card for bracket display.
  *
- * Shows seed badge, team name, probability bar, and optional ownership badge.
+ * Shows seed badge, team name, and probability bar.
  * Approximately 160x32px. Highlights the winner with an elevated background
  * and accent-primary left border.
  */
@@ -71,7 +68,6 @@ export const TeamCard = memo(function TeamCard({
   isWinner,
   isClickable,
   onClick,
-  ownership,
   isPreview,
 }: TeamCardProps) {
   // Empty slot (team not yet determined)
@@ -107,7 +103,7 @@ export const TeamCard = memo(function TeamCard({
             : undefined
       }
     >
-      {/* Top row: seed + name + probability + ownership */}
+      {/* Top row: seed + name + probability */}
       <div className={styles.topRow}>
         <span
           className={styles.seed}
@@ -125,9 +121,6 @@ export const TeamCard = memo(function TeamCard({
         >
           {team.team.shortName}
         </span>
-        {ownership != null && (
-          <OwnershipBadge ownershipPct={ownership} />
-        )}
         {probability != null && (
           <span className={styles.probability}>
             {isPreview ? "~" : ""}{(probability * 100).toFixed(0)}%

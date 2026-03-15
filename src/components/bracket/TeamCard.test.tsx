@@ -173,35 +173,6 @@ describe("TeamCard", () => {
       expect(barContainer).toBeNull();
     });
 
-    it("renders OwnershipBadge when ownership is provided", () => {
-      render(
-        <TeamCard
-          team={team1Seed}
-          seed={1}
-          probability={null}
-          isWinner={false}
-          isClickable={true}
-          onClick={() => {}}
-          ownership={42}
-        />
-      );
-      expect(screen.getByText("42%")).toBeInTheDocument();
-      expect(screen.getByText("own")).toBeInTheDocument();
-    });
-
-    it("does not render OwnershipBadge when ownership is not provided", () => {
-      render(
-        <TeamCard
-          team={team1Seed}
-          seed={1}
-          probability={null}
-          isWinner={false}
-          isClickable={true}
-          onClick={() => {}}
-        />
-      );
-      expect(screen.queryByText("own")).toBeNull();
-    });
   });
 
   describe("winner styling", () => {

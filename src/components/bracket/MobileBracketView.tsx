@@ -7,14 +7,13 @@
  * this component shows one region at a time via a tab bar. The user can
  * switch between First 4, East, West, South, Midwest, and Final 4 tabs.
  *
- * Reads the same state as BracketGrid (via useBracket, useContestStrategy)
+ * Reads the same state as BracketGrid (via useBracket)
  * and receives gameProbabilities as a prop from BracketGrid (computed once).
  * Passes props to FirstFour, FinalFour, and RegionBracket.
  */
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
-import { useContestStrategy } from "@/hooks/useContestStrategy";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import type { Region } from "@/types/team";
 import type { BracketMatchup } from "@/types/simulation";
@@ -94,7 +93,6 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileBracketViewProps) {
   const [activeTab, setActiveTab] = useState<TabId>("East");
   const { state, dispatch, allMatchups } = useBracket();
-  const { ownershipModel } = useContestStrategy();
 
   // Preview mode: probabilities are live estimates without full simulation confirmation
   const isPreview = state.simulationResult === null || state.isSimulationStale;
@@ -184,7 +182,6 @@ export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileB
             matchupOverrides={state.matchupOverrides}
             onAdvance={handleAdvance}
             onMatchupClick={handleMatchupClick}
-            ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
             playInConfig={state.playInConfig}
             isPreview={isPreview}
@@ -198,7 +195,6 @@ export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileB
             matchupOverrides={state.matchupOverrides}
             onAdvance={handleAdvance}
             onMatchupClick={handleMatchupClick}
-            ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
             isPreview={isPreview}
           />

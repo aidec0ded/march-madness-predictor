@@ -16,7 +16,6 @@ import React from "react";
 import type { TeamSeason, TournamentRound } from "@/types/team";
 import type { BracketMatchup, SimulationResult } from "@/types/simulation";
 import type { MatchupOverrides } from "@/types/engine";
-import type { OwnershipModel } from "@/types/game-theory";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import { MatchupSlot } from "@/components/bracket/MatchupSlot";
 import styles from "./FinalFour.module.css";
@@ -40,8 +39,6 @@ interface FinalFourProps {
   onAdvance: (gameId: string, teamId: string) => void;
   /** Called when user clicks a matchup for detail view */
   onMatchupClick?: (gameId: string) => void;
-  /** Ownership model for displaying ownership badges (optional) */
-  ownershipModel?: OwnershipModel | null;
   /** Per-game head-to-head probabilities from resolveMatchup (optional) */
   gameProbabilities?: GameProbabilities;
   /** Whether probabilities are preview estimates (no confirmed simulation) */
@@ -161,7 +158,6 @@ export const FinalFour = React.memo(function FinalFour({
   matchupOverrides,
   onAdvance,
   onMatchupClick,
-  ownershipModel,
   gameProbabilities,
   isPreview,
 }: FinalFourProps) {
@@ -200,32 +196,6 @@ export const FinalFour = React.memo(function FinalFour({
     ? getChampionshipProbability(championId, simulationResult)
     : null;
 
-  // Game-level ownership for each matchup (always sums to 100%)
-  const f4g1Own =
-    ownershipModel && f4Game1TeamA?.teamId && f4Game1TeamB?.teamId
-      ? ownershipModel.getMatchupOwnership(
-          f4Game1TeamA.teamId,
-          f4Game1TeamB.teamId,
-          "F4"
-        )
-      : null;
-  const ncgOwn =
-    ownershipModel && ncgTeamA?.teamId && ncgTeamB?.teamId
-      ? ownershipModel.getMatchupOwnership(
-          ncgTeamA.teamId,
-          ncgTeamB.teamId,
-          "NCG"
-        )
-      : null;
-  const f4g2Own =
-    ownershipModel && f4Game2TeamA?.teamId && f4Game2TeamB?.teamId
-      ? ownershipModel.getMatchupOwnership(
-          f4Game2TeamA.teamId,
-          f4Game2TeamB.teamId,
-          "F4"
-        )
-      : null;
-
   const hasAnyF4Pick = !!(picks["F4-1"] || picks["F4-2"]);
 
   return (
@@ -257,8 +227,6 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"F4-1" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-1", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={f4g1Own?.[0]}
-            ownershipB={f4g1Own?.[1]}
             isPreview={isPreview}
           />
         </div>
@@ -294,8 +262,6 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"NCG" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("NCG", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={ncgOwn?.[0]}
-            ownershipB={ncgOwn?.[1]}
             isPreview={isPreview}
           />
         </div>
@@ -333,8 +299,6 @@ export const FinalFour = React.memo(function FinalFour({
             hasOverrides={"F4-2" in matchupOverrides}
             onAdvance={(teamId) => onAdvance("F4-2", teamId)}
             onMatchupClick={onMatchupClick}
-            ownershipA={f4g2Own?.[0]}
-            ownershipB={f4g2Own?.[1]}
             isPreview={isPreview}
           />
         </div>

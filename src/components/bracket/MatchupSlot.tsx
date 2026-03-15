@@ -34,10 +34,6 @@ interface MatchupSlotProps {
   onAdvance: (teamId: string) => void;
   /** Optional handler for clicking the matchup container to view details */
   onMatchupClick?: (gameId: string) => void;
-  /** Ownership percentage for team A (optional) */
-  ownershipA?: number;
-  /** Ownership percentage for team B (optional) */
-  ownershipB?: number;
   /** Whether probabilities are preview estimates (no confirmed simulation) */
   isPreview?: boolean;
 }
@@ -54,7 +50,7 @@ interface MatchupSlotProps {
  * - --bg-surface background with rounded corners
  * - OverrideIndicator dot when per-matchup overrides exist
  * - Optional click handler for navigating to matchup detail view
- * - Passes ownership data through to TeamCard for display
+ * - Ownership data is shown in the matchup detail view, not here
  */
 export function MatchupSlot({
   gameId,
@@ -69,8 +65,6 @@ export function MatchupSlot({
   hasOverrides,
   onAdvance,
   onMatchupClick,
-  ownershipA,
-  ownershipB,
   isPreview,
 }: MatchupSlotProps) {
   const seedA = teamA?.tournamentEntry?.seed ?? 0;
@@ -100,7 +94,6 @@ export function MatchupSlot({
         onClick={() => {
           if (teamA) onAdvance(teamA.teamId);
         }}
-        ownership={ownershipA}
         isPreview={isPreview}
       />
 
@@ -118,7 +111,6 @@ export function MatchupSlot({
         onClick={() => {
           if (teamB) onAdvance(teamB.teamId);
         }}
-        ownership={ownershipB}
         isPreview={isPreview}
       />
 

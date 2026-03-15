@@ -19,6 +19,7 @@
 import { useEffect, useCallback, useRef, useMemo } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useMatchupAnalysis } from "@/hooks/useMatchupAnalysis";
+import { useContestStrategy } from "@/hooks/useContestStrategy";
 import type { TournamentRound } from "@/types/team";
 import { TeamProfileCard } from "@/components/matchup/TeamProfileCard";
 import { StatComparison } from "@/components/matchup/StatComparison";
@@ -77,11 +78,23 @@ const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
 export function MatchupView({ gameId, onClose }: MatchupViewProps) {
   const { state } = useBracket();
   const { analysis, teamA, teamB, stats, venue } = useMatchupAnalysis(gameId);
+  const { getMatchupOwnership } = useContestStrategy();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Get current overrides for this game
   const overrides = state.matchupOverrides[gameId];
+
+  // Compute game-level ownership for this matchup
+  const ownership = useMemo(() => {
+    if (!analysis || !teamA?.teamId || !teamB?.teamId) return null;
+    const [ownA, ownB] = getMatchupOwnership(
+      teamA.teamId,
+      teamB.teamId,
+      analysis.round
+    );
+    return { a: ownA, b: ownB };
+  }, [analysis, teamA?.teamId, teamB?.teamId, getMatchupOwnership]);
 
   // Extract path probabilities from simulation result for both teams
   const { pathProbA, pathProbB } = useMemo(() => {
@@ -214,6 +227,58 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                 pathProbA={pathProbA}
                 pathProbB={pathProbB}
               />
+
+              {/* Public Ownership Estimate */}
+              {ownership && (
+                <div className="ownership-bar">
+                  <div className="ownership-bar__header">
+                    <span className="ownership-bar__title">Public Ownership</span>
+                  </div>
+                  <div className="ownership-bar__values">
+                    <span
+                      className="ownership-bar__team"
+                      style={{
+                        color: ownership.a >= 60
+                          ? "var(--accent-warning)"
+                          : ownership.a < 30
+                            ? "var(--accent-success)"
+                            : "var(--text-secondary)",
+                      }}
+                    >
+                      {teamA.team.shortName}{" "}
+                      <strong>{Math.round(ownership.a)}%</strong>
+                    </span>
+                    <span
+                      className="ownership-bar__team"
+                      style={{
+                        color: ownership.b >= 60
+                          ? "var(--accent-warning)"
+                          : ownership.b < 30
+                            ? "var(--accent-success)"
+                            : "var(--text-secondary)",
+                      }}
+                    >
+                      <strong>{Math.round(ownership.b)}%</strong>{" "}
+                      {teamB.team.shortName}
+                    </span>
+                  </div>
+                  <div className="ownership-bar__track">
+                    <div
+                      className="ownership-bar__fill-a"
+                      style={{ width: `${ownership.a}%` }}
+                    />
+                    <div
+                      className="ownership-bar__fill-b"
+                      style={{ width: `${ownership.b}%` }}
+                    />
+                  </div>
+                  <p className="ownership-bar__note">
+                    Estimated % of public brackets picking each team to win this
+                    game. High ownership (amber) = chalk; low ownership (green) =
+                    contrarian value.
+                  </p>
+                </div>
+              )}
 
               {/* Team Profile Cards side-by-side */}
               <div className="matchup-view__profiles">
@@ -349,6 +414,71 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           font-size: 0.875rem;
           max-width: 400px;
           line-height: 1.5;
+        }
+        .ownership-bar {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          background-color: var(--bg-surface);
+          border: 1px solid var(--border-subtle);
+        }
+        .ownership-bar__header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .ownership-bar__title {
+          font-size: 0.6875rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--text-muted);
+        }
+        .ownership-bar__values {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .ownership-bar__team {
+          font-size: 0.8125rem;
+          font-weight: 500;
+          font-family: ${FONT_MONO};
+        }
+        .ownership-bar__team strong {
+          font-weight: 800;
+          font-size: 0.9375rem;
+        }
+        .ownership-bar__track {
+          display: flex;
+          height: 8px;
+          border-radius: 4px;
+          overflow: hidden;
+          background-color: var(--bg-elevated);
+          gap: 2px;
+        }
+        .ownership-bar__fill-a {
+          height: 100%;
+          border-radius: 4px;
+          background-color: var(--accent-primary);
+          opacity: 0.7;
+          transition: width 0.3s ease;
+        }
+        .ownership-bar__fill-b {
+          height: 100%;
+          border-radius: 4px;
+          background-color: var(--accent-danger);
+          opacity: 0.7;
+          transition: width 0.3s ease;
+        }
+        .ownership-bar__note {
+          font-size: 0.6875rem;
+          color: var(--text-muted);
+          line-height: 1.4;
+          margin: 0;
+          text-align: center;
+          font-style: italic;
         }
         @keyframes fade-in {
           from { opacity: 0; }

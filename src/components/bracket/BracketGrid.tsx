@@ -20,7 +20,7 @@
  * 1. Gets state and dispatch from useBracket()
  * 2. Builds the matchup tree using buildBracketMatchups() (memoized, dynamic)
  * 3. Splits matchups by region + F4/NCG + FF
- * 4. Computes ownership model via useContestStrategy()
+ * 4. (Ownership data is shown only in the matchup detail view)
  * 5. Passes props down to FirstFour, FinalFour, RegionBracket, and
  *    MobileBracketView. Game probabilities are computed once here via
  *    useGameProbabilities() and passed as a prop to avoid redundant calls
@@ -29,7 +29,6 @@
 
 import React, { useMemo, useCallback } from "react";
 import { useBracket } from "@/hooks/useBracket";
-import { useContestStrategy } from "@/hooks/useContestStrategy";
 import { useGameProbabilities } from "@/hooks/useGameProbabilities";
 import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 import type { Region } from "@/types/team";
@@ -118,7 +117,6 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 export function BracketGrid({ onMatchupClick }: BracketGridProps) {
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const { state, dispatch, allMatchups } = useBracket();
-  const { ownershipModel } = useContestStrategy();
   const gameProbabilities = useGameProbabilities();
 
   // Preview mode: probabilities are live estimates without full simulation confirmation
@@ -173,7 +171,6 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
             matchupOverrides={state.matchupOverrides}
             onAdvance={handleAdvance}
             onMatchupClick={handleMatchupClick}
-            ownershipModel={ownershipModel}
             gameProbabilities={gameProbabilities}
             playInConfig={state.playInConfig}
             isPreview={isPreview}
@@ -205,7 +202,6 @@ export function BracketGrid({ onMatchupClick }: BracketGridProps) {
           matchupOverrides={state.matchupOverrides}
           onAdvance={handleAdvance}
           onMatchupClick={handleMatchupClick}
-          ownershipModel={ownershipModel}
           gameProbabilities={gameProbabilities}
           isPreview={isPreview}
         />

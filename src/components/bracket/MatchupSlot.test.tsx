@@ -259,26 +259,6 @@ describe("MatchupSlot", () => {
     expect(tbdElements).toHaveLength(2);
   });
 
-  it("passes ownership data to TeamCards", () => {
-    render(
-      <MatchupSlot
-        gameId="R64-East-1"
-        round="R64"
-        teamA={teamA}
-        teamB={teamB}
-        winner={null}
-        probA={null}
-        probB={null}
-        hasOverrides={false}
-        onAdvance={() => {}}
-        ownershipA={75}
-        ownershipB={12}
-      />
-    );
-    expect(screen.getByText("75%")).toBeInTheDocument();
-    expect(screen.getByText("12%")).toBeInTheDocument();
-  });
-
   it("passes path probabilities through to TeamCards as tooltips", () => {
     render(
       <MatchupSlot
