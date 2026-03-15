@@ -2,9 +2,10 @@
  * Composite Rating Calculator
  *
  * Calculates a weighted composite efficiency rating from multiple data sources
- * (KenPom, Torvik, Evan Miya). The composite blends adjusted offensive efficiency
- * (adjOE), adjusted defensive efficiency (adjDE), and derives the adjusted
- * efficiency margin (adjEM) as adjOE - adjDE.
+ * (KenPom, Torvik, Evan Miya). The composite adjEM is computed as a weighted
+ * average of each source's stored adjEM. For adjOE/adjDE, only sources on a
+ * compatible per-100-possessions scale (KenPom, Torvik) are blended; Evan Miya's
+ * OE/DE are on a fundamentally different scale and cannot be mixed.
  *
  * When fewer than 3 sources are available, the weights are renormalized
  * proportionally among the available sources so the composite is always
@@ -18,6 +19,24 @@ import type { CompositeWeights } from "@/types/engine";
 import { DEFAULT_COMPOSITE_WEIGHTS } from "@/types/engine";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Sources whose adjOE/adjDE use the per-100-possessions scale.
+ * Evan Miya's OE/DE are on a completely different scale (~0-20 range
+ * vs ~80-130 for KenPom/Torvik) and cannot be blended for adjOE/adjDE.
+ * Additionally, Evan Miya's BPR is ADDITIVE (OE + DE = BPR), unlike
+ * KenPom/Torvik which are DIFFERENTIAL (AdjOE - AdjDE = AdjEM).
+ * Despite the different construction, BPR IS on a comparable efficiency
+ * margin scale and contributes to the composite adjEM.
+ */
+const PER_100_SOURCES: ReadonlySet<DataSource> = new Set([
+  "kenpom",
+  "torvik",
+]);
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -27,21 +46,29 @@ export interface CompositeSource {
   source: DataSource;
   /** The renormalized weight assigned to this source (sums to 1 across all sources) */
   weight: number;
-  /** The source's adjusted efficiency margin (adjOE - adjDE) */
+  /** The source's adjusted efficiency margin (stored adjEM, e.g. BPR for Evan Miya) */
   adjEM: number;
 }
 
 /** The result of a composite rating calculation */
 export interface CompositeRating {
-  /** Weighted composite adjusted offensive efficiency (points per 100 possessions) */
+  /**
+   * Weighted composite adjusted offensive efficiency (points per 100 possessions).
+   * Blended only from sources on the per-100-possessions scale (KenPom, Torvik).
+   * When only Evan Miya is available, estimated from a D1 baseline + adjEM.
+   */
   adjOE: number;
-  /** Weighted composite adjusted defensive efficiency (points per 100 possessions) */
+  /**
+   * Weighted composite adjusted defensive efficiency (points per 100 possessions).
+   * Blended only from sources on the per-100-possessions scale (KenPom, Torvik).
+   * When only Evan Miya is available, estimated from a D1 baseline + adjEM.
+   */
   adjDE: number;
   /**
    * Weighted composite adjusted efficiency margin.
-   * Always computed as adjOE - adjDE (not as a weighted average of source adjEMs).
-   * This ensures internal consistency when sources use different scales
-   * (e.g., Evan Miya BPR vs. KenPom AdjEM).
+   * Computed as a direct weighted average of each source's stored adjEM
+   * (BPR for Evan Miya, AdjEM for KenPom/Torvik). This is the value used
+   * in the probability calculation.
    */
   adjEM: number;
   /** Breakdown of each source's contribution */
@@ -53,18 +80,27 @@ export interface CompositeRating {
 // ---------------------------------------------------------------------------
 
 /**
+ * D1 average offensive efficiency baseline (points per 100 possessions).
+ * Used to derive estimated adjOE/adjDE when only non-per-100 sources
+ * (Evan Miya) are available. The exact value doesn't matter much since
+ * only adjEM is used in probability calculations.
+ */
+const D1_BASELINE_OE = 105.0;
+
+/**
  * Calculates a weighted composite efficiency rating from available data sources.
  *
  * The composite is built by:
  * 1. Collecting all available source ratings from the `ratings` object.
  * 2. Renormalizing the requested weights so that only available sources contribute
  *    and their weights sum to 1.0.
- * 3. Computing weighted averages of adjOE and adjDE independently.
- * 4. Deriving adjEM = adjOE - adjDE (not as a direct weighted average of adjEMs).
- *
- * This approach ensures that the composite margin is always consistent with
- * the composite offensive and defensive efficiencies, even when sources
- * define their margins differently (e.g., Evan Miya's BPR).
+ * 3. Computing a weighted average of each source's **stored adjEM** value.
+ *    For Evan Miya this is the BPR; for KenPom/Torvik this is AdjOE - AdjDE.
+ * 4. Computing weighted averages of adjOE and adjDE from per-100-possessions
+ *    sources only (KenPom, Torvik). Evan Miya's OE/DE are on an incompatible
+ *    scale and are excluded from the OE/DE blend.
+ * 5. If no per-100 sources are available, adjOE and adjDE are estimated from
+ *    a D1 baseline and the composite adjEM for display purposes.
  *
  * **Weight renormalization examples:**
  * - All 3 sources: weights used as-is (after normalizing to sum to 1).
@@ -127,24 +163,56 @@ export function calculateCompositeRating(
     normalizedWeight: s.requestedWeight / totalRequestedWeight,
   }));
 
-  // Compute weighted averages of adjOE and adjDE independently
-  let compositeAdjOE = 0;
-  let compositeAdjDE = 0;
+  // -----------------------------------------------------------------------
+  // Compute composite adjEM from ALL sources using stored adjEM
+  // -----------------------------------------------------------------------
+  let compositeAdjEM = 0;
   const sources: CompositeSource[] = [];
 
   for (const { rating, normalizedWeight } of normalized) {
-    compositeAdjOE += rating.adjOE * normalizedWeight;
-    compositeAdjDE += rating.adjDE * normalizedWeight;
+    // Use the source's STORED adjEM — this is BPR for Evan Miya
+    // (OE + DE, additive), and AdjOE - AdjDE for KenPom/Torvik (differential).
+    compositeAdjEM += rating.adjEM * normalizedWeight;
 
     sources.push({
       source: rating.source,
       weight: normalizedWeight,
-      adjEM: rating.adjOE - rating.adjDE,
+      adjEM: rating.adjEM,
     });
   }
 
-  // Derive adjEM from the composite components (NOT averaged adjEMs)
-  const compositeAdjEM = compositeAdjOE - compositeAdjDE;
+  // -----------------------------------------------------------------------
+  // Compute composite adjOE/adjDE from per-100-possessions sources only
+  // -----------------------------------------------------------------------
+  // Evan Miya's OE/DE are on a ~0-20 scale (not per-100-possessions) and
+  // cannot be blended with KenPom/Torvik's ~80-130 scale values.
+  const per100Sources = normalized.filter((s) =>
+    PER_100_SOURCES.has(s.rating.source)
+  );
+
+  let compositeAdjOE: number;
+  let compositeAdjDE: number;
+
+  if (per100Sources.length > 0) {
+    // Renormalize weights among per-100 sources for OE/DE blend
+    const totalPer100Weight = per100Sources.reduce(
+      (sum, s) => sum + s.normalizedWeight,
+      0
+    );
+    compositeAdjOE = 0;
+    compositeAdjDE = 0;
+    for (const { rating, normalizedWeight } of per100Sources) {
+      const renormWeight = normalizedWeight / totalPer100Weight;
+      compositeAdjOE += rating.adjOE * renormWeight;
+      compositeAdjDE += rating.adjDE * renormWeight;
+    }
+  } else {
+    // No per-100 sources available (only Evan Miya).
+    // Estimate adjOE/adjDE from the D1 baseline and composite adjEM.
+    // These values are for display only — adjEM is what matters for probability.
+    compositeAdjOE = D1_BASELINE_OE + compositeAdjEM / 2;
+    compositeAdjDE = D1_BASELINE_OE - compositeAdjEM / 2;
+  }
 
   return {
     adjOE: compositeAdjOE,

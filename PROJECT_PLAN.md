@@ -358,6 +358,10 @@
 - [x] **Missing coaches data** — Root cause: `seed-coaches.ts` used raw `toLowerCase()` matching for Kaggle team names, but Kaggle uses period-less abbreviations ("Michigan St", "St Louis", "NC State") that don't match DB names ("Michigan St.", "Saint Louis", "North Carolina St."). Fix: (1) Extended `normalizeForMerge()` in `merger.ts` with rules for bare "St"→"state"/"saint" suffix/prefix, bare directional abbreviations ("N"→"north", "S"→"south"), "NC"→"north carolina", "SC"→"south carolina", "MS"→"mississippi", "Mt"→"mount"; (2) Updated `seed-coaches.ts` to use `normalizeForMerge()` instead of raw lowercasing; (3) Added `KAGGLE_NAME_OVERRIDES` table for Kaggle-specific abbreviations (`normalizeForMerge` can't resolve (e.g., "Abilene Chr"→"Abilene Christian", "FL Atlantic"→"Florida Atlantic", 70+ mappings). Match rate improved from ~60% to 99.5% (365/367 coaches matched and seeded). Added 9 new Kaggle-format tests to `merger.test.ts`. Created `/seed-coaches` skill for reusable Selection Sunday workflow.
 - [ ] **Final README and PRD update** — Update `README.md` and `docs/PRD.md` to reflect all completed features, architecture, and deployment state. Last documentation pass before launch.
 
+### Batch 14 — Data Quality
+
+- [ ] **Fix "Unknown" conference labels** — Many teams in the `teams` table have `conference = 'Unknown'` because the import routes fall back to `"Unknown"` when conference data isn't present in the source CSV. On final bracket release, bulk-update all team conferences from KenPom/Torvik data to ensure the matchup view shows correct conference names (e.g., "ACC", "Big 12") instead of "Unknown".
+
 ### Claude Code Skills _(completed)_
 
 - [x] `/simulate-matchup` — `.claude/skills/simulate-matchup/SKILL.md`

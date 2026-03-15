@@ -129,10 +129,22 @@ const SITE_PROXIMITY_TRAVEL_THRESHOLD = 1000;
 /**
  * Calculates the Four Factors efficiency point adjustment between two teams.
  *
- * Compares each of the 8 Four Factors (4 offensive, 4 defensive) between teams.
- * For each factor, the advantage is computed by comparing team A's offense vs
- * team B's defense and vice versa, then differencing. The raw advantage is
- * scaled into efficiency points using a scaling constant of 0.15.
+ * Uses a **same-team net quality** approach: for each factor, we compute each
+ * team's net quality (offensive stat minus defensive stat for the same team),
+ * then compare the two teams. This correctly captures that a team with elite
+ * offense going against elite defense is a clash of strengths, not a guaranteed
+ * advantage for the offense.
+ *
+ * For eFG%, ORB%, and FT Rate: higher offensive = better, lower defensive = better,
+ * so net quality = (offense × offWeight) − (defense × defWeight).
+ *
+ * For TO%: lower offensive = better (fewer turnovers committed), higher defensive =
+ * better (more turnovers forced), so the formula is inverted:
+ * net quality = (defense × defWeight) − (offense × offWeight).
+ *
+ * When offense and defense weights are both 1.0 (default), the formula reduces
+ * to: adjustment = (A_off − A_def) − (B_off − B_def) for each factor.
+ * Users can then weight offense or defense more heavily via levers.
  *
  * If either team's defensive four factors are null (data not loaded), the
  * adjustment is 0 — we cannot compute a meaningful comparison without both
@@ -156,44 +168,49 @@ export function calculateFourFactorsAdjustment(
   let totalAdjustment = 0;
 
   // --- eFG% ---
-  // Team A's offense vs Team B's defense
-  const efgAdvA =
-    (teamA.fourFactorsOffense.efgPct - teamB.fourFactorsDefense.efgPct) *
-    weights.efgPctOffense;
-  // Team B's offense vs Team A's defense (subtract because B's advantage hurts A)
-  const efgAdvB =
-    (teamB.fourFactorsOffense.efgPct - teamA.fourFactorsDefense.efgPct) *
-    weights.efgPctDefense;
-  totalAdjustment += efgAdvA - efgAdvB;
+  // Each team's net quality: how much better they shoot than they allow.
+  // Higher off eFG% = better offense; lower def eFG% = better defense.
+  const efgNetA =
+    teamA.fourFactorsOffense.efgPct * weights.efgPctOffense -
+    teamA.fourFactorsDefense.efgPct * weights.efgPctDefense;
+  const efgNetB =
+    teamB.fourFactorsOffense.efgPct * weights.efgPctOffense -
+    teamB.fourFactorsDefense.efgPct * weights.efgPctDefense;
+  totalAdjustment += efgNetA - efgNetB;
 
   // --- Turnover % ---
-  const toAdvA =
-    (teamB.fourFactorsDefense.toPct - teamA.fourFactorsOffense.toPct) *
-    weights.toPctOffense;
-  const toAdvB =
-    (teamA.fourFactorsDefense.toPct - teamB.fourFactorsOffense.toPct) *
-    weights.toPctDefense;
-  totalAdjustment += toAdvA - toAdvB;
+  // Inverted: lower offensive TO% = better (fewer turnovers committed),
+  // higher defensive TO% = better (more turnovers forced).
+  // Net quality = defense (positive contributor) − offense (negative contributor).
+  const toNetA =
+    teamA.fourFactorsDefense.toPct * weights.toPctDefense -
+    teamA.fourFactorsOffense.toPct * weights.toPctOffense;
+  const toNetB =
+    teamB.fourFactorsDefense.toPct * weights.toPctDefense -
+    teamB.fourFactorsOffense.toPct * weights.toPctOffense;
+  totalAdjustment += toNetA - toNetB;
 
   // --- Offensive Rebound % ---
-  // Team A's ORB offense vs Team B's defensive rebounding
-  const orbAdvA =
-    (teamA.fourFactorsOffense.orbPct - teamB.fourFactorsDefense.orbPct) *
-    weights.orbPctOffense;
-  const orbAdvB =
-    (teamB.fourFactorsOffense.orbPct - teamA.fourFactorsDefense.orbPct) *
-    weights.orbPctDefense;
-  totalAdjustment += orbAdvA - orbAdvB;
+  // Each team's net rebounding quality: how much more they rebound than they allow.
+  // Higher off ORB% = better; lower def ORB% (opponents' ORB) = better defense.
+  const orbNetA =
+    teamA.fourFactorsOffense.orbPct * weights.orbPctOffense -
+    teamA.fourFactorsDefense.orbPct * weights.orbPctDefense;
+  const orbNetB =
+    teamB.fourFactorsOffense.orbPct * weights.orbPctOffense -
+    teamB.fourFactorsDefense.orbPct * weights.orbPctDefense;
+  totalAdjustment += orbNetA - orbNetB;
 
   // --- Free Throw Rate ---
-  // Team A's ability to get to the line vs Team B's ability to prevent it
-  const ftrAdvA =
-    (teamA.fourFactorsOffense.ftRate - teamB.fourFactorsDefense.ftRate) *
-    weights.ftRateOffense;
-  const ftrAdvB =
-    (teamB.fourFactorsOffense.ftRate - teamA.fourFactorsDefense.ftRate) *
-    weights.ftRateDefense;
-  totalAdjustment += ftrAdvA - ftrAdvB;
+  // Each team's net FT rate quality: how much more they get to the line than they allow.
+  // Higher off FT Rate = better; lower def FT Rate = better defense.
+  const ftrNetA =
+    teamA.fourFactorsOffense.ftRate * weights.ftRateOffense -
+    teamA.fourFactorsDefense.ftRate * weights.ftRateDefense;
+  const ftrNetB =
+    teamB.fourFactorsOffense.ftRate * weights.ftRateOffense -
+    teamB.fourFactorsDefense.ftRate * weights.ftRateDefense;
+  totalAdjustment += ftrNetA - ftrNetB;
 
   // Scale the raw percentage-point comparison into efficiency points
   return totalAdjustment * FOUR_FACTORS_SCALING;
