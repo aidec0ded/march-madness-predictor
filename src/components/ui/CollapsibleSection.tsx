@@ -5,6 +5,7 @@ import React, { useState } from "react";
 export interface CollapsibleSectionProps {
   title: string;
   defaultOpen?: boolean;
+  badge?: string;
   children: React.ReactNode;
 }
 
@@ -17,6 +18,7 @@ export interface CollapsibleSectionProps {
 export function CollapsibleSection({
   title,
   defaultOpen = false,
+  badge,
   children,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultOpen);
@@ -29,7 +31,10 @@ export function CollapsibleSection({
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
       >
-        <span className="collapsible-section__title">{title}</span>
+        <span className="collapsible-section__title-row">
+          <span className="collapsible-section__title">{title}</span>
+          {badge && <span className="collapsible-section__badge">{badge}</span>}
+        </span>
         <span
           className={`collapsible-section__chevron ${isExpanded ? "collapsible-section__chevron--open" : ""}`}
         >
@@ -57,11 +62,28 @@ export function CollapsibleSection({
         .collapsible-section__toggle:hover {
           color: var(--accent-primary);
         }
+        .collapsible-section__title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
         .collapsible-section__title {
           font-size: 0.875rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.04em;
+        }
+        .collapsible-section__badge {
+          font-size: 0.625rem;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          padding: 2px 6px;
+          border-radius: 3px;
+          background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+          color: var(--text-muted);
+          border: 1px solid var(--border-subtle);
+          white-space: nowrap;
         }
         .collapsible-section__chevron {
           font-size: 0.875rem;

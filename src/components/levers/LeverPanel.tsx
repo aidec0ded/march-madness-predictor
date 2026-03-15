@@ -45,7 +45,12 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Simulation Levers" width={isMobile ? "100vw" : "420px"}>
       <div className={styles.panel}>
-        {/* Composite Weights — default open */}
+        {/* ── Tier 1: Backtested Levers ── */}
+        <div className={styles.tierHeader}>
+          <span className={styles.tierLabel}>Backtested</span>
+          <span className={styles.tierNote}>Empirically validated via historical tournaments</span>
+        </div>
+
         <CollapsibleSection title="Composite Weights" defaultOpen>
           <CompositeWeightsControl
             weights={globalLevers.compositeWeights}
@@ -53,7 +58,6 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
           />
         </CollapsibleSection>
 
-        {/* Four Factors — default collapsed */}
         <CollapsibleSection title="Four Factors">
           <FourFactorsControls
             weights={globalLevers.fourFactors}
@@ -61,20 +65,7 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
           />
         </CollapsibleSection>
 
-        {/* Experience & Coaching — default collapsed */}
-        <CollapsibleSection title="Experience &amp; Coaching">
-          <LeverSlider
-            label="Roster Experience"
-            description="Weight for KenPom minutes-weighted D-1 experience. Higher values favor experienced rosters."
-            value={globalLevers.experienceWeight}
-            onChange={(experienceWeight) => updateLevers({ experienceWeight })}
-          />
-          <LeverSlider
-            label="Minutes Continuity"
-            description="Weight for rotation continuity from prior season. Higher values favor teams with returning players."
-            value={globalLevers.continuityWeight}
-            onChange={(continuityWeight) => updateLevers({ continuityWeight })}
-          />
+        <CollapsibleSection title="Coaching">
           <LeverSlider
             label="Coach Tournament Experience"
             description="Weight for a coach's prior NCAA tournament track record. Higher values favor experienced coaches."
@@ -83,45 +74,8 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
               updateLevers({ coachExperienceWeight })
             }
           />
-          <LeverSlider
-            label="Opponent Adjustment"
-            description="Weight for Evan Miya's opponent adjustment metric. Measures how well teams play up/down to competition level. Particularly relevant for high seeds in early rounds."
-            value={globalLevers.opponentAdjustWeight}
-            onChange={(opponentAdjustWeight) =>
-              updateLevers({ opponentAdjustWeight })
-            }
-          />
         </CollapsibleSection>
 
-        {/* Location & Travel — default collapsed */}
-        <CollapsibleSection title="Location &amp; Travel">
-          <LeverSlider
-            label="Site Proximity"
-            description="Weight for campus-to-venue distance advantage. Teams playing closer to home get a boost. Auto-computed from tournament site data."
-            value={globalLevers.siteProximityWeight}
-            onChange={(siteProximityWeight) =>
-              updateLevers({ siteProximityWeight })
-            }
-          />
-        </CollapsibleSection>
-
-        {/* Schedule & Luck — default collapsed */}
-        <CollapsibleSection title="Schedule &amp; Luck">
-          <LeverSlider
-            label="Strength of Schedule"
-            description="Extra credit for teams whose efficiency was earned against tougher opponents. Adjusted ratings already partially account for SoS."
-            value={globalLevers.sosWeight}
-            onChange={(sosWeight) => updateLevers({ sosWeight })}
-          />
-          <LeverSlider
-            label="Luck Regression"
-            description="Penalty for teams that overperformed their efficiency (won close games at unsustainable rates). Tournament play tends to regress these outcomes."
-            value={globalLevers.luckRegressionWeight}
-            onChange={(luckRegressionWeight) => updateLevers({ luckRegressionWeight })}
-          />
-        </CollapsibleSection>
-
-        {/* Variance — default collapsed */}
         <CollapsibleSection title="Variance">
           <VarianceControls
             tempoWeight={globalLevers.tempoVarianceWeight}
@@ -131,6 +85,61 @@ export function LeverPanel({ isOpen, onClose }: LeverPanelProps) {
             }
             onThreePtChange={(threePtVarianceWeight) =>
               updateLevers({ threePtVarianceWeight })
+            }
+          />
+        </CollapsibleSection>
+
+        {/* ── Tier 2: Supplemental Levers ── */}
+        <div className={styles.tierHeader}>
+          <span className={styles.tierLabel}>Supplemental</span>
+          <span className={styles.tierNote}>Not backtestable — based on user judgment</span>
+        </div>
+
+        <CollapsibleSection title="Experience &amp; Continuity" badge="Off by default">
+          <LeverSlider
+            label="Roster Experience"
+            description="Weight for KenPom minutes-weighted D-1 experience. Higher values favor experienced rosters. Not available in historical dataset for backtesting."
+            value={globalLevers.experienceWeight}
+            onChange={(experienceWeight) => updateLevers({ experienceWeight })}
+          />
+          <LeverSlider
+            label="Minutes Continuity"
+            description="Weight for rotation continuity from prior season. Higher values favor teams with returning players. Not available in historical dataset for backtesting."
+            value={globalLevers.continuityWeight}
+            onChange={(continuityWeight) => updateLevers({ continuityWeight })}
+          />
+          <LeverSlider
+            label="Opponent Adjustment"
+            description="Weight for Evan Miya's opponent adjustment metric. Measures how well teams play up/down to competition level. Not available in historical dataset for backtesting."
+            value={globalLevers.opponentAdjustWeight}
+            onChange={(opponentAdjustWeight) =>
+              updateLevers({ opponentAdjustWeight })
+            }
+          />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Schedule &amp; Luck" badge="Off by default">
+          <LeverSlider
+            label="Strength of Schedule"
+            description="Extra credit for teams whose efficiency was earned against tougher opponents. Adjusted ratings already partially account for SoS. Not available in historical dataset for backtesting."
+            value={globalLevers.sosWeight}
+            onChange={(sosWeight) => updateLevers({ sosWeight })}
+          />
+          <LeverSlider
+            label="Luck Regression"
+            description="Penalty for teams that overperformed their efficiency (won close games at unsustainable rates). Not available in historical dataset for backtesting."
+            value={globalLevers.luckRegressionWeight}
+            onChange={(luckRegressionWeight) => updateLevers({ luckRegressionWeight })}
+          />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Location &amp; Travel" badge="Off by default">
+          <LeverSlider
+            label="Site Proximity"
+            description="Weight for campus-to-venue distance advantage. Teams playing closer to home get a boost. Historical venue data not loaded for backtesting."
+            value={globalLevers.siteProximityWeight}
+            onChange={(siteProximityWeight) =>
+              updateLevers({ siteProximityWeight })
             }
           />
         </CollapsibleSection>

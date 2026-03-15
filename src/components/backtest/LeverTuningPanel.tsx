@@ -26,12 +26,13 @@ export interface LeverTuningPanelProps {
 /**
  * Lever slider panel for backtest configuration.
  *
- * Exposes only the levers that have supporting data in the historical
- * dataset (2008-2024). Levers backed by KenPom-only or Evan Miya-only
- * data (experience, continuity, opponentAdj, SoS, luck, siteProximity)
- * are excluded because those fields are NULL for historical seasons.
+ * Exposes only Tier 1 (backtested) levers — the ones with supporting data
+ * in the historical dataset (2008-2024). Tier 2 (supplemental) levers are
+ * excluded because their underlying data fields (KenPom experience,
+ * continuity, SoS, luck; Evan Miya opponent adjustment; tournament site
+ * coordinates) are NULL for historical seasons.
  *
- * Available levers:
+ * Tier 1 levers (available here):
  * - Composite Weights (Torvik data available for all seasons)
  * - Four Factors (Torvik data available for all seasons)
  * - Coach Experience (Kaggle historical data available)

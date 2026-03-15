@@ -175,8 +175,14 @@ describe("resolveMatchup", () => {
     // Team A is ~0mi away (large proximity bonus), Team B is ~1200mi away (penalty)
     const siteCoords = { latitude: 38.97, longitude: -95.24, name: "Near Lawrence" };
 
-    const noSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
-    const withSiteResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG, undefined, siteCoords);
+    // Site proximity is a Tier 2 lever (off by default), so enable it explicitly
+    const configWithSiteProx = {
+      ...DEFAULT_ENGINE_CONFIG,
+      levers: { ...DEFAULT_ENGINE_CONFIG.levers, siteProximityWeight: 1.0 },
+    };
+
+    const noSiteResult = resolveMatchup(teamA, teamB, configWithSiteProx);
+    const withSiteResult = resolveMatchup(teamA, teamB, configWithSiteProx, undefined, siteCoords);
 
     // Team A should be even more favored with site proximity
     expect(withSiteResult.winProbabilityA).toBeGreaterThan(
@@ -405,21 +411,27 @@ describe("resolveMatchup", () => {
     const teamA = createStrongTeam({ id: "a" });
     const teamB = createWeakTeam({ id: "b" });
 
-    // Run with default levers
-    const defaultResult = resolveMatchup(teamA, teamB, DEFAULT_ENGINE_CONFIG);
+    // Experience is a Tier 2 lever (off by default), so enable it in the base config
+    const configWithExperience = {
+      ...DEFAULT_ENGINE_CONFIG,
+      levers: { ...DEFAULT_ENGINE_CONFIG.levers, experienceWeight: 1.0 },
+    };
+
+    // Run with experience enabled
+    const defaultResult = resolveMatchup(teamA, teamB, configWithExperience);
 
     // Run with experience weight zeroed out via per-matchup override
     const overriddenResult = resolveMatchup(
       teamA,
       teamB,
-      DEFAULT_ENGINE_CONFIG,
+      configWithExperience,
       { leverOverrides: { experienceWeight: 0 } }
     );
 
     // The experience adjustment should be 0 with the override
     expect(overriddenResult.breakdown.experienceAdjustment).toBeCloseTo(0, 5);
 
-    // And it should differ from the default (which has non-zero experience adj)
+    // And it should differ from the config that has experience enabled
     expect(defaultResult.breakdown.experienceAdjustment).not.toBeCloseTo(0, 2);
   });
 

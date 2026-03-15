@@ -363,20 +363,39 @@ export const DEFAULT_FOUR_FACTORS_WEIGHTS: FourFactorsLeverWeights = {
   ftRateDefense: 1.0,
 };
 
+/**
+ * Default lever weights split into two tiers:
+ *
+ * **Tier 1 — Backtested (on by default):**
+ * Levers with historical data available for empirical validation via the
+ * backtesting module. Their optimal weights can be tuned and measured.
+ *   - Composite weights, Four Factors, Coach Experience
+ *   - Tempo variance, 3PT variance
+ *
+ * **Tier 2 — Supplemental (off by default):**
+ * Levers whose underlying data is not available in the historical dataset
+ * (requires KenPom/Evan Miya fields not present for backtesting seasons).
+ * Users can opt in based on their own judgment.
+ *   - Experience, Continuity, Opponent Adjustment, SoS, Luck Regression
+ *   - Site Proximity (historical venue data not loaded)
+ */
 export const DEFAULT_GLOBAL_LEVERS: GlobalLevers = {
+  // --- Tier 1: Backtested ---
   compositeWeights: { ...DEFAULT_COMPOSITE_WEIGHTS },
   fourFactors: { ...DEFAULT_FOUR_FACTORS_WEIGHTS },
-  experienceWeight: 1.0,
-  continuityWeight: 1.0,
   coachExperienceWeight: 1.0,
-  opponentAdjustWeight: 1.0, // Active globally (high seeds playing down)
-  benchDepthWeight: 0, // Matchup-level only
-  paceAdjustWeight: 0, // Matchup-level only
-  siteProximityWeight: 1.0, // Auto-computed from tournament sites
-  sosWeight: 1.0,
-  luckRegressionWeight: 1.0,
   tempoVarianceWeight: 1.0,
   threePtVarianceWeight: 1.0,
+  // --- Tier 2: Supplemental (off by default — not backtestable) ---
+  experienceWeight: 0,
+  continuityWeight: 0,
+  opponentAdjustWeight: 0,
+  siteProximityWeight: 0,
+  sosWeight: 0,
+  luckRegressionWeight: 0,
+  // --- Matchup-level only ---
+  benchDepthWeight: 0,
+  paceAdjustWeight: 0,
 };
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {

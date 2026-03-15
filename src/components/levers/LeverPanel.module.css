@@ -3,6 +3,27 @@
   flex-direction: column;
   gap: 0;
 }
+.tierHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 0 4px;
+}
+.tierHeader:first-child {
+  padding-top: 4px;
+}
+.tierLabel {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.tierNote {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
 .footer {
   padding: 20px 0 0;
 }
