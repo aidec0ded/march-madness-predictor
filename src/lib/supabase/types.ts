@@ -18,7 +18,7 @@ export type DbDataSource = "kenpom" | "torvik" | "evanmiya";
 
 export type DbTournamentRegion = "East" | "West" | "South" | "Midwest";
 
-export type DbTournamentRound = "R64" | "R32" | "S16" | "E8" | "F4" | "NCG";
+export type DbTournamentRound = "FF" | "R64" | "R32" | "S16" | "E8" | "F4" | "NCG";
 
 export type DbImportStatus =
   | "pending"

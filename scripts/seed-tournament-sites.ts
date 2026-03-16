@@ -38,7 +38,7 @@ import { CURRENT_SEASON } from "../src/lib/constants";
 // Types
 // ---------------------------------------------------------------------------
 
-type TournamentRound = "R64" | "R32" | "S16" | "E8" | "F4" | "NCG";
+type TournamentRound = "FF" | "R64" | "R32" | "S16" | "E8" | "F4" | "NCG";
 type Region = "East" | "West" | "South" | "Midwest";
 
 interface CsvRow {
@@ -69,7 +69,7 @@ interface SiteRecord {
 // ---------------------------------------------------------------------------
 
 const ROUND_MAP: Record<string, TournamentRound> = {
-  First_Four: "R64", // Play-in games — treated as R64 for site purposes
+  First_Four: "FF",
   First: "R64",
   Second: "R32",
   Sweet_Sixteen: "S16",

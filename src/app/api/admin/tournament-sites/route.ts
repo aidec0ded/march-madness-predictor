@@ -28,7 +28,7 @@ const rateLimiter = createRateLimiter({ maxRequests: 20, windowMs: 60_000 });
 // Validation constants
 // ---------------------------------------------------------------------------
 
-const VALID_ROUNDS = new Set(["R64", "R32", "S16", "E8", "F4", "NCG"]);
+const VALID_ROUNDS = new Set(["FF", "R64", "R32", "S16", "E8", "F4", "NCG"]);
 const VALID_REGIONS = new Set(["East", "West", "South", "Midwest"]);
 
 // ---------------------------------------------------------------------------
