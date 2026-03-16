@@ -78,12 +78,12 @@ export const SEED_TO_BRACKET_POSITION: Record<number, number> = {
 };
 
 /**
- * Standard Final Four pairing: East vs West, South vs Midwest.
+ * Standard Final Four pairing: East vs South, West vs Midwest.
  * Each tuple is [regionA, regionB] for the two semifinal games.
  */
 const FINAL_FOUR_PAIRINGS: [Region, Region][] = [
-  ["East", "West"],
-  ["South", "Midwest"],
+  ["East", "South"],
+  ["West", "Midwest"],
 ];
 
 /**
