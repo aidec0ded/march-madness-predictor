@@ -302,6 +302,12 @@ export interface TournamentSite {
   rounds: TournamentRound[];
   /** Which region(s) play here (for regionals) */
   regions?: Region[];
+  /**
+   * Which seed lines play at this venue for R64/R32.
+   * E.g., [1, 16, 8, 9] means the 1v16 and 8v9 games are here.
+   * Undefined/null means all games for this round/region (S16/E8/F4/NCG).
+   */
+  seedMatchups?: number[];
   /** Tournament year */
   season: number;
 }

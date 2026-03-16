@@ -20,6 +20,10 @@ import { transformTeamSeasonRows } from "@/lib/supabase/transforms";
 import { processTournamentField } from "@/lib/bracket-utils";
 import type { TournamentSite, TournamentRound, Region } from "@/types/team";
 
+// Force dynamic rendering — bracket data changes when tournament entries
+// or team stats are seeded, and we need fresh Supabase queries on every request.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Bracket Builder",
   description:
@@ -80,6 +84,7 @@ export default async function BracketPage() {
       longitude: row.longitude,
       rounds: row.rounds as TournamentRound[],
       regions: row.regions ? (row.regions as Region[]) : undefined,
+      seedMatchups: row.seed_matchups ?? undefined,
       season: row.season,
     }));
   }

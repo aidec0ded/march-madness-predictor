@@ -114,6 +114,7 @@ export async function fetchSimulationData(
       longitude: row.longitude,
       rounds: row.rounds as TournamentRound[],
       regions: row.regions ? (row.regions as Region[]) : undefined,
+      seedMatchups: row.seed_matchups ?? undefined,
       season: row.season,
     }));
     const matchups = buildBracketMatchups(playInConfig);

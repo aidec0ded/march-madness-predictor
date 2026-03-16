@@ -367,6 +367,8 @@ export interface Database {
           longitude: number;
           rounds: DbTournamentRound[];
           regions: DbTournamentRegion[] | null;
+          /** Which seed lines play at this venue (e.g. [1,16,8,9] for a R64 pod). NULL = all games. */
+          seed_matchups: number[] | null;
           season: number;
           created_at: string;
         };
@@ -379,6 +381,7 @@ export interface Database {
           longitude: number;
           rounds: DbTournamentRound[];
           regions?: DbTournamentRegion[] | null;
+          seed_matchups?: number[] | null;
           season: number;
           created_at?: string;
         };
@@ -391,6 +394,7 @@ export interface Database {
           longitude?: number;
           rounds?: DbTournamentRound[];
           regions?: DbTournamentRegion[] | null;
+          seed_matchups?: number[] | null;
           season?: number;
           created_at?: string;
         };

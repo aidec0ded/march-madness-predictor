@@ -43,6 +43,8 @@ interface SiteInput {
   longitude: number;
   rounds: string[];
   regions?: string[];
+  /** Which seed lines play at this venue (e.g. [1,16,8,9]). Null = all games. */
+  seedMatchups?: number[] | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +181,29 @@ export async function POST(request: Request) {
         }
       }
 
+      // Validate seed_matchups (optional — for R64/R32 pod assignment)
+      // Accept either snake_case or camelCase from the request
+      const rawSeeds = (site.seed_matchups ?? site.seedMatchups) as unknown;
+      let seedMatchups: number[] | null = null;
+      if (rawSeeds !== undefined && rawSeeds !== null) {
+        if (!Array.isArray(rawSeeds)) {
+          errors.push(
+            `Site ${i} (${site.name}): seed_matchups must be an array`
+          );
+          continue;
+        }
+        const invalidSeeds = (rawSeeds as number[]).filter(
+          (s) => typeof s !== "number" || !Number.isInteger(s) || s < 1 || s > 16
+        );
+        if (invalidSeeds.length > 0) {
+          errors.push(
+            `Site ${i} (${site.name}): seed_matchups values must be integers 1-16, got: ${invalidSeeds.join(", ")}`
+          );
+          continue;
+        }
+        seedMatchups = rawSeeds as number[];
+      }
+
       validatedSites.push({
         name: site.name as string,
         city: site.city as string,
@@ -187,6 +212,7 @@ export async function POST(request: Request) {
         longitude: lng,
         rounds: site.rounds as string[],
         regions: (site.regions as string[] | undefined) ?? [],
+        seedMatchups,
       });
     }
 
@@ -226,6 +252,7 @@ export async function POST(request: Request) {
       regions: (s.regions ?? []).length > 0
         ? (s.regions as DbTournamentRegion[])
         : null,
+      seed_matchups: s.seedMatchups,
       season,
     }));
 
