@@ -287,6 +287,7 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
           picks: bracket.picks,
           globalLevers: bracket.globalLevers,
           matchupOverrides: bracket.matchupOverrides,
+          ownershipOverrides: bracket.ownershipOverrides ?? {},
           simulationResult: bracket.simulationSnapshot,
           simulationInputHash: loadedHash,
           isSimulationStale: false,
@@ -300,6 +301,7 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
           picks: {},
           globalLevers: { ...DEFAULT_GLOBAL_LEVERS },
           matchupOverrides: {},
+          ownershipOverrides: {},
           simulationResult: null,
           isSimulating: false,
           simulationInputHash: null,
@@ -316,6 +318,7 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
         return {
           ...state,
           picks: {},
+          ownershipOverrides: {},
           simulationResult: null,
           isSimulating: false,
           simulationInputHash: null,
@@ -344,6 +347,27 @@ function createBracketReducer(downstreamMap: Map<string, string[]>) {
         return {
           ...state,
           tournamentSiteMap: action.siteMap,
+        };
+      }
+
+      case "SET_OWNERSHIP_OVERRIDE": {
+        return {
+          ...state,
+          ownershipOverrides: {
+            ...state.ownershipOverrides,
+            [action.gameId]: action.ownership,
+          },
+          isDirty: true,
+        };
+      }
+
+      case "REMOVE_OWNERSHIP_OVERRIDE": {
+        const newOwnershipOverrides = { ...state.ownershipOverrides };
+        delete newOwnershipOverrides[action.gameId];
+        return {
+          ...state,
+          ownershipOverrides: newOwnershipOverrides,
+          isDirty: true,
         };
       }
 
@@ -430,6 +454,7 @@ export function BracketProvider({
       picks: savedBracket?.picks ?? {},
       globalLevers: savedBracket?.globalLevers ?? { ...DEFAULT_GLOBAL_LEVERS },
       matchupOverrides: savedBracket?.matchupOverrides ?? {},
+      ownershipOverrides: savedBracket?.ownershipOverrides ?? {},
       simulationResult: savedBracket?.simulationSnapshot ?? null,
       isSimulating: false,
       simulationInputHash: savedBracket?.simulationSnapshot

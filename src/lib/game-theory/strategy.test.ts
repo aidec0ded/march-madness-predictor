@@ -10,7 +10,10 @@ import {
   calculateLeverageScore,
   getStrategyRecommendation,
   buildStrategyRecommendation,
+  getMatchupEdgeAnalysis,
   POOL_STRATEGY_CONFIGS,
+  ROUND_THRESHOLD_MULTIPLIER,
+  PROBABILITY_FLOOR,
 } from "./strategy";
 
 // ---------------------------------------------------------------------------
@@ -197,5 +200,178 @@ describe("POOL_STRATEGY_CONFIGS", () => {
     expect(large.contrarianThreshold).toBeGreaterThan(
       very_large.contrarianThreshold
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Round Threshold Multiplier & Probability Floor
+// ---------------------------------------------------------------------------
+
+describe("ROUND_THRESHOLD_MULTIPLIER", () => {
+  it("increases monotonically from FF to NCG", () => {
+    const rounds = ["FF", "R64", "R32", "S16", "E8", "F4", "NCG"] as const;
+    for (let i = 1; i < rounds.length; i++) {
+      expect(ROUND_THRESHOLD_MULTIPLIER[rounds[i]]).toBeGreaterThan(
+        ROUND_THRESHOLD_MULTIPLIER[rounds[i - 1]]
+      );
+    }
+  });
+
+  it("uses S16 as the baseline (1.0)", () => {
+    expect(ROUND_THRESHOLD_MULTIPLIER.S16).toBe(1.0);
+  });
+});
+
+describe("PROBABILITY_FLOOR", () => {
+  it("decreases from small to very_large pools", () => {
+    expect(PROBABILITY_FLOOR.small).toBeGreaterThan(PROBABILITY_FLOOR.medium);
+    expect(PROBABILITY_FLOOR.medium).toBeGreaterThan(PROBABILITY_FLOOR.large);
+    expect(PROBABILITY_FLOOR.large).toBeGreaterThan(
+      PROBABILITY_FLOOR.very_large
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Matchup Edge Analysis
+// ---------------------------------------------------------------------------
+
+describe("getMatchupEdgeAnalysis", () => {
+  it("surfaces actionable edge for a clear undervalued underdog in a large pool", () => {
+    // Team A: favourite with 60% prob, 70% ownership → leverage = 0.857
+    // Team B: underdog with 40% prob, 30% ownership → leverage = 1.333
+    // Large pool threshold = 1.3, S16 multiplier = 1.0 → effective = 1.3
+    // Team B leverage 1.333 > 1.3 and prob 0.40 > floor 0.30
+    const result = getMatchupEdgeAnalysis(
+      0.6,
+      70,
+      30,
+      "S16",
+      POOL_STRATEGY_CONFIGS.large
+    );
+
+    expect(result.leverageTeamId).toBe("B");
+    expect(result.isActionable).toBe(true);
+    expect(result.edgeLabel).toBe("Strategic Edge");
+    expect(result.edgeDescription).not.toBeNull();
+  });
+
+  it("is almost never actionable in a small pool", () => {
+    // Small pool contrarianThreshold is 999 → effective threshold is huge
+    // Even a massively undervalued underdog won't trigger
+    const result = getMatchupEdgeAnalysis(
+      0.6,
+      70,
+      10,
+      "NCG",
+      POOL_STRATEGY_CONFIGS.small
+    );
+
+    expect(result.isActionable).toBe(false);
+  });
+
+  it("returns no edge when the favourite is also the higher-leverage team", () => {
+    // Team A: favourite with 70% prob, 50% ownership → leverage = 1.4
+    // Team B: underdog with 30% prob, 50% ownership → leverage = 0.6
+    // Favourite has higher leverage — no contrarian edge
+    const result = getMatchupEdgeAnalysis(
+      0.7,
+      50,
+      50,
+      "S16",
+      POOL_STRATEGY_CONFIGS.large
+    );
+
+    expect(result.leverageTeamId).toBeNull();
+    expect(result.isActionable).toBe(false);
+    expect(result.edgeLabel).toBeNull();
+  });
+
+  it("lowers threshold for later rounds (R64 vs E8 vs NCG)", () => {
+    // Same matchup tested across rounds
+    // Team A: 55% prob, 65% ownership → leverage = 0.846
+    // Team B: 45% prob, 35% ownership → leverage = 1.286
+    // Large pool base threshold = 1.3
+    //   R64: effective = 1.3 / 0.6  = 2.167 → NOT actionable (1.286 < 2.167)
+    //   E8:  effective = 1.3 / 1.25 = 1.04  → actionable (1.286 > 1.04)
+    //   NCG: effective = 1.3 / 2.0  = 0.65  → actionable (1.286 > 0.65)
+    const config = POOL_STRATEGY_CONFIGS.large;
+
+    const r64 = getMatchupEdgeAnalysis(0.55, 65, 35, "R64", config);
+    expect(r64.isActionable).toBe(false);
+    expect(r64.effectiveThreshold).toBeCloseTo(1.3 / 0.6, 2);
+
+    const e8 = getMatchupEdgeAnalysis(0.55, 65, 35, "E8", config);
+    expect(e8.isActionable).toBe(true);
+    expect(e8.effectiveThreshold).toBeCloseTo(1.3 / 1.25, 2);
+
+    const ncg = getMatchupEdgeAnalysis(0.55, 65, 35, "NCG", config);
+    expect(ncg.isActionable).toBe(true);
+    expect(ncg.effectiveThreshold).toBeCloseTo(1.3 / 2.0, 2);
+  });
+
+  it("is not actionable when underdog probability is below the floor", () => {
+    // Team A: 80% prob, 85% ownership → leverage = 0.941
+    // Team B: 20% prob, 15% ownership → leverage = 1.333
+    // Large pool floor = 0.30, underdog prob = 0.20 < 0.30 → NOT actionable
+    const result = getMatchupEdgeAnalysis(
+      0.8,
+      85,
+      15,
+      "S16",
+      POOL_STRATEGY_CONFIGS.large
+    );
+
+    expect(result.leverageTeamId).toBe("B");
+    expect(result.isActionable).toBe(false);
+    expect(result.edgeLabel).toBeNull();
+  });
+
+  it("shows no contrarian edge with equal ownership", () => {
+    // Team A: 60% prob, 50% ownership → leverage = 1.2
+    // Team B: 40% prob, 50% ownership → leverage = 0.8
+    // Favourite has higher leverage → no edge
+    const result = getMatchupEdgeAnalysis(
+      0.6,
+      50,
+      50,
+      "S16",
+      POOL_STRATEGY_CONFIGS.large
+    );
+
+    expect(result.leverageTeamId).toBeNull();
+    expect(result.isActionable).toBe(false);
+    expect(result.leverageA).toBeCloseTo(1.2, 5);
+    expect(result.leverageB).toBeCloseTo(0.8, 5);
+  });
+
+  it("returns 'Strong Edge' when leverage is very high", () => {
+    // Team A: 55% prob, 80% ownership → leverage = 0.6875
+    // Team B: 45% prob, 20% ownership → leverage = 2.25
+    // NCG effective threshold = 1.3 / 2.0 = 0.65
+    // Strong threshold = 0.65 * 1.5 = 0.975; leverage 2.25 > 0.975 → Strong Edge
+    const result = getMatchupEdgeAnalysis(
+      0.55,
+      80,
+      20,
+      "NCG",
+      POOL_STRATEGY_CONFIGS.large
+    );
+
+    expect(result.isActionable).toBe(true);
+    expect(result.edgeLabel).toBe("Strong Edge");
+    expect(result.leverageTeamId).toBe("B");
+  });
+
+  it("calculates correct effective thresholds across pool sizes and rounds", () => {
+    // Verify the threshold math for a few combos
+    const medS16 = getMatchupEdgeAnalysis(0.5, 50, 50, "S16", POOL_STRATEGY_CONFIGS.medium);
+    expect(medS16.effectiveThreshold).toBeCloseTo(1.5 / 1.0, 5);
+
+    const veryLargeNCG = getMatchupEdgeAnalysis(0.5, 50, 50, "NCG", POOL_STRATEGY_CONFIGS.very_large);
+    expect(veryLargeNCG.effectiveThreshold).toBeCloseTo(1.2 / 2.0, 5);
+
+    const largeR32 = getMatchupEdgeAnalysis(0.5, 50, 50, "R32", POOL_STRATEGY_CONFIGS.large);
+    expect(largeR32.effectiveThreshold).toBeCloseTo(1.3 / 0.75, 5);
   });
 });

@@ -45,6 +45,15 @@ export interface ContestStrategyResult {
     teamBId: string,
     round: TournamentRound
   ) => [number, number];
+  /** Get effective ownership for a matchup, using user override if present, else model estimate */
+  getEffectiveOwnership: (
+    gameId: string,
+    teamAId: string,
+    teamBId: string,
+    round: TournamentRound
+  ) => [number, number];
+  /** Check whether a user ownership override exists for a game */
+  hasOwnershipOverride: (gameId: string) => boolean;
   /** Get strategy recommendation for a pick */
   getRecommendation: (
     winProbability: number,
@@ -102,6 +111,34 @@ export function useContestStrategy(): ContestStrategyResult {
     [ownershipModel]
   );
 
+  // Ownership overrides from bracket state
+  const ownershipOverrides = state.ownershipOverrides;
+
+  // Stable getEffectiveOwnership function — uses override if present, else model
+  const getEffectiveOwnership = useCallback(
+    (
+      gameId: string,
+      teamAId: string,
+      teamBId: string,
+      round: TournamentRound
+    ): [number, number] => {
+      const override = ownershipOverrides[gameId];
+      if (override) {
+        return override;
+      }
+      return ownershipModel.getMatchupOwnership(teamAId, teamBId, round);
+    },
+    [ownershipModel, ownershipOverrides]
+  );
+
+  // Stable hasOwnershipOverride function
+  const hasOwnershipOverride = useCallback(
+    (gameId: string): boolean => {
+      return gameId in ownershipOverrides;
+    },
+    [ownershipOverrides]
+  );
+
   // Stable getRecommendation function
   const getRecommendation = useCallback(
     (winProbability: number, ownershipPct: number) => {
@@ -116,6 +153,8 @@ export function useContestStrategy(): ContestStrategyResult {
     poolSizeBucket,
     getOwnership,
     getMatchupOwnership,
+    getEffectiveOwnership,
+    hasOwnershipOverride,
     getRecommendation,
   };
 }

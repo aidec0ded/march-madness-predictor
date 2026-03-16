@@ -16,10 +16,11 @@
  * Closes on Escape key or clicking the back button.
  */
 
-import { useEffect, useCallback, useRef, useMemo } from "react";
+import { useEffect, useCallback, useRef, useMemo, useState } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import { useMatchupAnalysis } from "@/hooks/useMatchupAnalysis";
 import { useContestStrategy } from "@/hooks/useContestStrategy";
+import { getMatchupEdgeAnalysis } from "@/lib/game-theory/strategy";
 import type { TournamentRound } from "@/types/team";
 import { TeamProfileCard } from "@/components/matchup/TeamProfileCard";
 import { StatComparison } from "@/components/matchup/StatComparison";
@@ -76,25 +77,47 @@ const NEXT_ROUND: Record<string, TournamentRound | "champion"> = {
 // ---------------------------------------------------------------------------
 
 export function MatchupView({ gameId, onClose }: MatchupViewProps) {
-  const { state } = useBracket();
+  const { state, dispatch } = useBracket();
   const { analysis, teamA, teamB, stats, venue } = useMatchupAnalysis(gameId);
-  const { getMatchupOwnership } = useContestStrategy();
+  const {
+    getEffectiveOwnership,
+    hasOwnershipOverride,
+    poolConfig,
+  } = useContestStrategy();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // Ownership edit mode
+  const [isEditingOwnership, setIsEditingOwnership] = useState(false);
+  const [editOwnershipA, setEditOwnershipA] = useState("");
+
   // Get current overrides for this game
   const overrides = state.matchupOverrides[gameId];
+  const hasOwnOverride = hasOwnershipOverride(gameId);
 
-  // Compute game-level ownership for this matchup
+  // Compute game-level ownership for this matchup (uses override if present)
   const ownership = useMemo(() => {
     if (!analysis || !teamA?.teamId || !teamB?.teamId) return null;
-    const [ownA, ownB] = getMatchupOwnership(
+    const [ownA, ownB] = getEffectiveOwnership(
+      gameId,
       teamA.teamId,
       teamB.teamId,
       analysis.round
     );
     return { a: ownA, b: ownB };
-  }, [analysis, teamA?.teamId, teamB?.teamId, getMatchupOwnership]);
+  }, [analysis, teamA?.teamId, teamB?.teamId, gameId, getEffectiveOwnership]);
+
+  // Compute edge analysis when we have both ownership and win probability
+  const edgeAnalysis = useMemo(() => {
+    if (!analysis || !ownership) return null;
+    return getMatchupEdgeAnalysis(
+      analysis.probA,
+      ownership.a,
+      ownership.b,
+      analysis.round,
+      poolConfig
+    );
+  }, [analysis, ownership, poolConfig]);
 
   // Extract path probabilities from simulation result for both teams
   const { pathProbA, pathProbB } = useMemo(() => {
@@ -228,40 +251,132 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                 pathProbB={pathProbB}
               />
 
-              {/* Public Ownership Estimate */}
+              {/* Public Ownership + Leverage Analysis */}
               {ownership && (
-                <div className="ownership-bar">
+                <div className={`ownership-bar${hasOwnOverride ? " ownership-bar--overridden" : ""}`}>
                   <div className="ownership-bar__header">
-                    <span className="ownership-bar__title">Public Ownership</span>
-                  </div>
-                  <div className="ownership-bar__values">
-                    <span
-                      className="ownership-bar__team"
-                      style={{
-                        color: ownership.a >= 60
-                          ? "var(--accent-warning)"
-                          : ownership.a < 30
-                            ? "var(--accent-success)"
-                            : "var(--text-secondary)",
-                      }}
-                    >
-                      {teamA.team.shortName}{" "}
-                      <strong>{Math.round(ownership.a)}%</strong>
+                    <span className="ownership-bar__title">
+                      Public Ownership
+                      {hasOwnOverride && (
+                        <span className="ownership-bar__badge">CUSTOM</span>
+                      )}
                     </span>
-                    <span
-                      className="ownership-bar__team"
-                      style={{
-                        color: ownership.b >= 60
-                          ? "var(--accent-warning)"
-                          : ownership.b < 30
-                            ? "var(--accent-success)"
-                            : "var(--text-secondary)",
-                      }}
-                    >
-                      <strong>{Math.round(ownership.b)}%</strong>{" "}
-                      {teamB.team.shortName}
-                    </span>
+                    <div className="ownership-bar__actions">
+                      {!isEditingOwnership ? (
+                        <button
+                          type="button"
+                          className="ownership-bar__edit-btn"
+                          onClick={() => {
+                            setEditOwnershipA(String(Math.round(ownership.a)));
+                            setIsEditingOwnership(true);
+                          }}
+                        >
+                          {hasOwnOverride ? "Edit" : "Override"}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="ownership-bar__save-btn"
+                            onClick={() => {
+                              const valA = Math.max(0, Math.min(100, Number(editOwnershipA) || 50));
+                              dispatch({
+                                type: "SET_OWNERSHIP_OVERRIDE",
+                                gameId,
+                                ownership: [valA, 100 - valA],
+                              });
+                              setIsEditingOwnership(false);
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            className="ownership-bar__cancel-btn"
+                            onClick={() => setIsEditingOwnership(false)}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {hasOwnOverride && !isEditingOwnership && (
+                        <button
+                          type="button"
+                          className="ownership-bar__reset-btn"
+                          onClick={() => {
+                            dispatch({ type: "REMOVE_OWNERSHIP_OVERRIDE", gameId });
+                          }}
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Ownership values — editable or display */}
+                  {isEditingOwnership ? (
+                    <div className="ownership-bar__edit-row">
+                      <label className="ownership-bar__edit-label">
+                        {teamA.team.shortName}
+                        <div className="ownership-bar__input-wrap">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            className="ownership-bar__input"
+                            value={editOwnershipA}
+                            onChange={(e) => setEditOwnershipA(e.target.value)}
+                            autoFocus
+                          />
+                          <span className="ownership-bar__pct">%</span>
+                        </div>
+                      </label>
+                      <span className="ownership-bar__edit-vs">vs</span>
+                      <label className="ownership-bar__edit-label ownership-bar__edit-label--right">
+                        {teamB.team.shortName}
+                        <div className="ownership-bar__input-wrap">
+                          <input
+                            type="number"
+                            className="ownership-bar__input ownership-bar__input--readonly"
+                            value={Math.max(0, 100 - (Number(editOwnershipA) || 0))}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                          <span className="ownership-bar__pct">%</span>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="ownership-bar__values">
+                      <span
+                        className="ownership-bar__team"
+                        style={{
+                          color: ownership.a >= 60
+                            ? "var(--accent-warning)"
+                            : ownership.a < 30
+                              ? "var(--accent-success)"
+                              : "var(--text-secondary)",
+                        }}
+                      >
+                        {teamA.team.shortName}{" "}
+                        <strong>{Math.round(ownership.a)}%</strong>
+                      </span>
+                      <span
+                        className="ownership-bar__team"
+                        style={{
+                          color: ownership.b >= 60
+                            ? "var(--accent-warning)"
+                            : ownership.b < 30
+                              ? "var(--accent-success)"
+                              : "var(--text-secondary)",
+                        }}
+                      >
+                        <strong>{Math.round(ownership.b)}%</strong>{" "}
+                        {teamB.team.shortName}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="ownership-bar__track">
                     <div
                       className="ownership-bar__fill-a"
@@ -272,10 +387,74 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                       style={{ width: `${ownership.b}%` }}
                     />
                   </div>
+
+                  {/* Leverage Scores */}
+                  {edgeAnalysis && (
+                    <div className="leverage-row">
+                      <div className="leverage-row__item">
+                        <span className="leverage-row__label">Leverage</span>
+                        <span
+                          className={`leverage-row__score${
+                            edgeAnalysis.leverageA >= (edgeAnalysis.effectiveThreshold ?? 1.3)
+                              ? " leverage-row__score--high"
+                              : edgeAnalysis.leverageA <= 0.7
+                                ? " leverage-row__score--low"
+                                : ""
+                          }`}
+                        >
+                          {edgeAnalysis.leverageA.toFixed(2)}×
+                        </span>
+                      </div>
+                      <div className="leverage-row__divider" />
+                      <div className="leverage-row__item leverage-row__item--right">
+                        <span className="leverage-row__label">Leverage</span>
+                        <span
+                          className={`leverage-row__score${
+                            edgeAnalysis.leverageB >= (edgeAnalysis.effectiveThreshold ?? 1.3)
+                              ? " leverage-row__score--high"
+                              : edgeAnalysis.leverageB <= 0.7
+                                ? " leverage-row__score--low"
+                                : ""
+                          }`}
+                        >
+                          {edgeAnalysis.leverageB.toFixed(2)}×
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edge Indicator */}
+                  {edgeAnalysis?.isActionable && edgeAnalysis.edgeLabel && (
+                    <div
+                      className={`edge-callout${
+                        edgeAnalysis.edgeLabel === "Strong Edge"
+                          ? " edge-callout--strong"
+                          : ""
+                      }`}
+                    >
+                      <div className="edge-callout__header">
+                        <span className="edge-callout__icon">⚡</span>
+                        <span className="edge-callout__label">
+                          {edgeAnalysis.edgeLabel}:{" "}
+                          {edgeAnalysis.leverageTeamId === "A"
+                            ? teamA.team.shortName
+                            : teamB.team.shortName}
+                        </span>
+                      </div>
+                      {edgeAnalysis.edgeDescription && (
+                        <p className="edge-callout__desc">
+                          {edgeAnalysis.edgeDescription
+                            .replace("Team A", teamA.team.shortName)
+                            .replace("Team B", teamB.team.shortName)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <p className="ownership-bar__note">
-                    Estimated % of public brackets picking each team to win this
-                    game. High ownership (amber) = chalk; low ownership (green) =
-                    contrarian value.
+                    {hasOwnOverride
+                      ? "Using your custom ownership values. Leverage = winProb ÷ ownership — values above 1.0× indicate contrarian value."
+                      : "Estimated % of public brackets picking each team. Leverage = winProb ÷ ownership — values above 1.0× indicate contrarian value."}
                   </p>
                 </div>
               )}
@@ -423,11 +602,16 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           border-radius: 8px;
           background-color: var(--bg-surface);
           border: 1px solid var(--border-subtle);
+          transition: border-color 0.2s ease;
+        }
+        .ownership-bar--overridden {
+          border-color: var(--accent-primary);
+          border-style: dashed;
         }
         .ownership-bar__header {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
         }
         .ownership-bar__title {
           font-size: 0.6875rem;
@@ -435,6 +619,112 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           text-transform: uppercase;
           letter-spacing: 0.06em;
           color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .ownership-bar__badge {
+          font-size: 0.5625rem;
+          font-weight: 800;
+          padding: 1px 5px;
+          border-radius: 3px;
+          background-color: var(--accent-primary);
+          color: #ffffff;
+          letter-spacing: 0.08em;
+        }
+        .ownership-bar__actions {
+          display: flex;
+          gap: 6px;
+        }
+        .ownership-bar__edit-btn,
+        .ownership-bar__save-btn,
+        .ownership-bar__cancel-btn,
+        .ownership-bar__reset-btn {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          border: 1px solid var(--border-subtle);
+          background: none;
+          color: var(--text-secondary);
+        }
+        .ownership-bar__edit-btn:hover,
+        .ownership-bar__reset-btn:hover,
+        .ownership-bar__cancel-btn:hover {
+          color: var(--text-primary);
+          border-color: var(--accent-primary);
+        }
+        .ownership-bar__save-btn {
+          background-color: var(--accent-primary);
+          border-color: var(--accent-primary);
+          color: #ffffff;
+        }
+        .ownership-bar__save-btn:hover {
+          opacity: 0.85;
+        }
+        .ownership-bar__reset-btn {
+          color: var(--text-muted);
+          border-color: transparent;
+        }
+        .ownership-bar__edit-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .ownership-bar__edit-label {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          flex: 1;
+        }
+        .ownership-bar__edit-label--right {
+          text-align: right;
+          align-items: flex-end;
+        }
+        .ownership-bar__input-wrap {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+        .ownership-bar__input {
+          width: 56px;
+          padding: 4px 6px;
+          font-size: 0.875rem;
+          font-weight: 700;
+          font-family: ${FONT_MONO};
+          background-color: var(--bg-elevated);
+          border: 1px solid var(--border-subtle);
+          border-radius: 4px;
+          color: var(--text-primary);
+          text-align: center;
+        }
+        .ownership-bar__input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb, 59, 130, 246), 0.2);
+        }
+        .ownership-bar__input--readonly {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .ownership-bar__pct {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-muted);
+          font-family: ${FONT_MONO};
+        }
+        .ownership-bar__edit-vs {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          padding-top: 16px;
         }
         .ownership-bar__values {
           display: flex;
@@ -472,6 +762,81 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           opacity: 0.7;
           transition: width 0.3s ease;
         }
+
+        /* Leverage Row */
+        .leverage-row {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          padding: 6px 0 0;
+        }
+        .leverage-row__item {
+          flex: 1;
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+        }
+        .leverage-row__item--right {
+          justify-content: flex-end;
+        }
+        .leverage-row__label {
+          font-size: 0.625rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text-muted);
+        }
+        .leverage-row__score {
+          font-size: 0.875rem;
+          font-weight: 800;
+          font-family: ${FONT_MONO};
+          color: var(--text-secondary);
+        }
+        .leverage-row__score--high {
+          color: var(--accent-success);
+        }
+        .leverage-row__score--low {
+          color: var(--accent-warning);
+        }
+        .leverage-row__divider {
+          width: 1px;
+          height: 20px;
+          background-color: var(--border-subtle);
+          margin: 0 12px;
+          flex-shrink: 0;
+        }
+
+        /* Edge Callout */
+        .edge-callout {
+          padding: 10px 12px;
+          border-radius: 6px;
+          background-color: rgba(var(--accent-success-rgb, 34, 197, 94), 0.08);
+          border: 1px solid rgba(var(--accent-success-rgb, 34, 197, 94), 0.25);
+        }
+        .edge-callout--strong {
+          background-color: rgba(var(--accent-success-rgb, 34, 197, 94), 0.12);
+          border-color: rgba(var(--accent-success-rgb, 34, 197, 94), 0.4);
+        }
+        .edge-callout__header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .edge-callout__icon {
+          font-size: 0.875rem;
+        }
+        .edge-callout__label {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--accent-success);
+        }
+        .edge-callout__desc {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+          margin: 4px 0 0;
+          line-height: 1.5;
+        }
+
         .ownership-bar__note {
           font-size: 0.6875rem;
           color: var(--text-muted);

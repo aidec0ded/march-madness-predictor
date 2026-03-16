@@ -81,6 +81,9 @@ export interface BracketState {
 
   /** Play-in configuration for First Four games (null if no play-ins / 64-team bracket) */
   playInConfig: PlayInConfig | null;
+
+  /** User-provided ownership overrides: gameId -> [ownershipA, ownershipB] */
+  ownershipOverrides: Record<string, [number, number]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +107,9 @@ export type BracketAction =
   | { type: "CLEAR_PICKS" }
   | { type: "MARK_SAVED"; bracketId: string }
   | { type: "SET_POOL_SIZE"; poolSizeBucket: PoolSizeBucket }
-  | { type: "SET_TOURNAMENT_SITE_MAP"; siteMap: SiteMap };
+  | { type: "SET_TOURNAMENT_SITE_MAP"; siteMap: SiteMap }
+  | { type: "SET_OWNERSHIP_OVERRIDE"; gameId: string; ownership: [number, number] }
+  | { type: "REMOVE_OWNERSHIP_OVERRIDE"; gameId: string };
 
 // ---------------------------------------------------------------------------
 // Matchup Display Data
@@ -169,4 +174,7 @@ export interface SavedBracketData {
 
   /** Simulation snapshot at time of save (null if never simulated) */
   simulationSnapshot: SimulationResult | null;
+
+  /** User-provided ownership overrides at time of save */
+  ownershipOverrides?: Record<string, [number, number]>;
 }

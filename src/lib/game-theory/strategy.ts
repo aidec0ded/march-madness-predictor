@@ -16,6 +16,7 @@
  */
 
 import type {
+  EdgeAnalysis,
   PoolSizeBucket,
   PoolStrategyConfig,
   RecommendationType,
@@ -204,5 +205,127 @@ export function buildStrategyRecommendation(
     type,
     leverageScore,
     reason,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Round-Aware Thresholds
+// ---------------------------------------------------------------------------
+
+/**
+ * Round multipliers applied to the contrarian threshold. Later rounds
+ * are more impactful, so the threshold is effectively *lowered*
+ * (dividing by a larger multiplier) to surface more edges.
+ */
+export const ROUND_THRESHOLD_MULTIPLIER: Record<TournamentRound, number> = {
+  FF: 0.5, // First Four — low value
+  R64: 0.6, // Round of 64 — low value, high damage risk
+  R32: 0.75, // Round of 32
+  S16: 1.0, // Sweet 16 — baseline
+  E8: 1.25, // Elite 8 — high value
+  F4: 1.5, // Final Four — very high value
+  NCG: 2.0, // Championship — THE differentiator
+};
+
+/**
+ * Minimum win probability required before we will recommend the
+ * underdog, regardless of leverage. Varies by pool size — larger
+ * pools tolerate more risk.
+ */
+export const PROBABILITY_FLOOR: Record<PoolSizeBucket, number> = {
+  small: 0.45, // Only recommend near coin-flips
+  medium: 0.35, // Moderate floor
+  large: 0.3, // Lower floor
+  very_large: 0.25, // Accept more risk
+};
+
+// ---------------------------------------------------------------------------
+// Matchup Edge Analysis
+// ---------------------------------------------------------------------------
+
+/**
+ * Analyses a matchup between two teams and returns a structured edge
+ * assessment that accounts for round importance and pool size.
+ *
+ * The key insight: an edge only exists when the *lower-probability* team
+ * has the *higher* leverage score. If the favourite is also under-owned,
+ * there's no contrarian edge to surface — they're the obvious pick.
+ *
+ * @param winProbA   - Team A's win probability (0-1). Team B's is `1 - winProbA`.
+ * @param ownershipA - Team A's estimated public ownership (0-100).
+ * @param ownershipB - Team B's estimated public ownership (0-100).
+ * @param round      - The tournament round for this matchup.
+ * @param poolConfig - The pool strategy configuration.
+ * @returns A complete {@link EdgeAnalysis}.
+ */
+export function getMatchupEdgeAnalysis(
+  winProbA: number,
+  ownershipA: number,
+  ownershipB: number,
+  round: TournamentRound,
+  poolConfig: PoolStrategyConfig
+): EdgeAnalysis {
+  const winProbB = 1 - winProbA;
+
+  const leverageA = calculateLeverageScore(winProbA, ownershipA);
+  const leverageB = calculateLeverageScore(winProbB, ownershipB);
+
+  const roundMultiplier = ROUND_THRESHOLD_MULTIPLIER[round];
+  const effectiveThreshold =
+    poolConfig.contrarianThreshold / roundMultiplier;
+
+  // Determine which team has higher leverage
+  const higherLevTeam: "A" | "B" = leverageA >= leverageB ? "A" : "B";
+  const higherLevProb = higherLevTeam === "A" ? winProbA : winProbB;
+  const lowerLevProb = higherLevTeam === "A" ? winProbB : winProbA;
+  const higherLevScore = higherLevTeam === "A" ? leverageA : leverageB;
+
+  // Base result with no edge
+  const base: EdgeAnalysis = {
+    leverageTeamId: null,
+    leverageA,
+    leverageB,
+    isActionable: false,
+    effectiveThreshold,
+    edgeLabel: null,
+    edgeDescription: null,
+  };
+
+  // If the higher-leverage team is already the higher-probability team,
+  // there's no contrarian edge — they're the obvious pick.
+  if (higherLevProb >= lowerLevProb) {
+    return base;
+  }
+
+  // The higher-leverage team is the underdog. Check actionability:
+  // 1. Win probability must exceed the floor for this pool size
+  const floor = PROBABILITY_FLOOR[poolConfig.bucket];
+  if (higherLevProb < floor) {
+    return { ...base, leverageTeamId: higherLevTeam };
+  }
+
+  // 2. Leverage must exceed the effective threshold
+  if (higherLevScore < effectiveThreshold) {
+    return { ...base, leverageTeamId: higherLevTeam };
+  }
+
+  // Edge is actionable — determine label and description
+  const isStrong = higherLevScore >= effectiveThreshold * 1.5;
+  const edgeLabel = isStrong ? "Strong Edge" : "Strategic Edge";
+
+  const teamLabel = `Team ${higherLevTeam}`;
+  const probPct = (higherLevProb * 100).toFixed(0);
+  const edgeDescription = isStrong
+    ? `${teamLabel} has a ${probPct}% win probability but is significantly under-owned (leverage ${higherLevScore.toFixed(2)}). In ${poolConfig.label} pools, this is a high-value contrarian pick for the ${round}.`
+    : `${teamLabel} has a ${probPct}% win probability and is under-owned relative to their chances (leverage ${higherLevScore.toFixed(2)}). Worth considering as a strategic differentiator in the ${round}.`;
+
+  return {
+    leverageTeamId: higherLevTeam,
+    leverageA,
+    leverageB,
+    isActionable: true,
+    effectiveThreshold,
+    edgeLabel,
+    edgeDescription,
   };
 }

@@ -85,6 +85,32 @@ export interface PoolStrategyConfig {
 // Ownership Model
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Edge Analysis
+// ---------------------------------------------------------------------------
+
+/** Structured edge analysis for a matchup between two teams */
+export interface EdgeAnalysis {
+  /** Team with the higher leverage score ("A" or "B"), or null if no edge */
+  leverageTeamId: "A" | "B" | null;
+  /** Leverage score for team A */
+  leverageA: number;
+  /** Leverage score for team B */
+  leverageB: number;
+  /** Whether the edge is actionable given pool size and round */
+  isActionable: boolean;
+  /** The effective threshold for this pool size + round combo */
+  effectiveThreshold: number;
+  /** Human-readable edge label (null if no edge) */
+  edgeLabel: string | null;
+  /** Detailed explanation (null if no edge) */
+  edgeDescription: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Ownership Model
+// ---------------------------------------------------------------------------
+
 /** Full ownership model for all teams across all rounds */
 export interface OwnershipModel {
   /** Ownership estimates indexed by `${teamId}-${round}` */
