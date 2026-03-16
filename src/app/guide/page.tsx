@@ -131,12 +131,7 @@ export default function GuidePage() {
             <li><strong>Win probability</strong> for that specific game (e.g., &ldquo;72%&rdquo;), computed from the composite rating model</li>
             <li><strong>Probability bar</strong> &mdash; A visual representation of the win probability</li>
             <li>
-              <strong>Ownership badge</strong> &mdash; Estimated public pick percentage, color-coded:
-              <ul className="guide-ul guide-ul--nested">
-                <li><strong>Amber (&ge;60%):</strong> Over-owned chalk &mdash; most people are picking this team</li>
-                <li><strong>Gray (30&ndash;59%):</strong> Neutral ownership</li>
-                <li><strong>Green (&lt;30%):</strong> Contrarian value &mdash; fewer people are picking this team</li>
-              </ul>
+              <strong>Ownership badge</strong> &mdash; Estimated public pick percentage (shown as &ldquo;X% own&rdquo;)
             </li>
           </ul>
           <p>
@@ -181,6 +176,44 @@ export default function GuidePage() {
             matchup, key factors, how the game might play out, and closes with a recommendation
             that factors in your pool size. Narratives stream in real time, are cached per matchup,
             and are rate-limited to 10 per minute.
+          </p>
+          <p>
+            <strong>Public Ownership &amp; Leverage Analysis</strong> sits between the probability
+            display and team profiles. This is the core of the game theory system:
+          </p>
+          <ul className="guide-ul">
+            <li>
+              <strong>Ownership bar</strong> shows estimated public pick percentage for each team,
+              color-coded relative to win probability: <strong>green</strong> if under-owned
+              (ownership &lt; win probability), <strong>amber</strong> if over-owned (ownership &gt; win
+              probability), and <strong>gray</strong> if roughly equal. Click <strong>Override</strong>{" "}
+              to enter real ownership data from your contest (ESPN, Yahoo, etc.).
+            </li>
+            <li>
+              <strong>Leverage scores</strong> show the ratio of win probability to ownership
+              (winProb &divide; ownership). Above 1.0&times; means under-owned (contrarian value),
+              below 1.0&times; means over-owned. Leverage is color-coded: <strong>green</strong>{" "}
+              when it exceeds the contrarian threshold for your pool size, <strong>amber</strong>{" "}
+              when it falls below the symmetric inverse.
+            </li>
+            <li>
+              <strong>Edge callouts</strong> appear when the model detects an actionable contrarian
+              edge &mdash; when the underdog has higher leverage than the favorite, exceeds a minimum
+              win probability floor, and clears a round-adjusted threshold. Labeled &ldquo;Strategic
+              Edge&rdquo; or &ldquo;Strong Edge&rdquo; with a plain-language explanation.
+            </li>
+            <li>
+              <strong>Explanatory text</strong> at the bottom adapts to the matchup: it describes the
+              edge when one exists, notes when both teams are under- or over-owned, or provides a
+              generic explanation of the leverage formula.
+            </li>
+          </ul>
+          <p>
+            The leverage system uses <strong>round-aware thresholds</strong> &mdash; later rounds
+            (Elite 8, Final Four, Championship) lower the bar to surface more edges, since
+            differentiation in later rounds carries more scoring weight. The system also enforces a{" "}
+            <strong>probability floor</strong> per pool size so it won&rsquo;t recommend extreme
+            longshots.
           </p>
           <p>
             <strong>Ownership Explainer</strong> (click &ldquo;How is ownership estimated?&rdquo;)
@@ -724,6 +757,35 @@ export default function GuidePage() {
             benefit from the same pick.
           </dd>
 
+          <dt>What is the leverage score?</dt>
+          <dd>
+            Leverage = win probability &divide; ownership. A score of 1.5&times; means the
+            team&rsquo;s win probability is 50% higher than their public ownership &mdash;
+            they&rsquo;re under-valued by the field. Scores above 1.0&times; indicate contrarian
+            value (green), below 1.0&times; indicate over-ownership (amber). The leverage score
+            is the key input for the edge analysis system.
+          </dd>
+
+          <dt>When do edge callouts appear?</dt>
+          <dd>
+            Edge callouts appear when three conditions are met: (1) the underdog has higher
+            leverage than the favorite, (2) the underdog&rsquo;s win probability exceeds a minimum
+            floor for your pool size, and (3) the leverage exceeds a round-adjusted threshold.
+            Later rounds have lower thresholds because differentiation there is more impactful.
+            In small pools, edges are suppressed because raw probability maximization is the
+            optimal strategy.
+          </dd>
+
+          <dt>Can I enter my own ownership numbers?</dt>
+          <dd>
+            Yes. In the matchup view, click &ldquo;Override&rdquo; next to the ownership bar.
+            Enter the actual ownership percentage from your contest platform (ESPN, Yahoo, etc.)
+            and click &ldquo;Save.&rdquo; Custom ownership shows a &ldquo;CUSTOM&rdquo; badge.
+            Click &ldquo;Reset&rdquo; to return to the model&rsquo;s estimate. Ownership overrides
+            only affect strategy recommendations &mdash; they don&rsquo;t change win probabilities
+            or simulation results.
+          </dd>
+
           <dt>Why did my downstream picks disappear?</dt>
           <dd>
             Cascading invalidation. If you change a pick in an earlier round, any later-round picks
@@ -760,6 +822,7 @@ export default function GuidePage() {
               <tr><td>Four Factors</td><td>Dean Oliver&rsquo;s four key basketball stats: eFG%, TO%, ORB%, FTR</td></tr>
               <tr><td>Log5 / Logistic</td><td>Method for converting a rating differential into a win probability using the logistic function</td></tr>
               <tr><td>Monte Carlo</td><td>Simulation technique that runs thousands of random trials to estimate probabilities</td></tr>
+              <tr><td>Leverage Score</td><td>Win probability divided by ownership &mdash; values above 1.0 indicate the team is under-owned (contrarian value)</td></tr>
               <tr><td>Ownership</td><td>Estimated percentage of contest participants picking a given team to advance</td></tr>
               <tr><td>Path Probability</td><td>Probability of a team reaching a specific round, accounting for all games on their path</td></tr>
               <tr><td>Pairwise Prob.</td><td>Probability of one team beating another in a single head-to-head game</td></tr>

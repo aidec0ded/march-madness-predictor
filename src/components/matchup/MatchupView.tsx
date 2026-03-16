@@ -351,9 +351,9 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                       <span
                         className="ownership-bar__team"
                         style={{
-                          color: ownership.a >= 60
+                          color: ownership.a / 100 > analysis.probA
                             ? "var(--accent-warning)"
-                            : ownership.a < 30
+                            : ownership.a / 100 < analysis.probA
                               ? "var(--accent-success)"
                               : "var(--text-secondary)",
                         }}
@@ -364,9 +364,9 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                       <span
                         className="ownership-bar__team"
                         style={{
-                          color: ownership.b >= 60
+                          color: ownership.b / 100 > analysis.probB
                             ? "var(--accent-warning)"
-                            : ownership.b < 30
+                            : ownership.b / 100 < analysis.probB
                               ? "var(--accent-success)"
                               : "var(--text-secondary)",
                         }}
@@ -389,39 +389,44 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                   </div>
 
                   {/* Leverage Scores */}
-                  {edgeAnalysis && (
-                    <div className="leverage-row">
-                      <div className="leverage-row__item">
-                        <span className="leverage-row__label">Leverage</span>
-                        <span
-                          className={`leverage-row__score${
-                            edgeAnalysis.leverageA >= (edgeAnalysis.effectiveThreshold ?? 1.3)
-                              ? " leverage-row__score--high"
-                              : edgeAnalysis.leverageA <= 0.7
-                                ? " leverage-row__score--low"
-                                : ""
-                          }`}
-                        >
-                          {edgeAnalysis.leverageA.toFixed(2)}×
-                        </span>
+                  {edgeAnalysis && (() => {
+                    const ct = poolConfig.contrarianThreshold;
+                    const leverageHigh = ct < 100 ? ct : 1.3; // fallback for small pool (999)
+                    const leverageLow = ct < 100 ? 1 - (ct - 1) : 0.7;
+                    return (
+                      <div className="leverage-row">
+                        <div className="leverage-row__item">
+                          <span className="leverage-row__label">Leverage</span>
+                          <span
+                            className={`leverage-row__score${
+                              edgeAnalysis.leverageA >= leverageHigh
+                                ? " leverage-row__score--high"
+                                : edgeAnalysis.leverageA <= leverageLow
+                                  ? " leverage-row__score--low"
+                                  : ""
+                            }`}
+                          >
+                            {edgeAnalysis.leverageA.toFixed(2)}×
+                          </span>
+                        </div>
+                        <div className="leverage-row__divider" />
+                        <div className="leverage-row__item leverage-row__item--right">
+                          <span className="leverage-row__label">Leverage</span>
+                          <span
+                            className={`leverage-row__score${
+                              edgeAnalysis.leverageB >= leverageHigh
+                                ? " leverage-row__score--high"
+                                : edgeAnalysis.leverageB <= leverageLow
+                                  ? " leverage-row__score--low"
+                                  : ""
+                            }`}
+                          >
+                            {edgeAnalysis.leverageB.toFixed(2)}×
+                          </span>
+                        </div>
                       </div>
-                      <div className="leverage-row__divider" />
-                      <div className="leverage-row__item leverage-row__item--right">
-                        <span className="leverage-row__label">Leverage</span>
-                        <span
-                          className={`leverage-row__score${
-                            edgeAnalysis.leverageB >= (edgeAnalysis.effectiveThreshold ?? 1.3)
-                              ? " leverage-row__score--high"
-                              : edgeAnalysis.leverageB <= 0.7
-                                ? " leverage-row__score--low"
-                                : ""
-                          }`}
-                        >
-                          {edgeAnalysis.leverageB.toFixed(2)}×
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Edge Indicator */}
                   {edgeAnalysis?.isActionable && edgeAnalysis.edgeLabel && (
@@ -452,9 +457,17 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
                   )}
 
                   <p className="ownership-bar__note">
-                    {hasOwnOverride
-                      ? "Using your custom ownership values. Leverage = winProb ÷ ownership — values above 1.0× indicate contrarian value."
-                      : "Estimated % of public brackets picking each team. Leverage = winProb ÷ ownership — values above 1.0× indicate contrarian value."}
+                    {edgeAnalysis?.isActionable && edgeAnalysis.edgeDescription
+                      ? edgeAnalysis.edgeDescription
+                          .replace("Team A", teamA.team.shortName)
+                          .replace("Team B", teamB.team.shortName)
+                      : edgeAnalysis && edgeAnalysis.leverageA > 1 && edgeAnalysis.leverageB > 1
+                        ? `Both teams are under-owned relative to their win probability. No clear contrarian edge in this matchup.`
+                        : edgeAnalysis && edgeAnalysis.leverageA < 1 && edgeAnalysis.leverageB < 1
+                          ? `Both teams are over-owned relative to their win probability. No clear contrarian edge in this matchup.`
+                          : hasOwnOverride
+                            ? `Using your custom ownership values. Leverage = winProb \u00F7 ownership \u2014 green (above 1.0\u00D7) means under-owned, amber (below 1.0\u00D7) means over-owned.`
+                            : `Leverage = winProb \u00F7 ownership \u2014 green (above 1.0\u00D7) means under-owned relative to win probability, amber (below 1.0\u00D7) means over-owned.`}
                   </p>
                 </div>
               )}
