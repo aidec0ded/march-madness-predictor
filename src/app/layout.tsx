@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/client";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { PostHogProvider } from "@/components/providers/PostHogProvider";
 import { Navbar } from "@/components/navigation/Navbar";
 import "./globals.css";
 
@@ -61,10 +62,12 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        <AuthProvider initialUser={user}>
-          <Navbar />
-          {children}
-        </AuthProvider>
+        <PostHogProvider>
+          <AuthProvider initialUser={user}>
+            <Navbar />
+            {children}
+          </AuthProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
