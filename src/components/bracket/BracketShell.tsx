@@ -141,15 +141,16 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
       <div className={styles.shell}>
         {/* Sticky header bar */}
         <header className={`${styles.header} ${isMobile ? styles.headerMobile : ""}`}>
-          {/* Left section: bracket name + pool size */}
+          {/* Left section: bracket name + pool size (+ Simulate on mobile) */}
           <div className={`${styles.headerLeft} ${isMobile ? styles.headerLeftMobile : ""}`}>
             {!isMobile && <SiteBrand />}
             <PoolSizeSelector />
+            {isMobile && <SimulationButton onSimulationComplete={handleSimulationComplete} compact />}
           </div>
 
           {/* Right section: action buttons */}
           <div className={`${styles.headerRight} ${isMobile ? styles.headerRightMobile : ""}`}>
-            <SimulationButton onSimulationComplete={handleSimulationComplete} compact={isMobile} />
+            {!isMobile && <SimulationButton onSimulationComplete={handleSimulationComplete} />}
 
             <button
               type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { Slider } from "@/components/ui/Slider";
 import styles from "./LeverSlider.module.css";
 
@@ -16,8 +16,8 @@ export interface LeverSliderProps {
 }
 
 /**
- * Individual lever control — displays a labeled slider with current value
- * and a description of what the lever does.
+ * Individual lever control — displays a labeled slider with current value,
+ * −/+ stepper buttons for precise adjustments, and a description.
  */
 export function LeverSlider({
   label,
@@ -29,6 +29,17 @@ export function LeverSlider({
   step = 0.05,
   unit = "\u00d7",
 }: LeverSliderProps) {
+  const nudge = useCallback(
+    (direction: -1 | 1) => {
+      const raw = value + direction * step;
+      // Round to step precision to avoid floating-point drift
+      const decimals = (step.toString().split(".")[1] || "").length;
+      const clamped = Math.min(max, Math.max(min, parseFloat(raw.toFixed(decimals))));
+      onChange(clamped);
+    },
+    [value, step, min, max, onChange]
+  );
+
   return (
     <div className={styles.slider}>
       <div className={styles.header}>
@@ -38,7 +49,29 @@ export function LeverSlider({
           {unit}
         </span>
       </div>
-      <Slider min={min} max={max} step={step} value={value} onChange={onChange} />
+      <div className={styles.sliderRow}>
+        <button
+          type="button"
+          className={styles.stepButton}
+          onClick={() => nudge(-1)}
+          disabled={value <= min}
+          aria-label={`Decrease ${label}`}
+          title={`−${step}`}
+        >
+          −
+        </button>
+        <Slider min={min} max={max} step={step} value={value} onChange={onChange} />
+        <button
+          type="button"
+          className={styles.stepButton}
+          onClick={() => nudge(1)}
+          disabled={value >= max}
+          aria-label={`Increase ${label}`}
+          title={`+${step}`}
+        >
+          +
+        </button>
+      </div>
       <p className={styles.description}>{description}</p>
     </div>
   );

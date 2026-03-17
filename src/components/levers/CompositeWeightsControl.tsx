@@ -66,6 +66,15 @@ export function CompositeWeightsControl({
     [weights, onChange],
   );
 
+  const nudge = useCallback(
+    (key: keyof CompositeWeights, direction: -1 | 1) => {
+      const raw = weights[key] + direction * 0.05;
+      const clamped = Math.min(1, Math.max(0, parseFloat(raw.toFixed(2))));
+      handleChange(key, clamped);
+    },
+    [weights, handleChange],
+  );
+
   return (
     <div className={styles.container}>
       {SOURCES.map(({ key, label }) => (
@@ -76,13 +85,35 @@ export function CompositeWeightsControl({
               {Math.round(weights[key] * 100)}%
             </span>
           </div>
-          <Slider
-            min={0}
-            max={1}
-            step={0.05}
-            value={weights[key]}
-            onChange={(val) => handleChange(key, val)}
-          />
+          <div className={styles.sliderRow}>
+            <button
+              type="button"
+              className={styles.stepButton}
+              onClick={() => nudge(key, -1)}
+              disabled={weights[key] <= 0}
+              aria-label={`Decrease ${label} weight`}
+              title="−5%"
+            >
+              −
+            </button>
+            <Slider
+              min={0}
+              max={1}
+              step={0.05}
+              value={weights[key]}
+              onChange={(val) => handleChange(key, val)}
+            />
+            <button
+              type="button"
+              className={styles.stepButton}
+              onClick={() => nudge(key, 1)}
+              disabled={weights[key] >= 1}
+              aria-label={`Increase ${label} weight`}
+              title="+5%"
+            >
+              +
+            </button>
+          </div>
         </div>
       ))}
     </div>

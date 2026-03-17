@@ -41,8 +41,9 @@
 .headerLeftMobile {
   gap: 8px;
   flex: 0 1 auto;
-  /* Full width on first row so Pool selector isn't overlapped */
+  /* Full width on first row: Pool left, Simulate right */
   width: 100%;
+  justify-content: space-between;
 }
 
 .headerRight {
