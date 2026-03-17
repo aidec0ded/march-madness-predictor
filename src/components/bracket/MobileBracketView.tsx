@@ -12,7 +12,7 @@
  * Passes props to FirstFour, FinalFour, and RegionBracket.
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useBracket } from "@/hooks/useBracket";
 import type { GameProbabilities } from "@/hooks/useGameProbabilities";
 import type { Region } from "@/types/team";
@@ -93,6 +93,27 @@ function splitMatchupsByRegion(matchups: BracketMatchup[]): {
 export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileBracketViewProps) {
   const [activeTab, setActiveTab] = useState<TabId>("East");
   const { state, dispatch, allMatchups } = useBracket();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollFade, setShowScrollFade] = useState(false);
+
+  // Show/hide the right-edge scroll fade based on scroll position
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const check = () => {
+      const canScroll = el.scrollWidth > el.clientWidth;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      setShowScrollFade(canScroll && !atEnd);
+    };
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", check);
+      ro.disconnect();
+    };
+  }, [activeTab]);
 
   // Preview mode: probabilities are live estimates without full simulation confirmation
   const isPreview = state.simulationResult === null || state.isSimulationStale;
@@ -167,12 +188,14 @@ export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileB
       </div>
 
       {/* Region content */}
-      <div
-        id={`region-panel-${activeTab}`}
-        role="tabpanel"
-        aria-label={`${activeTab} bracket`}
-        className="mobile-bracket-region-container"
-      >
+      <div className="bracket-scroll-container">
+        <div
+          ref={scrollContainerRef}
+          id={`region-panel-${activeTab}`}
+          role="tabpanel"
+          aria-label={`${activeTab} bracket`}
+          className="mobile-bracket-region-container"
+        >
         {activeTab === "First 4" ? (
           <FirstFour
             matchups={firstFourMatchups}
@@ -206,6 +229,10 @@ export function MobileBracketView({ onMatchupClick, gameProbabilities }: MobileB
             onMatchupClick={handleMatchupClick}
             gameProbabilities={gameProbabilities}
           />
+        )}
+        </div>
+        {showScrollFade && (
+          <div className="bracket-scroll-fade-right" aria-hidden="true" />
         )}
       </div>
     </div>

@@ -858,6 +858,34 @@ export function MatchupView({ gameId, onClose }: MatchupViewProps) {
           text-align: center;
           font-style: italic;
         }
+        /* ---- Mobile adjustments ---- */
+        @media (max-width: 767px) {
+          .matchup-view__header {
+            padding: 10px 16px;
+            gap: 12px;
+          }
+          .matchup-view__back {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+          }
+          .matchup-view__title {
+            font-size: 0.875rem;
+          }
+          .matchup-view__content {
+            padding: 16px 16px 32px;
+            gap: 16px;
+          }
+          .matchup-view__profiles {
+            grid-template-columns: 1fr;
+          }
+          .ownership-bar {
+            padding: 10px 12px;
+          }
+          .ownership-bar__team strong {
+            font-size: 0.8125rem;
+          }
+        }
+
         @keyframes fade-in {
           from { opacity: 0; }
           to { opacity: 1; }

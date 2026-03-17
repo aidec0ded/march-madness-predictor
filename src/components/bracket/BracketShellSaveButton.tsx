@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useBracketPersistence } from "@/hooks/useBracketPersistence";
+import { useMediaQuery, MOBILE_QUERY } from "@/hooks/useMediaQuery";
 
 /**
  * Save button rendered inside BracketProvider.
@@ -12,6 +13,7 @@ import { useBracketPersistence } from "@/hooks/useBracketPersistence";
  */
 export function SaveButton() {
   const { saveBracket, isDirty, isAuthenticated } = useBracketPersistence();
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const handleSave = useCallback(async () => {
@@ -62,8 +64,8 @@ export function SaveButton() {
       disabled={!isAuthenticated || saveState === "saving"}
       title={!isAuthenticated ? "Sign in to save brackets" : undefined}
       style={{
-        padding: "8px 14px",
-        fontSize: "0.8125rem",
+        padding: isMobile ? "6px 10px" : "8px 14px",
+        fontSize: isMobile ? "0.75rem" : "0.8125rem",
         fontWeight: 600,
         color,
         backgroundColor: bgColor,

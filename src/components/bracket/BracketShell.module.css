@@ -27,7 +27,8 @@
 
 .headerMobile {
   padding: 8px 12px;
-  gap: 8px;
+  gap: 6px 8px;
+  flex-wrap: wrap;
 }
 
 .headerLeft {
@@ -40,6 +41,8 @@
 .headerLeftMobile {
   gap: 8px;
   flex: 0 1 auto;
+  /* Full width on first row so Pool selector isn't overlapped */
+  width: 100%;
 }
 
 .headerRight {
@@ -51,6 +54,16 @@
 
 .headerRightMobile {
   gap: 6px;
+  /* Take full second row + horizontal scroll if buttons still overflow */
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 1;
+}
+
+.headerRightMobile::-webkit-scrollbar {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ */

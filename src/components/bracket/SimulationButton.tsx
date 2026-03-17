@@ -17,6 +17,8 @@ type ButtonState = "idle" | "loading" | "success" | "error";
 interface SimulationButtonProps {
   /** Called after a simulation completes successfully. */
   onSimulationComplete?: () => void;
+  /** Whether to use compact mobile labels */
+  compact?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,7 +40,7 @@ interface SimulationButtonProps {
  *
  * Reads simulation state from useBracketSimulation hook.
  */
-export function SimulationButton({ onSimulationComplete }: SimulationButtonProps) {
+export function SimulationButton({ onSimulationComplete, compact }: SimulationButtonProps) {
   const { simulate, isSimulating, isSimulationStale, simulationProgress } =
     useBracketSimulation();
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
@@ -127,7 +129,9 @@ export function SimulationButton({ onSimulationComplete }: SimulationButtonProps
       break;
     default:
       backgroundColor = "var(--accent-primary)";
-      label = isSimulationStale ? "Re-run Simulation" : "Run Simulation";
+      label = compact
+        ? (isSimulationStale ? "Re-run" : "Simulate")
+        : (isSimulationStale ? "Re-run Simulation" : "Run Simulation");
       break;
   }
 
@@ -145,9 +149,9 @@ export function SimulationButton({ onSimulationComplete }: SimulationButtonProps
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "8px",
-        padding: "8px 16px",
-        fontSize: "0.8125rem",
+        gap: compact ? "6px" : "8px",
+        padding: compact ? "6px 12px" : "8px 16px",
+        fontSize: compact ? "0.75rem" : "0.8125rem",
         fontWeight: 600,
         color: "#ffffff",
         backgroundColor,

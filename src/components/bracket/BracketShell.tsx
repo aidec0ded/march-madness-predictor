@@ -149,7 +149,7 @@ export function BracketShell({ initialTeams, savedBracket, tournamentSites, play
 
           {/* Right section: action buttons */}
           <div className={`${styles.headerRight} ${isMobile ? styles.headerRightMobile : ""}`}>
-            <SimulationButton onSimulationComplete={handleSimulationComplete} />
+            <SimulationButton onSimulationComplete={handleSimulationComplete} compact={isMobile} />
 
             <button
               type="button"
