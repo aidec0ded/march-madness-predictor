@@ -128,7 +128,7 @@ export function useMatchupNarrative(
 ): UseMatchupNarrativeResult {
   const { state: bracketState } = useBracket();
   const {
-    getMatchupOwnership,
+    getEffectiveOwnership,
     getRecommendation,
     poolSizeBucket,
     poolConfig,
@@ -164,7 +164,8 @@ export function useMatchupNarrative(
     const overrides: MatchupOverrides | undefined =
       bracketState.matchupOverrides[analysis.gameId];
 
-    const [ownershipA, ownershipB] = getMatchupOwnership(
+    const [ownershipA, ownershipB] = getEffectiveOwnership(
+      analysis.gameId,
       teamA.teamId,
       teamB.teamId,
       analysis.round
@@ -194,7 +195,7 @@ export function useMatchupNarrative(
     teamA,
     teamB,
     bracketState.matchupOverrides,
-    getMatchupOwnership,
+    getEffectiveOwnership,
     getRecommendation,
     poolSizeBucket,
     poolConfig,
